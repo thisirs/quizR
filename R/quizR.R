@@ -180,53 +180,6 @@ isCorrect <- function(question, env, guess) {
 }
 
 
-## isCorrect <- function(question, env, guess) {
-##     if(is.function(question$answer)) {
-##         environment(question$answer) <- env
-##         answer <- question$answer()
-##     } else if(is.list(question$answer)) {
-
-##         answer <- question$answer
-##     }
-##     result <- validate(answer, guess, question$dist, question$epsilon)
-##     return(list(ok=result, answer=answer))
-## }
-
-## validate <- function(answer, guess, dist, epsilon) {
-##     if(is.numeric(answer)) {
-##         guess <- as.numeric(guess)
-##         result <- !is.na(guess) && abs(answer - guess) <= epsilon * abs(answer)
-##     } else if(is.character(answer)) {
-##         guess <- as.character(guess)
-##         result <- adist(answer, guess) <= dist
-##     }
-##     return(result)
-## }
-
-## expr <- function(...) {
-##     as.list(match.call()[-1])
-## }
-
-## expr <- function(...) {
-##     as.list(substitute(list(...))[-1])
-## }
-
-
-## getEnvFromQuotedList <- function(ql) {
-##     env <- new.env(parent=globalenv())
-##     lapply(ql, function(q) { eval(q, env) })
-##     return(env)
-## }
-
-## getRecursiveEnv <- function(obj) {
-##     getEnvFromQuotedList(getRecursiveQuotedListData(obj))
-## }
-
-## getRecursiveQuotedListData <- function(obj)
-## {
-##     UseMethod("getRecursiveQuotedListData")
-## }
-
 getLocalLanguage <- function(obj) {
     hidden.data.env <- new.env(parent=globalenv())
     eval(obj$hidden.data, hidden.data.env)
@@ -256,78 +209,10 @@ getRecursiveLanguage.Group <- function(obj) {
     if(is.null(ls)) NULL else do.call(call, c("{", ls), quote=TRUE)
 }
 
-## Retourne une liste de quote remplacés
-## getRecursiveQuotedListData.Quiz <- function(quiz) {
-##     qql <- getLocalQuotedListData(quiz)
-##     c(qql, do.call(c, lapply(quiz$groups, function(g) { getRecursiveQuotedListData(g) })))
-## }
-
-## getRecursiveQuotedListData.Group <- function(group) {
-##     gql <- getLocalQuotedListData(group)
-##     c(gql, do.call(c, lapply(group$questions, function(q) { getRecursiveQuotedListData(q) })))
-## }
-
-## getRecursiveQuotedListData.Question <- function(question) {
-##     getLocalQuotedListData(question)
-## }
-
-## getLocalQuotedListData <- function(obj) {
-##     hidden.data.env <- new.env(parent=globalenv())
-##     lapply(obj$hidden.data, function(q) { eval(q, hidden.data.env) })
-##     lapply(obj$data, function(q) { substitute_q(q, hidden.data.env) })
-## }
-
-## evalAnswerInEnv <- function(answer, env) {
-##     switch(typeof(answer),
-##            closure={
-##                environment(answer) <- env
-##                answer() },
-##            language=eval(answer, envir=env),
-##            default=answer)
-## }
-
-## getLocalEnv <- function(obj) {
-##     hidden.data.env <- new.env(parent=globalenv())
-##     eval(obj$hidden.data, hidden.data.env)
-##     substitute_q(obj$data, hidden.data.env)
-## }
-
-## getLocalEnv <- function(obj) {
-##     getEnvFromQuotedList(getLocalQuotedListData(obj))
-## }
-
-## checkAnswers <- function(obj, ...)
-## {
-##     UseMethod("checkAnswers")
-## }
-
-## checkAnswers.Quiz <- function(quiz) {
-##     renv <- getRecursiveEnv(quiz)
-##     lenv <- getLocalEnv(quiz)
-##     all(sapply(quiz$groups, function(g) { checkAnswers(g, renv, lenv) }))
-## }
-
-## checkAnswers.Group <- function(group, renv, lenv) {
-##     lgenv <- getLocalEnv(group)
-##     parent.env(lgenv) <- lenv
-##     all(sapply(group$questions, function(q) { checkAnswers(q, renv, lgenv) }))
-## }
-
-## checkAnswers.Question <- function(q, renv, lenv) {
-##     lqenv <- getLocalEnv(q)
-##     parent.env(lqenv) <- lenv
-##     if(!evalAnswerInEnv(q$answer, renv) == evalAnswerInEnv(q$answer, lenv)) browser()
-##     evalAnswerInEnv(q$answer, renv) == evalAnswerInEnv(q$answer, lenv)
-## }
-
 checkId <- function(quiz) {
     allQuestions <- do.call(c, lapply(quiz$groups, function(g) { g$questions }))
     !any(duplicated(sapply(allQuestions, function(q) { q$id })))
 }
-
-## getInstructionsFromQuotedList <- function(ql) {
-##     paste(lapply(ql, function(q) { paste(deparse(q), collapse="\n") }), collapse="\n\n")
-## }
 
 computeResultsFromData <- function(quiz, data) {
     stopifnot(length(quiz$groups) > 0)
@@ -377,11 +262,6 @@ computeResultsFromData <- function(quiz, data) {
     return(allResults)
 }
 
-
-## evalQuotedListInEnv <- function(ql, env) {
-##     lapply(ql, function(q) { eval(q, env) })
-##     return(env)
-## }
 
 correctRecord <- function(quiz0, record, env, isWithQuestionBody) {
     resultQuiz <- list(grade=0)

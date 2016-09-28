@@ -1,2 +1,3 @@
 *.Rcheck
 quizR*.tar.gz
+R/obsolete.R
