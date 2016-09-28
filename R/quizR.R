@@ -70,6 +70,7 @@ Group <- function(title, type, num, data, hidden.data, questions) {
     if(missing(data)) data <- quote({}) else stopifnot(is.language(data))
     if(missing(num) && type == 'random') stop("Missing `num' argument for random group")
     if(!missing(num) && type != "random") stop("Ignored `num' argument for non-random group")
+    match.arg(type, c("random", "sequential", "identifier"))
     num <- if(missing(num)) NA else num
     if(missing(questions)) questions <- list()
     me <- list(
