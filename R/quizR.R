@@ -65,20 +65,20 @@ addGroup <- function(quiz, group) {
 #' @param type Type of group
 #' @param num Number of questions of group if of random type
 #' @export
-Group <- function(title, type, num, hidden.data=quote({}), data=quote({}), questions) {
-    stopifnot(is.language(hidden.data))
-    stopifnot(is.language(data))
-    if(missing(num) && type == 'random') stop("Missing `num' argument")
-    if(!missing(num) && type != "random") stop("No num in non-random group")
+Group <- function(title, type, num, data, hidden.data, questions) {
+    if(missing(hidden.data)) hidden.data <- quote({}) else stopifnot(is.language(hidden.data))
+    if(missing(data)) data <- quote({}) else stopifnot(is.language(data))
+    if(missing(num) && type == 'random') stop("Missing `num' argument for random group")
+    if(!missing(num) && type != "random") stop("Ignored `num' argument for non-random group")
     num <- if(missing(num)) NA else num
-    questions <- if(!missing(questions)) questions else list()
+    if(!missing(questions)) questions <- list()
     me <- list(
         title=title,
         type=type,
         num=num,
         questions=questions,
-        hidden.data=hidden.data,
-        data=data
+        data=data,
+        hidden.data=hidden.data
     )
     class(me) <- append(class(me), "Group")
     return(me)
