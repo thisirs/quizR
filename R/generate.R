@@ -1,3 +1,10 @@
+#' Generate XML Moodle quiz file and data file
+#'
+#' @param quiz Quiz
+#' @param data.name Name of data file
+#' @param quiz.name Name of XML file
+#'
+#' @export
 generateFiles <- function(quiz, data.name=paste0(quiz$title, "-data"), quiz.name=paste0(quiz$title, "-quiz")) {
     if(!is.null(quiz.name)) write(toXML(quiz), paste0(quiz.name, ".xml"))
     if(!is.null(data.name)) {

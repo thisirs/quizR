@@ -4,7 +4,7 @@
 \alias{Quiz}
 \title{Create a quiz object}
 \usage{
-Quiz(title, groups = list(), hidden.data = quote({ }), data = quote({ }))
+Quiz(title, groups, data, hidden.data)
 }
 \arguments{
 \item{title}{Title of the quiz}

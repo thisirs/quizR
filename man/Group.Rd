@@ -4,8 +4,7 @@
 \alias{Group}
 \title{Create a group object}
 \usage{
-Group(title, type, num, hidden.data = quote({ }), data = quote({ }),
-  questions)
+Group(title, type, num, data, hidden.data, questions)
 }
 \arguments{
 \item{title}{Title of group}
