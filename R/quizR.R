@@ -5,12 +5,17 @@
 #'
 #' @return A quiz object
 #' @export
-Quiz <- function(title, groups=list(), hidden.data=quote({}), data=quote({})) {
+Quiz <- function(title, groups, data, hidden.data) {
+    if(missing(title)) stop("Quiz needs a title")
+    if(missing(groups)) groups <- list()
+    if(missing(data)) data <- quote({})
+    if(missing(hidden.data)) hidden.data <- quote({})
+
     me <- list(
         title=title,
         groups=groups,
-        hidden.data=hidden.data,
-        data=data
+        data=data,
+        hidden.data=hidden.data
     )
 
     class(me) <- append(class(me), "Quiz")
