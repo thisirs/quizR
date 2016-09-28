@@ -99,7 +99,7 @@ getNum <- function(group) {
     if(group$type == "random")
         return(group$num)
     else {
-        return(sum(sapply(group$questions, function(q) q$type != "description")))
+        return(sum(unlist(lapply(group$questions, function(q) q$type != "description"))))
     }
 }
 
