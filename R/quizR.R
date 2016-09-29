@@ -218,12 +218,39 @@ getRecursiveLanguage.Group <- function(obj) {
 
 uniqueIDs <- function(quiz) {
     allQuestions <- do.call(c, lapply(quiz$groups, function(g) { g$questions }))
-    any(duplicated(sapply(allQuestions, function(q) { q$id })))
+    !any(duplicated(sapply(allQuestions, function(q) { q$id })))
+}
+
+#' Check if languages are commutative chunks of code
+#'
+#' @param lang1 First chunk of code
+#' @param lang2 Second chunk of code
+#'
+#' @return Return TRUE if the two chunks of code are commutative
+distinct_language <- function (lang1, lang2) {
+    env1 <- new.env(baseenv())
+    env2 <- new.env(baseenv())
+    eval(lang1, env1)
+    eval(lang2, env2)
+    all(sapply(intersect(ls(env1), ls(env2)), function(e) identical(get(e, envir=env1), get(e, envir=env2))))
+}
+
+distinct_data <- function(quiz) {
+    languages <- list(getLocalLanguage(quiz))
+    for(g in quiz$groups) {
+        languages <- c(getLocalLanguage(g), languages)
+        for(q in g$questions) {
+            languages <- c(getLocalLanguage(q), languages)
+        }
+    }
+    if(length(languages) < 2) return(TRUE)
+    all(combn(languages, 2, function(args) do.call(distinct_language, args)))
 }
 
 computeResultsFromData <- function(quiz, data) {
     stopifnot(length(quiz$groups) > 0)
     stopifnot(uniqueIDs(quiz))
+    stopifnot(distinct_data(quiz))
 
     ## No factor, numeric or character vector
     i <- sapply(data, is.factor)
