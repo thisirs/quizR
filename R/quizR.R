@@ -215,13 +215,14 @@ getRecursiveLanguage.Group <- function(obj) {
     if(is.null(ls)) NULL else do.call(call, c("{", ls), quote=TRUE)
 }
 
-checkId <- function(quiz) {
+uniqueIDs <- function(quiz) {
     allQuestions <- do.call(c, lapply(quiz$groups, function(g) { g$questions }))
-    !any(duplicated(sapply(allQuestions, function(q) { q$id })))
+    any(duplicated(sapply(allQuestions, function(q) { q$id })))
 }
 
 computeResultsFromData <- function(quiz, data) {
     stopifnot(length(quiz$groups) > 0)
+    stopifnot(uniqueIDs(quiz))
 
     ## No factor, numeric or character vector
     i <- sapply(data, is.factor)
