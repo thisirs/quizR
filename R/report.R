@@ -24,7 +24,7 @@ correctionForIdentifier <- function(quiz, identifier=NULL, formatter=full_answer
         warning("No identifier given but identifying question present, defaulting to \"quizR\"")
         identifier <- "quizR"
         assign('identifiant', identifier, env)
-    } else groups0 <- groups
+    } else groups0 <- quiz$groups
     eval(getRecursiveLanguage(quiz), env)
 
     qno <- 0
