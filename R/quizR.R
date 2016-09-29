@@ -243,8 +243,7 @@ distinct_data <- function(quiz) {
             languages <- c(getLocalLanguage(q), languages)
         }
     }
-    if(length(languages) < 2) return(TRUE)
-    all(combn(languages, 2, function(args) do.call(distinct_language, args)))
+    length(languages) < 2 || all(combn(languages, 2, function(args) do.call(distinct_language, args)))
 }
 
 computeResultsFromData <- function(quiz, data) {
