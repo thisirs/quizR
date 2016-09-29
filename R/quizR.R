@@ -185,7 +185,6 @@ isCorrect <- function(question, env, guess) {
     }
 }
 
-
 getLocalLanguage <- function(obj) {
     hidden.data.env <- new.env(parent=globalenv())
     eval(obj$hidden.data, hidden.data.env)
@@ -198,9 +197,10 @@ getLocalLanguage <- function(obj) {
 
 getRecursiveLanguage <- function(obj)
 {
-    UseMethod("getRecursiveLanguage")
+    UseMethod("getRecursiveLanguage", obj)
 }
 
+#' @export
 getRecursiveLanguage.Quiz <- function(obj) {
     ll <- getLocalLanguage(obj)
     rlgs <- lapply(obj$groups, getRecursiveLanguage)
@@ -208,6 +208,7 @@ getRecursiveLanguage.Quiz <- function(obj) {
     if(is.null(ls)) NULL else do.call(call, c("{", ls), quote=TRUE)
 }
 
+#' @export
 getRecursiveLanguage.Group <- function(obj) {
     ll <- getLocalLanguage(obj)
     rlqs <- lapply(obj$questions, getLocalLanguage)
