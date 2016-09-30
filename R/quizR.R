@@ -249,6 +249,22 @@ distinct_data <- function(quiz) {
     length(languages) < 2 || all(combn(languages, 2, function(args) do.call(distinct_language, args, quote=TRUE)))
 }
 
+getMapping <- function(qs.text, questions) {
+    map <- rep(0, length(qs.text))
+    for(i in 1:length(qs.text)) {
+        # Extract ID from the question's body
+        text <- qs.text[i]
+        id <- stringr::str_match(text, "\\(Q([A-Za-z0-9]+)\\)")[1, 2]
+        if(is.na(id)) stop("`id' not found")
+
+        # Look for corresponding id in list of questions
+        index <- Position(function(q){ id == q$id}, questions)
+        if(is.na(index)) stop("No corresponding `id' found for ", q$text)
+        map[i] <- index
+    }
+    return(map)
+}
+
 computeResultsFromData <- function(quiz, data) {
     stopifnot(length(quiz$groups) > 0)
     stopifnot(uniqueIDs(quiz))
