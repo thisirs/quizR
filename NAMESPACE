@@ -2,6 +2,9 @@
 
 S3method(getRecursiveLanguage,Group)
 S3method(getRecursiveLanguage,Quiz)
+S3method(toXML,Group)
+S3method(toXML,Question)
+S3method(toXML,Quiz)
 export(Group)
 export(Question)
 export(Quiz)
