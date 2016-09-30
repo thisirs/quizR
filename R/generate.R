@@ -44,7 +44,7 @@ toXML.default <- function(obj, ...)
     return(obj)
 }
 
-@export
+#' @export
 toXML.Quiz <- function(obj, ...)
 {
     gs <- lapply(obj$groups, function(g) { toXML(g, obj) })
@@ -53,7 +53,7 @@ toXML.Quiz <- function(obj, ...)
     return(output)
 }
 
-@export
+#' @export
 toXML.Group <- function(obj, ...)
 {
     quiz <- list(...)[[1]]
@@ -62,7 +62,7 @@ toXML.Group <- function(obj, ...)
     return(paste(sprintf(group.xml, title), qs, sep="\n"))
 }
 
-@export
+#' @export
 toXML.Question <- function(obj, ...)
 {
     title <- "-"
