@@ -205,7 +205,7 @@ getRecursiveLanguage.Quiz <- function(obj) {
     ll <- getLocalLanguage(obj)
     rlgs <- lapply(obj$groups, getRecursiveLanguage)
     ls <- unlist(c(ll, rlgs))
-    if(is.null(ls)) NULL else do.call(call, c("{", ls), quote=TRUE)
+    if(is.null(ls)) NULL else merge_languages(ls)
 }
 
 #' @export
@@ -213,7 +213,7 @@ getRecursiveLanguage.Group <- function(obj) {
     ll <- getLocalLanguage(obj)
     rlqs <- lapply(obj$questions, getLocalLanguage)
     ls <- unlist(c(ll, rlqs))
-    if(is.null(ls)) NULL else do.call(call, c("{", ls), quote=TRUE)
+    if(is.null(ls)) NULL else merge_languages(ls)
 }
 
 uniqueIDs <- function(quiz) {
@@ -247,6 +247,13 @@ distinct_data <- function(quiz) {
     if(any(errors)) warning("Some errors in data code chunks")
     languages <- languages[!errors]
     length(languages) < 2 || all(combn(languages, 2, function(args) do.call(distinct_language, args, quote=TRUE)))
+}
+
+#' Concatenate languages
+merge_languages <- function(...) {
+    ls <- unlist(list(...))
+    if(length(ls) == 1) return(ls[[1]])
+    if(is.null(ls)) quote({}) else do.call(call, c("{", ls), quote=TRUE)
 }
 
 getMapping <- function(qs.text, questions) {
