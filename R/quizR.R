@@ -165,7 +165,6 @@ matchAnswers <- function(evalAnswers, guess, dist, epsilon) {
             guess <- as.character(guess)
             utils::adist(answer, guess) <= dist
         } else {
-            browser()
             stop("Unhandled answer type")
         }
     })
@@ -176,7 +175,6 @@ isCorrect <- function(question, env, guess) {
     ea <- evalAnswers(answers, env)
     match <- matchAnswers(ea, guess, question$dist, question$epsilon)
 
-    if(any(is.na(match))) browser()
     if(any(match)) {
         manswer <- ea[match][[1]]
         return(list(ok=TRUE, answer=manswer))
