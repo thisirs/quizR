@@ -241,7 +241,7 @@ distinct_data <- function(quiz) {
             languages <- c(getLocalLanguage(q), languages)
         }
     }
-    errors <- sapply(languages, function(l) { tryCatch({eval(l, new.env(baseenv())); FALSE}, error=function(e) TRUE) })
+    errors <- sapply(languages, fails)
     if(any(errors)) warning("Some errors in data code chunks")
     languages <- languages[!errors]
     length(languages) < 2 || all(combn(languages, 2, function(args) do.call(distinct_language, args, quote=TRUE)))
