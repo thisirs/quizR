@@ -67,8 +67,13 @@ toXML.Question <- function(obj, ...)
 {
     title <- "-"
     body <- paste0("<!-- Q(", obj$id, ") -->", renderHTML(obj$text))
-    feedback <- renderHTML(obj$feedback)
-    return(sprintf(question.xml, obj$type, title, "html", body, feedback))
+    if(is.function(obj$feedback)) {
+        feedback <- obj$feedback(NULL, obj, NULL, numbered=FALSE, eval=FALSE, question.body=FALSE)
+    } else {
+        feedback <- obj$feedback
+    }
+    rdr_feedback <- renderHTML(feedback)
+    return(sprintf(question.xml, obj$type, title, "html", body, rdr_feedback))
 }
 
 #' Generate XML Moodle quiz file and data file
