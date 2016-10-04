@@ -78,11 +78,14 @@ toXML.Question <- function(obj, ...)
 #' @param quiz.name Name of XML file
 #'
 #' @export
-generateFiles <- function(quiz, data.name=paste0(quiz$title, "-data"), quiz.name=paste0(quiz$title, "-quiz")) {
-    if(!is.null(quiz.name)) write(toXML(quiz), paste0(quiz.name, ".xml"))
+generateFiles <- function(quiz, data.name=paste0(quiz$title, "-data.R"), quiz.name=paste0(quiz$title, "-quiz.xml")) {
+    stopifnot(uniqueIDs(quiz))
+    stopifnot(distinct_data(quiz))
+
+    if(!is.null(quiz.name)) write(toXML(quiz), quiz.name)
     if(!is.null(data.name)) {
         l <- getRecursiveLanguage(quiz)
-        write(deparse(l), paste0(data.name, ".R"))
+        write(deparse(l), data.name)
     }
 }
 
