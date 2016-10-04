@@ -128,8 +128,12 @@ getNum <- function(group) {
     }
 }
 
+getClozeNum <- function(q) {
+    stopifnot(q$type == "cloze")
+    stri_count_regex(q$text, "\\{\\d+:(SHORTANSWER|SA):=")
+}
 
-questionTypes <- c("shortanswer", "description")
+questionTypes <- c("shortanswer", "description", "cloze")
 
 
 #' Create a question object
@@ -194,16 +198,68 @@ matchAnswers <- function(evalAnswers, guess, dist, epsilon) {
     })
 }
 
-isCorrect <- function(question, env, guess) {
-    answers <- if(is.list(question$answer)) question$answer else list(question$answer)
-    ea <- evalAnswers(answers, env)
-    match <- matchAnswers(ea, guess, question$dist, question$epsilon)
+cloze_coefficients <- function(q) {
+    stopifnot(q$type == "cloze")
+    cloze_fields <- "\\{(\\d+):(SHORTANSWER|SA):="
+    coeffs <- as.numeric(stri_match_all_regex(q$text, prefix)[[1]][,2])
+    coeffs / sum(coeffs)
+}
 
-    if(any(match)) {
-        manswer <- ea[match][[1]]
-        return(list(ok=TRUE, answer=manswer))
+
+correct_question <- function(question, env, guess) {
+    if(question$type == "cloze") {
+        stopifnot(is.list(question$answer))
+        num <- getClozeNum(question)
+        stopifnot(length(question$answer) == num)
+        guesses <- split_cloze_guesses(num, guess)
+        cloze_points <- rep(0, num)
+        right_answers <- vector(mode=list, length=num)
+
+        for (i in 1:num) {
+            guess <- guesses[i]
+            answer_raw <- question$answer[[i]]
+
+            # Possibly several right answers, listify them
+            answers <- if(is.list(answer_raw)) answer_raw else list(answer_raw)
+            ea <- evalAnswers(answers, env)
+            match <- matchAnswers(ea, guess, question$dist, question$epsilon)
+
+            if(any(match)) {
+                cloze_points[i] <- 1
+                right_answers[[i]] <- answers[match][[1]]
+            } else {
+                cloze_points[i] <- 0
+                right_answers[[i]] <- answers[[1]]
+            }
+        }
+
+        cloze_coefficients <- cloze_coefficients(q)
+        weighted_points <- cloze_points * cloze_coefficients
+        total_points <- q$points * sum(weighted_points)
+
+        list(type="cloze",
+             points=total_points,
+             cloze.points=cloze_points,
+             cloze.coeffs=cloze_coefficients,
+             guesses=guesses,
+             right_answers=right_answers)
     } else {
-        return(list(ok=FALSE, answer=ea))
+        # Possibly several right answers, listify them
+        answers <- if(is.list(question$answer)) question$answer else list(question$answer)
+        ea <- evalAnswers(answers, env)
+        match <- matchAnswers(ea, guess, question$dist, question$epsilon)
+
+        if(any(match)) {
+            points <- question$points
+            right_answer <- answers[match][[1]]
+        } else {
+            points <- 0
+            right_answer <- answers[[1]]
+        }
+        list(type="shortanswer",
+             points=points,
+             guess=guess,
+             right_answer=right_answer)
     }
 }
 
@@ -369,19 +425,33 @@ correctRecordGroup <- function(group, record, env, isWithQuestionBody) {
         map <- 1:getNum(group)
     }
 
-    resultg <- list(grade=0)
+    resultg <- list(points=0,
+                    questions=list())
+
     for(i in 1:length(qs.answer)) {
         q.answer <- qs.answer[[i]]
         q <- group$questions[[map[i]]]
-        result <- isCorrect(q, new.env(parent=env), q.answer)
-        if(result$ok)
-            resultg$grade <- resultg$grade + q$points
-        resultq <- list(body=if(isWithQuestionBody) qs.text[i] else paste0("Q", i),
-                        truth=q$answer,
-                        answer=result$answer,
-                        guess=q.answer,
-                        result=result)
-        resultg$questions[[length(resultg$questions) + 1]] <- resultq
+        result <- correct_question(q, new.env(parent=env), q.answer)
+
+        ## Add body of question to result
+        result$body <- if(isWithQuestionBody) qs.text[i] else paste0("Q", i)
+
+        resultg$points <- resultg$points + result$points
+        resultg$questions[[length(resultg$questions) + 1]] <- result
     }
     return(resultg)
+}
+
+split_cloze_guesses <- function(num, s_answers) {
+    prefix <- "partie (\\d+) : "
+    numbers <- as.numeric(stri_match_all_regex(s_answers, prefix)[[1]][,2])
+    stopifnot(numbers == (1:num))
+
+    raw_answers <- stri_split_regex(s_answers, prefix, omit_empty=TRUE)[[1]]
+    stopifnot(length(raw_answers) == num)
+
+    answers0 <- trimws(raw_answers)
+
+    ## Remove last character (a semicolon)
+    substr(answers0, 1, nchar(answers0) - 1)
 }
