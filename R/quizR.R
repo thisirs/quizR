@@ -22,6 +22,23 @@ Quiz <- function(title, groups, data, hidden.data) {
     return(me)
 }
 
+validate_quiz <- function(quiz) {
+    stopifnot(length(quiz$groups) > 0)
+    if(quiz$groups[[1]]$type == 'identifier') {
+        stopifnot(length(quiz$groups[[1]]$questions) == 1)
+        groups <- quiz$groups[-1]
+    }
+    else
+        groups <- quiz$groups
+
+    stopifnot(length(groups) > 0)
+    stopifnot(!"identifier" %in% lapply(groups, function(g) {g$type}))
+
+    for(g in groups)
+        stopifnot(length(g$questions) > 0)
+}
+
+
 #' Compute grades for given quiz and results
 #'
 #' @param quiz Quiz
