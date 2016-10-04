@@ -243,8 +243,8 @@ uniqueIDs <- function(quiz) {
 #'
 #' @return Return TRUE if the two chunks of code are commutative
 distinct_language <- function (lang1, lang2) {
-    env1 <- new.env(baseenv())
-    env2 <- new.env(baseenv())
+    env1 <- cleanenv()
+    env2 <- cleanenv()
     eval(lang1, env1)
     eval(lang2, env2)
     all(sapply(intersect(ls(env1), ls(env2)), function(e) identical(get(e, envir=env1), get(e, envir=env2))))

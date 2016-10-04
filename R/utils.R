@@ -23,3 +23,6 @@ fails <- function(language) {
              finally=.Random.seed <- oldseed)
 }
 
+cleanenv <- function() {
+    new.env(parent=parent.env(.GlobalEnv))
+}
