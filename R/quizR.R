@@ -31,11 +31,18 @@ validate_quiz <- function(quiz) {
     else
         groups <- quiz$groups
 
+    ## Not only an identifier group
     stopifnot(length(groups) > 0)
+
+    ## No other identifier group
     stopifnot(!"identifier" %in% lapply(groups, function(g) {g$type}))
 
+    ## No group with no question
     for(g in groups)
         stopifnot(length(g$questions) > 0)
+
+    ## Check that IDs are unique
+    stopifnot(uniqueIDs(quiz))
 }
 
 
@@ -231,6 +238,7 @@ getRecursiveLanguage.Group <- function(obj) {
     if(is.null(ls)) NULL else merge_languages(ls)
 }
 
+#' Return TRUE if all questions' ID are unique
 uniqueIDs <- function(quiz) {
     allQuestions <- do.call(c, lapply(quiz$groups, function(g) { g$questions }))
     !any(duplicated(sapply(allQuestions, function(q) { q$id })))
@@ -283,8 +291,7 @@ getMapping <- function(qs.text, questions) {
 }
 
 computeResultsFromData <- function(quiz, data) {
-    stopifnot(length(quiz$groups) > 0)
-    stopifnot(uniqueIDs(quiz))
+    validate_quiz(quiz)
     stopifnot(distinct_data(quiz))
 
     ## No factor, numeric or character vector
