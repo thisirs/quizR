@@ -264,11 +264,6 @@ distinct_data <- function(quiz) {
     length(languages) < 2 || all(combn(languages, 2, function(args) do.call(distinct_language, args, quote=TRUE)))
 }
 
-#' Concatenate languages
-merge_languages <- function(...) {
-    ls <- unlist(list(...))
-    if(length(ls) == 1) return(ls[[1]])
-    if(is.null(ls)) quote({}) else do.call(call, c("{", ls), quote=TRUE)
 }
 
 getMapping <- function(qs.text, questions) {

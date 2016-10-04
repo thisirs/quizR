@@ -6,6 +6,14 @@ addSpacesLeft <- function(s, spaces) {
     indent <- paste(rep(" ", spaces), collapse="")
     gsub("(?m)^", indent, s, perl=T)
 }
+
+#' Concatenate languages
+merge_languages <- function(...) {
+    ls <- unlist(list(...))
+    if(length(ls) == 1) return(ls[[1]])
+    if(is.null(ls)) quote({}) else do.call(call, c("{", ls), quote=TRUE)
+}
+
 # TODO Verify return value
 fails <- function(language) {
     oldseed <- .Random.seed # Save seed because evaluating potential set.seed
