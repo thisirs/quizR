@@ -201,7 +201,7 @@ matchAnswers <- function(evalAnswers, guess, dist, epsilon) {
 cloze_coefficients <- function(q) {
     stopifnot(q$type == "cloze")
     cloze_fields <- "\\{(\\d+):(SHORTANSWER|SA):="
-    coeffs <- as.numeric(stri_match_all_regex(q$text, prefix)[[1]][,2])
+    coeffs <- as.numeric(stri_match_all_regex(q$text, cloze_fields)[[1]][,2])
     coeffs / sum(coeffs)
 }
 
@@ -213,7 +213,7 @@ correct_question <- function(question, env, guess) {
         stopifnot(length(question$answer) == num)
         guesses <- split_cloze_guesses(num, guess)
         cloze_points <- rep(0, num)
-        right_answers <- vector(mode=list, length=num)
+        right_answers <- vector(mode="list", length=num)
 
         for (i in 1:num) {
             guess <- guesses[i]
@@ -233,9 +233,9 @@ correct_question <- function(question, env, guess) {
             }
         }
 
-        cloze_coefficients <- cloze_coefficients(q)
+        cloze_coefficients <- cloze_coefficients(question)
         weighted_points <- cloze_points * cloze_coefficients
-        total_points <- q$points * sum(weighted_points)
+        total_points <- question$points * sum(weighted_points)
 
         list(type="cloze",
              points=total_points,
@@ -449,9 +449,8 @@ split_cloze_guesses <- function(num, s_answers) {
 
     raw_answers <- stri_split_regex(s_answers, prefix, omit_empty=TRUE)[[1]]
     stopifnot(length(raw_answers) == num)
-
     answers0 <- trimws(raw_answers)
 
-    ## Remove last character (a semicolon)
-    substr(answers0, 1, nchar(answers0) - 1)
+    ## Remove trailing semicolon
+    sub(";$", "", answers0)
 }
