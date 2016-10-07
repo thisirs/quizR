@@ -5,7 +5,7 @@
 #'
 #' @return A quiz object
 #' @export
-Quiz <- function(title, groups, data, hidden.data) {
+Quiz <- function(title, groups, data, hidden.data, seed=NULL) {
     if(missing(title)) stop("Quiz needs a title")
     if(missing(groups)) groups <- list()
     if(missing(data)) data <- quote({})
@@ -325,6 +325,8 @@ unrandomize_data <- function(obj)
 
 #' @export
 unrandomize_data.Quiz <- function(obj) {
+    if(!is.null(obj$seed))
+        set.seed(obj$seed)
     obj$set_hdata(unrandomize(obj$hidden.data))
     lapply(obj$groups, unrandomize_data)
 }
