@@ -190,6 +190,15 @@ Question <- function(text, type=NULL, id=hexaHash(text), answer=NULL, hidden.dat
     return(me)
 }
 
+replace_answers <- function(answers, data) {
+    env <- new.env(parent=.GlobalEnv)
+    eval(data, env)
+    lapply(answers, function(e) {
+        call <- substitute(substitute(e, env), list(e = e))
+        eval(call)
+    })
+}
+
 evalAnswers <- function(answers, env) {
     lapply(answers, function(answer) {
         type <- typeof(answer)
@@ -272,7 +281,8 @@ correct_question <- function(question, env, guess) {
     } else {
         # Possibly several right answers, listify them
         answers <- if(is.list(question$answer)) question$answer else list(question$answer)
-        ea <- evalAnswers(answers, env)
+        ra <- replace_answers(answers, question$get_hdata())
+        ea <- evalAnswers(ra, env)
         match <- matchAnswers(ea, guess, question$dist, question$epsilon)
 
         if(any(match)) {
