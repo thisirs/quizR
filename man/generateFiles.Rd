@@ -4,8 +4,8 @@
 \alias{generateFiles}
 \title{Generate XML Moodle quiz file and data file}
 \usage{
-generateFiles(quiz, data.name = paste0(quiz$title, "-data"),
-  quiz.name = paste0(quiz$title, "-quiz"))
+generateFiles(quiz, data.name = paste0(quiz$title, "-data.R"),
+  quiz.name = paste0(quiz$title, "-quiz.xml"))
 }
 \arguments{
 \item{quiz}{Quiz}
