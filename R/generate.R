@@ -94,7 +94,8 @@ generateFiles <- function(quiz, data.name=paste0(quiz$title, "-data.R"), quiz.na
     if(!is.null(quiz.name)) write(toXML(quiz), quiz.name)
     if(!is.null(data.name)) {
         l <- getRecursiveLanguage(quiz)
-        write(deparse(l), data.name)
+        if(!is.null(l))
+            write(deparse(l), data.name)
     }
 }
 
