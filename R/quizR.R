@@ -247,6 +247,8 @@ correct_question <- function(question, env, guess) {
         num <- getClozeNum(question)
         stopifnot(length(question$answer) == num)
         guesses <- split_cloze_guesses(num, guess)
+        stopifnot(length(guesses) == num)
+
         cloze_points <- rep(0, num)
         right_answers <- vector(mode="list", length=num)
 
