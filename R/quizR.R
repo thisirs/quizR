@@ -11,11 +11,20 @@ Quiz <- function(title, groups, data, hidden.data) {
     if(missing(data)) data <- quote({})
     if(missing(hidden.data)) hidden.data <- quote({})
 
+    .hdata <- NULL
+    set_hdata <- function(hdata) {
+        .hdata <<- hdata
+    }
+    get_hdata <- function() .hdata
+
     me <- list(
         title=title,
         groups=groups,
         data=data,
-        hidden.data=hidden.data
+        hidden.data=hidden.data,
+        seed=seed,
+        get_hdata=get_hdata,
+        set_hdata=set_hdata
     )
 
     class(me) <- append(class(me), "Quiz")
@@ -97,13 +106,22 @@ Group <- function(title, type, num, data, hidden.data, questions) {
     match.arg(type, c("random", "sequential", "identifier"))
     num <- if(missing(num)) NA else num
     if(missing(questions)) questions <- list()
+
+    .hdata <- NULL
+    set_hdata <- function(hdata) {
+        .hdata <<- hdata
+    }
+    get_hdata <- function() .hdata
+
     me <- list(
         title=title,
         type=type,
         num=num,
         questions=questions,
         data=data,
-        hidden.data=hidden.data
+        hidden.data=hidden.data,
+        get_hdata=get_hdata,
+        set_hdata=set_hdata
     )
     class(me) <- append(class(me), "Group")
     return(me)
@@ -148,6 +166,12 @@ Question <- function(text, type=NULL, id=hexaHash(text), answer=NULL, hidden.dat
     type <- ifelse(is.null(type), "shortanswer", type)
     match.arg(type, questionTypes)
 
+    .hdata <- NULL
+    set_hdata <- function(hdata) {
+        .hdata <<- hdata
+    }
+    get_hdata <- function() .hdata
+
     me <- list(
         id=id,
         text=text,
@@ -158,7 +182,9 @@ Question <- function(text, type=NULL, id=hexaHash(text), answer=NULL, hidden.dat
         feedback=feedback,
         points=points,
         dist=dist,
-        epsilon=epsilon)
+        epsilon=epsilon,
+        get_hdata=get_hdata,
+        set_hdata=set_hdata)
 
     class(me) <- append(class(me), "Question")
     return(me)
@@ -263,10 +289,51 @@ correct_question <- function(question, env, guess) {
     }
 }
 
+expression_to_lang <- function(expr) {
+    ls <- as.list(expr)
+    do.call(call, c("{", ls), quote=TRUE)
+}
+
+unrandomize <- function(lang) {
+    if(is.null(lang) | length(lang) == 1) return(quote({}))
+    env <- new.env(parent=.GlobalEnv)
+    eval(lang, env)
+    tmpfile <- tempfile("data", fileext=".R")
+    dump(ls(env), tmpfile, envir=env, control=c("quoteExpressions",
+                                                "showAttributes",
+                                                "useSource",
+                                                "warnIncomplete",
+                                                "keepNA"))
+    expression_to_lang(parse(tmpfile))
+}
+
+#' @export
+unrandomize_data <- function(obj)
+{
+    UseMethod("unrandomize_data", obj)
+}
+
+#' @export
+unrandomize_data.Quiz <- function(obj) {
+    obj$set_hdata(unrandomize(obj$hidden.data))
+    lapply(obj$groups, unrandomize_data)
+}
+
+#' @export
+unrandomize_data.Group <- function(obj) {
+    obj$set_hdata(unrandomize(obj$hidden.data))
+    lapply(obj$questions, unrandomize_data)
+}
+
+#' @export
+unrandomize_data.Question <- function(obj) {
+    obj$set_hdata(unrandomize(obj$hidden.data))
+}
+
 getLocalLanguage <- function(obj) {
-    hidden.data.env <- new.env(parent=globalenv())
-    eval(obj$hidden.data, hidden.data.env)
-    l <- pryr::substitute_q(obj$data, hidden.data.env)
+    hidden.data.env <- new.env(parent=.GlobalEnv)
+    eval(obj$get_hdata(), hidden.data.env)
+    l <- pryr::substitute_q(obj$data, as.list(hidden.data.env))
     if(length(l) == 1)
         return(NULL)
     else

@@ -25,9 +25,13 @@ quiz.xml <- "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 %s
 </quiz>"
 
-renderHTML <- function(text) {
+renderHTML <- function(text, data) {
+    if(missing(data)) data <- quote({})
+    data_chunk <- sprintf("```{r include=FALSE}\n%s\n```\n\n", paste(deparse(data), collapse="\n"))
+
     tmpfile <- tempfile("question", fileext=".Rmd")
-    write(text, tmpfile)
+    write(data_chunk, tmpfile)
+    write(text, tmpfile, append=T)
     output <- rmarkdown::render(tmpfile, rmarkdown::html_fragment())
     toString(output)
 }
@@ -66,13 +70,13 @@ toXML.Group <- function(obj, ...)
 toXML.Question <- function(obj, ...)
 {
     title <- "-"
-    body <- paste0("<!-- Q(", obj$id, ") -->", renderHTML(obj$text))
+    body <- paste0("<!-- Q(", obj$id, ") -->", renderHTML(obj$text, obj$get_hdata()))
     if(is.function(obj$feedback)) {
         feedback <- obj$feedback(NULL, obj, NULL, numbered=FALSE, eval=FALSE, question.body=FALSE)
     } else {
         feedback <- obj$feedback
     }
-    rdr_feedback <- renderHTML(feedback)
+    rdr_feedback <- renderHTML(feedback, obj$get_hdata())
     return(sprintf(question.xml, obj$type, title, "html", body, rdr_feedback))
 }
 
