@@ -148,7 +148,7 @@ getNum <- function(group) {
 
 getClozeNum <- function(q) {
     stopifnot(q$type == "cloze")
-    stri_count_regex(q$text, "\\{\\d+:(SHORTANSWER|SA):=")
+    stringi::stri_count_regex(q$text, "\\{\\d+:(SHORTANSWER|SA):=")
 }
 
 questionTypes <- c("shortanswer", "description", "cloze")
@@ -227,7 +227,7 @@ matchAnswers <- function(evalAnswers, guess, dist, epsilon) {
 cloze_coefficients <- function(q) {
     stopifnot(q$type == "cloze")
     cloze_fields <- "\\{(\\d+):(SHORTANSWER|SA):="
-    coeffs <- as.numeric(stri_match_all_regex(q$text, cloze_fields)[[1]][,2])
+    coeffs <- as.numeric(stringi::stri_match_all_regex(q$text, cloze_fields)[[1]][,2])
     coeffs / sum(coeffs)
 }
 
@@ -392,7 +392,7 @@ distinct_data <- function(quiz) {
     errors <- sapply(languages, fails)
     if(any(errors)) warning("Some errors in data code chunks")
     languages <- languages[!errors]
-    length(languages) < 2 || all(combn(languages, 2, function(args) do.call(distinct_language, args, quote=TRUE)))
+    length(languages) < 2 || all(utils::combn(languages, 2, function(args) do.call(distinct_language, args, quote=TRUE)))
 }
 
 }
@@ -511,10 +511,10 @@ correctRecordGroup <- function(group, record, env, isWithQuestionBody) {
 
 split_cloze_guesses <- function(num, s_answers) {
     prefix <- "partie (\\d+) : "
-    numbers <- as.numeric(stri_match_all_regex(s_answers, prefix)[[1]][,2])
+    numbers <- as.numeric(stringi::stri_match_all_regex(s_answers, prefix)[[1]][,2])
     stopifnot(numbers == (1:num))
 
-    raw_answers <- stri_split_regex(s_answers, prefix, omit_empty=TRUE)[[1]]
+    raw_answers <- stringi::stri_split_regex(s_answers, prefix, omit_empty=TRUE)[[1]]
     stopifnot(length(raw_answers) == num)
     answers0 <- trimws(raw_answers)
 
