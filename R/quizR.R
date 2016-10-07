@@ -161,7 +161,7 @@ questionTypes <- c("shortanswer", "description", "cloze")
 #' @param id Id of question
 #' @param answer Answer of question
 #' @export
-Question <- function(text, type=NULL, id=hexaHash(text), answer=NULL, hidden.data=quote({}), data=quote({}), feedback="", points=1, dist=2, epsilon=1e-4) {
+Question <- function(text, type=NULL, id=hexaHash(text), answer=NULL, hidden.data=quote({}), data=quote({}), feedback=answer_feedback, points=1, dist=2, epsilon=1e-4) {
     stopifnot(is.character(text))
     type <- ifelse(is.null(type), "shortanswer", type)
     match.arg(type, questionTypes)
