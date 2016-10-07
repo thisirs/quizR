@@ -26,7 +26,7 @@ quiz.xml <- "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 </quiz>"
 
 renderHTML <- function(text) {
-    tmpfile <- tempfile("question", fileext=".md")
+    tmpfile <- tempfile("question", fileext=".Rmd")
     write(text, tmpfile)
     output <- rmarkdown::render(tmpfile, rmarkdown::html_fragment())
     return(paste(readLines(output), collapse="\n"))
