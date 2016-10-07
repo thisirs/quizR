@@ -26,3 +26,6 @@ fails <- function(language) {
 cleanenv <- function() {
     new.env(parent=parent.env(.GlobalEnv))
 }
+toString <- function(filename) {
+    paste(readLines(filename), collapse="\n")
+}

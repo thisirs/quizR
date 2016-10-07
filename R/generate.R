@@ -29,7 +29,7 @@ renderHTML <- function(text) {
     tmpfile <- tempfile("question", fileext=".Rmd")
     write(text, tmpfile)
     output <- rmarkdown::render(tmpfile, rmarkdown::html_fragment())
-    return(paste(readLines(output), collapse="\n"))
+    toString(output)
 }
 
 
