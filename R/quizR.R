@@ -248,7 +248,7 @@ evalAnswers <- function(answers, env) {
                },
                character={answer},
                double={answer},
-               default=stop("Unhandled answer type"))
+               stop("Unhandled type in ", sQuote("evalAnswers"), ": ", type))
     })
 }
 
