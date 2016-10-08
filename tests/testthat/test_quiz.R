@@ -20,15 +20,15 @@ test_that("Check that identifiers are unique", {
              groups=list(
                  Group("g1", type="sequential",
                        questions=list(
-                           Question("q1", id=id1),
-                           Question("q2", id=id2))),
+                           Question(id1),
+                           Question(id2))),
                  Group("g2", type="sequential",
                        questions=list(
-                           Question("q3", id=id3)))))
+                           Question(id3)))))
     }
-    expect_identical(checkId(gen_quiz("a", "b", "c")), TRUE)
-    expect_identical(checkId(gen_quiz("a", "a", "b")), FALSE)
-    expect_identical(checkId(gen_quiz("a", "b", "b")), FALSE)
+    expect_identical(uniqueIDs(gen_quiz("a", "b", "c")), TRUE)
+    expect_identical(uniqueIDs(gen_quiz("a", "a", "b")), FALSE)
+    expect_identical(uniqueIDs(gen_quiz("a", "b", "b")), FALSE)
 })
 
 

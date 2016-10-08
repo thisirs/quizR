@@ -161,7 +161,7 @@ questionTypes <- c("shortanswer", "description", "cloze")
 #' @param id Id of question
 #' @param answer Answer of question
 #' @export
-Question <- function(text, type=NULL, id=hexaHash(text), answer=NULL, hidden.data=quote({}), data=quote({}), feedback=answer_feedback, points=1, dist=2, epsilon=1e-4) {
+Question <- function(text, type=NULL, answer=NULL, hidden.data=quote({}), data=quote({}), feedback=answer_feedback, points=1, dist=2, epsilon=1e-4) {
     stopifnot(is.character(text))
     type <- ifelse(is.null(type), "shortanswer", type)
     match.arg(type, questionTypes)
@@ -173,7 +173,6 @@ Question <- function(text, type=NULL, id=hexaHash(text), answer=NULL, hidden.dat
     get_hdata <- function() .hdata
 
     me <- list(
-        id=id,
         text=text,
         type=type,
         hidden.data=hidden.data,
@@ -182,9 +181,12 @@ Question <- function(text, type=NULL, id=hexaHash(text), answer=NULL, hidden.dat
         feedback=feedback,
         points=points,
         dist=dist,
-        epsilon=epsilon,
-        get_hdata=get_hdata,
-        set_hdata=set_hdata)
+        epsilon=epsilon)
+
+    me$id <- hexaHash(me)
+
+    me$get_hdata <- get_hdata
+    me$set_hdata <- set_hdata
 
     class(me) <- append(class(me), "Question")
     return(me)
