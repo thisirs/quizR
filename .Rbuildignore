@@ -1,1 +1,4 @@
 .git
+todo.org
+.dir-locals.el
+Makefile
