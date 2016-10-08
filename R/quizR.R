@@ -2,6 +2,8 @@
 #'
 #' @param title Title of the quiz
 #' @param groups List of groups
+#' @param data Language object defining the data
+#' @param hidden.data Language object defining the hidden data
 #'
 #' @return A quiz object
 #' @export
@@ -31,8 +33,15 @@ Quiz <- function(title, groups, data, hidden.data, seed=NULL) {
     return(me)
 }
 
+#' Validate a quiz object
+#'
+#' @param quiz A quiz object
+#'
+#' @return Return TRUE if quiz is a valid one
 validate_quiz <- function(quiz) {
     stopifnot(length(quiz$groups) > 0)
+
+    # Only one question in identifier group if any
     if(quiz$groups[[1]]$type == 'identifier') {
         stopifnot(length(quiz$groups[[1]]$questions) == 1)
         groups <- quiz$groups[-1]
@@ -97,6 +106,9 @@ addGroup <- function(quiz, group) {
 #' @param title Title of group
 #' @param type Type of group
 #' @param num Number of questions of group if of random type
+#' @param questions List of questions
+#' @param data Language object defining the data
+#' @param hidden.data Language object defining the hidden data
 #' @export
 Group <- function(title, type, num, data, hidden.data, questions) {
     if(missing(hidden.data)) hidden.data <- quote({}) else stopifnot(is.language(hidden.data))
@@ -129,8 +141,8 @@ Group <- function(title, type, num, data, hidden.data, questions) {
 
 #' Add question to group
 #'
-#' @param group Group
-#' @param question Question
+#' @param group Group object
+#' @param question Question to add
 #' @export
 addQuestion <- function(group, question)
 {
@@ -138,6 +150,9 @@ addQuestion <- function(group, question)
     return(group)
 }
 
+#' Number of real questions (except description questions)
+#'
+#' @param group Group object
 getNum <- function(group) {
     if(group$type == "random")
         return(group$num)
@@ -146,6 +161,9 @@ getNum <- function(group) {
     }
 }
 
+#' Number of fields in cloze question
+#'
+#' @param group Questoin object
 getClozeNum <- function(q) {
     stopifnot(q$type == "cloze")
     stringi::stri_count_regex(q$text, "\\{\\d+:(SHORTANSWER|SA):=")
@@ -158,8 +176,13 @@ questionTypes <- c("shortanswer", "description", "cloze")
 #'
 #' @param text Body of question
 #' @param type Type of question
-#' @param id Id of question
 #' @param answer Answer of question
+#' @param data Language object defining the data
+#' @param hidden.data Language object defining the hidden data
+#' @param feedback Feedback of question
+#' @param points Number of points of question
+#' @param dist Tolerance of answer for character string answer
+#' @param epsilon Relative error for numeric answer
 #' @export
 Question <- function(text, type=NULL, answer=NULL, hidden.data=quote({}), data=quote({}), feedback=answer_feedback, points=1, dist=2, epsilon=1e-4) {
     stopifnot(is.character(text))
@@ -192,6 +215,10 @@ Question <- function(text, type=NULL, answer=NULL, hidden.data=quote({}), data=q
     return(me)
 }
 
+#' Replace data in list of answers
+#'
+#' @param answers List of answers
+#' @param data Data to replace
 replace_answers <- function(answers, data) {
     env <- new.env(parent=.GlobalEnv)
     eval(data, env)
@@ -201,6 +228,10 @@ replace_answers <- function(answers, data) {
     })
 }
 
+#' Evaluate list of answers in environment
+#'
+#' @param answers List of answers
+#' @param env Environment in which to evaluate
 evalAnswers <- function(answers, env) {
     lapply(answers, function(answer) {
         type <- typeof(answer)
@@ -221,6 +252,12 @@ evalAnswers <- function(answers, env) {
     })
 }
 
+#' Match guess with list of evaluated answers
+#'
+#' @param evalAnswers List of evaluated answers
+#' @param guess A guess
+#' @param dist Maximum edit distance for a match
+#' @param epsilon Relative error for numeric answers
 matchAnswers <- function(evalAnswers, guess, dist, epsilon) {
     sapply(evalAnswers, function(answer) {
         if(is.numeric(answer)) {
@@ -235,10 +272,13 @@ matchAnswers <- function(evalAnswers, guess, dist, epsilon) {
     })
 }
 
-cloze_coefficients <- function(q) {
-    stopifnot(q$type == "cloze")
+#' Return coefficients of cloze fields over their sum
+#'
+#' @param question A question
+cloze_coefficients <- function(question) {
+    stopifnot(question$type == "cloze")
     cloze_fields <- "\\{(\\d+):(SHORTANSWER|SA):="
-    coeffs <- as.numeric(stringi::stri_match_all_regex(q$text, cloze_fields)[[1]][,2])
+    coeffs <- as.numeric(stringi::stri_match_all_regex(question$text, cloze_fields)[[1]][,2])
     coeffs / sum(coeffs)
 }
 
@@ -313,6 +353,8 @@ unrandomize <- function(lang) {
     env <- new.env(parent=.GlobalEnv)
     eval(lang, env)
     tmpfile <- tempfile("data", fileext=".R")
+
+    # Remove keepInteger from default dump option
     dump(ls(env), tmpfile, envir=env, control=c("quoteExpressions",
                                                 "showAttributes",
                                                 "useSource",
@@ -480,9 +522,7 @@ computeResultsFromData <- function(quiz, data) {
     for(g in quiz$groups)
         numQuestions <- numQuestions + getNum(g)
 
-    ncolq <- ncol(data) - 10            # first 10 columns are info
-    # like name, email,...
-
+    ncolq <- ncol(data) - 10            # first 10 columns are info like name, email,...
     stopifnot((ncolq == numQuestions) | (ncolq == 2*numQuestions))
 
     ## Is data containing bodies of questions
