@@ -1,3 +1,5 @@
 *.Rcheck
 quizR*.tar.gz
 R/obsolete.R
+todo.org
+.dir-locals.el
