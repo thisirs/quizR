@@ -31,7 +31,6 @@ generate_correction <- function(quiz, output, lang) {
 
                 hdata <- paste(deparse(q$get_hdata()), collapse="\n")
                 answer <- paste(deparse(r_answers[[1]]), collapse="\n")
-                #answer <- deparse(eval(r_answers[[1]], new.env(parent=env)))
 
                 body <- sprintf("```{r include=FALSE}\n%s\n```\n\n", hdata)
                 body <- c(body, sprintf("**Question %d.** %s\n\n", qno, q$text))
@@ -47,9 +46,7 @@ generate_correction <- function(quiz, output, lang) {
     tmpfile <- tempfile("quiz", fileext=".Rmd")
     write(soutput, tmpfile)
 
-    ## oldseed <- .Random.seed
     rmarkdown::render(input=tmpfile, output_dir=getwd(), output_file=output, "pdf_document")
-    ## .Random.seed <- oldseed
 }
 
 
