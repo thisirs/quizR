@@ -12,6 +12,12 @@ Group(title, type, num, data, hidden.data, questions)
 \item{type}{Type of group}
 
 \item{num}{Number of questions of group if of random type}
+
+\item{data}{Language object defining the data}
+
+\item{hidden.data}{Language object defining the hidden data}
+
+\item{questions}{List of questions}
 }
 \description{
 Create a group object

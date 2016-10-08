@@ -7,9 +7,9 @@
 addQuestion(group, question)
 }
 \arguments{
-\item{group}{Group}
+\item{group}{Group object}
 
-\item{question}{Question}
+\item{question}{Question to add}
 }
 \description{
 Add question to group

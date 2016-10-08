@@ -4,18 +4,28 @@
 \alias{Question}
 \title{Create a question object}
 \usage{
-Question(text, type = NULL, id = hexaHash(text), answer = NULL,
-  hidden.data = quote({ }), data = quote({ }), feedback = "",
-  points = 1, dist = 2, epsilon = 1e-04)
+Question(text, type = NULL, answer = NULL, hidden.data = quote({ }),
+  data = quote({ }), feedback = answer_feedback, points = 1, dist = 2,
+  epsilon = 1e-04)
 }
 \arguments{
 \item{text}{Body of question}
 
 \item{type}{Type of question}
 
-\item{id}{Id of question}
-
 \item{answer}{Answer of question}
+
+\item{hidden.data}{Language object defining the hidden data}
+
+\item{data}{Language object defining the data}
+
+\item{feedback}{Feedback of question}
+
+\item{points}{Number of points of question}
+
+\item{dist}{Tolerance of answer for character string answer}
+
+\item{epsilon}{Relative error for numeric answer}
 }
 \description{
 Create a question object
