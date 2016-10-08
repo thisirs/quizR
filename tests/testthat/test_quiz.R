@@ -1,6 +1,6 @@
 context("Quiz")
 
-test_that("Add groups to quiz", {
+test_that("groups are correctly added", {
     quiz <- Quiz("test")
     expect_identical(quiz$groups, list())
 
@@ -14,7 +14,7 @@ test_that("Add groups to quiz", {
     expect_identical(quiz$groups, list(g1, g2))
 })
 
-test_that("Check that identifiers are unique", {
+test_that("identifiers are unique", {
     gen_quiz <- function(id1, id2, id3) {
         Quiz("test",
              groups=list(
@@ -31,10 +31,17 @@ test_that("Check that identifiers are unique", {
     expect_identical(uniqueIDs(gen_quiz("a", "b", "b")), FALSE)
 })
 
-
 context("Answers")
 
-test_that("Answers", {
+
+test_that("replace_answers is correctly working", {
+    answers <- list(quote(a), quote(b), "blah", 42)
+    data <- quote({ a <- 1; b <- 2})
+    expect_identical(replace_answers(answers, data), list(1, 2, "blah", 42))
+})
+
+
+test_that("evalAnswers is properly evaluating", {
     expect_identical(evalAnswers(list("a"), new.env()), list("a"))
 
     expect_identical(evalAnswers(list(42), new.env()), list(42))
@@ -45,7 +52,6 @@ test_that("Answers", {
     expect_identical(evalAnswers(list(function() 42), new.env()), list(42))
 
     expect_identical(evalAnswers(list(function() 42, "a"), new.env()), list(42, "a"))
-
 
     env <- new.env(parent=baseenv())
     env$a <- 2

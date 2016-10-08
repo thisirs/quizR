@@ -1,4 +1,4 @@
-test_that("answerstr correctly return as string from language", {
+test_that("answerstr correctly returns a string from a language", {
     expect_identical(answerstr(quote(blah)), "blah")
     expect_identical(answerstr(function() {
         a <- 1
@@ -16,7 +16,6 @@ test_that("answerstr correctly return as string from language", {
 
     expect_error(answerstr(new.env()))
 })
-
 
 quiz <- Quiz("Quiz",
              data=quote({
