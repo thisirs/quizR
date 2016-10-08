@@ -411,6 +411,44 @@ distinct_data <- function(quiz) {
     length(languages) < 2 || all(utils::combn(languages, 2, function(args) do.call(distinct_language, args, quote=TRUE)))
 }
 
+#' Check that all given answers are consistent
+#' @export
+noerror_in_answers <- function(quiz, env) {
+    if(missing(env)) env <- new.env(parent=baseenv())
+    if(is.language(env)) {
+        lang <- env
+        env <- new.env(parent=baseenv())
+        eval(lang, env)
+    }
+
+    l_global <- getRecursiveLanguage(quiz)
+    l_quiz <- getLocalLanguage(quiz)
+    for (g in quiz$groups) {
+        if(g$type == 'identifier') next
+        l_group <- getLocalLanguage(g)
+        for (q in g$questions) {
+            l_question <- getLocalLanguage(q)
+            l_branch <- merge_languages(l_quiz, l_group, l_question)
+
+            parent.env(env) <- cleanenv()
+
+            env_branch <- new.env(parent=env)
+            eval(l_branch, env_branch)
+
+            env_global <- new.env(parent=env)
+            eval(l_global, env_global)
+
+            tryCatch(eval(q$answer, env_branch),
+                     error=function(e) {
+                         stop(paste("Error in question \"", substring(q$text, 1, 16), "...\": ", e))
+                     })
+
+            tryCatch(eval(q$answer, env_global),
+                     error=function(e) {
+                         stop(paste("Error in question \"", substring(q$text, 1, 16), "...\": ", e))
+                     })
+        }
+    }
 }
 
 getMapping <- function(qs.text, questions) {
