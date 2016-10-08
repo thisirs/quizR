@@ -4,6 +4,7 @@
 #' @param groups List of groups
 #' @param data Language object defining the data
 #' @param hidden.data Language object defining the hidden data
+#' @param seed The seed used to generate hidden data
 #'
 #' @return A quiz object
 #' @export
@@ -163,7 +164,7 @@ getNum <- function(group) {
 
 #' Number of fields in cloze question
 #'
-#' @param group Questoin object
+#' @param q Question object
 getClozeNum <- function(q) {
     stopifnot(q$type == "cloze")
     stringi::stri_count_regex(q$text, "\\{\\d+:(SHORTANSWER|SA):=")
@@ -420,6 +421,8 @@ getRecursiveLanguage.Group <- function(obj) {
 }
 
 #' Return TRUE if all questions' ID are unique
+#'
+#' @param quiz The quiz
 uniqueIDs <- function(quiz) {
     allQuestions <- do.call(c, lapply(quiz$groups, function(g) { g$questions }))
     !any(duplicated(sapply(allQuestions, function(q) { q$id })))

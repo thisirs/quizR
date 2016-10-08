@@ -7,7 +7,7 @@ addSpacesLeft <- function(s, spaces) {
     gsub("(?m)^", indent, s, perl=T)
 }
 
-#' Concatenate languages
+# Concatenate languages
 merge_languages <- function(...) {
     ls <- unlist(list(...))
     if(length(ls) == 1) return(ls[[1]])
