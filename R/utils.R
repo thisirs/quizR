@@ -14,13 +14,10 @@ merge_languages <- function(...) {
     if(is.null(ls)) quote({}) else do.call(call, c("{", ls), quote=TRUE)
 }
 
-# TODO Verify return value
 fails <- function(language) {
-    oldseed <- .Random.seed # Save seed because evaluating potential set.seed
     result <- NULL
     tryCatch({eval(language, cleanenv()); FALSE},
-             error=function(e) TRUE,
-             finally=.Random.seed <- oldseed)
+             error=function(e) TRUE)
 }
 
 cleanenv <- function() {
