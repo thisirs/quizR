@@ -1,47 +1,115 @@
-getCharacterFromAnswer <- function(answer) {
-    if(is.function(answer)) {
-        d <- deparse(body(answer))
-        lines <- d[-c(1, length(d))]
-        indent <- min(attr(regexpr("^ +", lines), "match.length"))
-        paste(substring(lines, indent + 1), collapse="\n")
-    } else as.character(answer)
-}
+#' @export
+generate_correction <- function(quiz, output, lang) {
+    validate_quiz(quiz)
 
+    if(missing(output)) output <- paste0(quiz$title, ".pdf")
+    if(missing(lang)) lang <- quote({})
 
-getReport <- function(allResults) {
-    lapply(allResults, function(quizResult) {
+    soutput <- paste0("# ", quiz$title, "\n\n")
 
-    })
-}
+    data <- getRecursiveLanguage(quiz)
+    data0 <- merge_languages(lang, data)
 
+    ## env <- cleanenv()
+    env <- new.env(parent=.GlobalEnv)
+    eval(data0, env)
+    data_chunk <- sprintf("```{r include=FALSE}\n%s\n```\n\n", paste(deparse(data0), collapse="\n"))
 
-correctionForIdentifier <- function(quiz, identifier=NULL, formatter=full_answer_frmt) {
-    stopifnot(length(quiz$groups) > 0)
-    env <- new.env(globalenv())
-    if(quiz$groups[[1]]$type == "identifier") {
-        stopifnot(length(quiz$groups) > 1)
-        groups0 <- quiz$groups[-1]
-        warning("No identifier given but identifying question present, defaulting to \"quizR\"")
-        identifier <- "quizR"
-        assign('identifiant', identifier, env)
-    } else groups0 <- quiz$groups
-    eval(getRecursiveLanguage(quiz), env)
+    soutput <- c(soutput, data_chunk)
 
-    qno <- 0
-    report <- ""
-    for (g in groups0) {
-        stopifnot(g$type != "identifier")
-        report <- c(report, paste("Partie", g$title, "\n\n"))
+    for (g in quiz$groups) {
+        if(g$type == "identifier") next
+        soutput <- c(soutput, paste0("\n## ", g$title, "\n\n"))
+        qno <- 0
         for (q in g$questions) {
             qno <- qno + 1
-            t_answers <- if(is.list(q$answer)) q$answer else list(q$answer)
-            e_answers <- evalAnswers(t_answers, env)
-            report <- c(report, formatter(qno, q, e_answers, t_answers))
+            if(is.function(q$feedback)) {
+                body <- q$feedback(qno, q, env)
+            } else if(is.character(q$feedback)) {
+                t_answers <- if(is.list(q$answer)) q$answer else list(q$answer)
+                r_answers <- replace_answers(t_answers, q$get_hdata())
+
+                hdata <- paste(deparse(q$get_hdata()), collapse="\n")
+                answer <- paste(deparse(r_answers[[1]]), collapse="\n")
+                #answer <- deparse(eval(r_answers[[1]], new.env(parent=env)))
+
+                body <- sprintf("```{r include=FALSE}\n%s\n```\n\n", hdata)
+                body <- c(body, sprintf("**Question %d.** %s\n\n", qno, q$text))
+                body <- c(body, sprintf("```{r include=FALSE}\nanswer <- {%s}\n```\n\n", answer))
+                body <- c(body, "**Réponse:**\n")
+                body <- c(body, q$feedback)
+            } else stop("Unhandled")
+            soutput <- c(soutput, paste0("\n", body, "\n"))
         }
     }
-    paste0(report, collapse="")
+
+    soutput <- paste(soutput, collapse="")
+    tmpfile <- tempfile("quiz", fileext=".Rmd")
+    write(soutput, tmpfile)
+
+    ## oldseed <- .Random.seed
+    rmarkdown::render(input=tmpfile, output_dir=getwd(), output_file=output, "pdf_document")
+    ## .Random.seed <- oldseed
 }
 
+
+## Taken from RCurl
+merge.list <- function (x, y)
+{
+    if (length(x) == 0)
+        return(y)
+    if (length(y) == 0)
+        return(x)
+    i = match(names(y), names(x))
+    i = is.na(i)
+    if (any(i))
+        x[names(y)[which(i)]] = y[which(i)]
+    x
+}
+
+
+feedback_args <- c("numbered", "eval", "question.body", "alt.answer")
+
+general_feedback <- function(...) {
+    args <- list(...)
+    stopifnot(length(setdiff(names(args), feedback_args)) == 0)
+
+    function(qno, question, env, ...) {
+        override_args <- list(...)
+        stopifnot(length(setdiff(names(override_args), feedback_args)) == 0)
+        f.args <- merge.list(override_args, args)
+
+        if(is.null(qno) & f.args$numbered) stop("Cannot number without numbers")
+        if(is.null(qno)) f.args$numbered <- FALSE
+
+        if(is.null(env) & f.args$eval) stop("Cannot eval with a null environment")
+        if(is.null(env)) f.args$eval <- FALSE
+
+        answer <- if(is.list(question$answer)) question$answer else list(question$answer)
+        answer <- replace_answers(answer, question$get_hdata())
+        answer <- answerstr(answer[[1]])
+        alt_answer <- if(is.null(f.args$alt.answer)) answer else answerstr(f.args$alt.answer)
+
+        hdata <- answerstr(question$get_hdata())
+
+        paste0(c(
+            sprintf("```{r include=FALSE}\n%s\n```\n", hdata),
+            if(f.args$numbered) sprintf("**Question %02d.** ", qno),
+            if(f.args$question.body) trimws(question$text),
+            "\n\n**Réponse:**\n",
+            if(f.args$eval) sprintf("```{r include=FALSE}\nanswer <- {%s}\n```\n", answer),
+            if(f.args$eval)
+                sprintf("```{r}\n%s\n```\n", alt_answer)
+            else sprintf("```r\n%s\n```\n", alt_answer),
+            if(f.args$eval) "La réponse est: `r answer`"), collapse="")
+    }
+}
+
+answer_feedback <- general_feedback(eval=TRUE, numbered=TRUE, question.body=TRUE)
+
+alt_feedback <- function(expr) {
+    general_feedback(eval=TRUE, numbered=TRUE, question.body=TRUE, alt.answer=expr)
+}
 
 answerstr <- function(answer) {
     type <- typeof(answer)
@@ -49,38 +117,16 @@ answerstr <- function(answer) {
            closure={
                d <- deparse(body(answer))
                lines <- d[-c(1, length(d))]
-               print(lines)
                indent <- min(attr(regexpr("^ *", lines), "match.length"))
                paste(substring(lines, indent + 1), collapse="\n")
            },
            language={
                d <- deparse(answer)
-               lines <- if (length(lines) >=3) d[-c(1, length(d))] else d
+               lines <- if (length(d) >=3) d[-c(1, length(d))] else d
                indent <- min(attr(regexpr("^ *", lines), "match.length"))
                paste(substring(lines, indent + 1), collapse="\n")
            },
-           default=stop("Unhandled"))
-}
-
-feedback_frmt <- function(qno, question, e_answers, t_answers) {
-    feedback <- question$feedback
-
-    e_ans <- gsub("@E_ANS@", paste(e_answers, collapse=" ou"), feedback)
-    t_ans <- paste(sapply(t_answers, function (a) {
-        paste0("```r\n", answerstr(a), "\n```")
-    }), collapse="\nou\n")
-
-    feedback <- gsub("@E_ANS@", paste(e_answers, collapse=" ou"), feedback)
-    feedback <- gsub("@T_ANS@", t_ans, feedback)
-    sprintf("%02d. %s\n\n%s\n\n", qno, question$text, feedback)
-}
-
-eval_answer_frmt <- function(qno, question, e_answers, t_answers) {
-    sprintf("%02d. %s\nRéponse: %s\n\n", qno, question$text, paste(e_answers, collapse=" ou "))
-}
-
-full_answer_frmt <- function(qno, question, e_answers, t_answers) {
-    sprintf("%02d. %s\n\n%s\n\nRéponse: %s\n\n", qno, question$text,
-            paste(t_answers, collapse=" ou "),
-            paste(e_answers, collapse=" ou "))
+           symbol={deparse(answer)},
+           double={deparse(answer)},
+           stop("Unhandled type in ", sQuote("answerstr"), ": ", type))
 }
