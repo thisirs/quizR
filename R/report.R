@@ -106,8 +106,10 @@ general_feedback <- function(...) {
     }
 }
 
+#' @export
 answer_feedback <- general_feedback(eval=TRUE, numbered=TRUE, question.body=TRUE)
 
+#' @export
 alt_feedback <- function(expr) {
     general_feedback(eval=TRUE, numbered=TRUE, question.body=TRUE, alt.answer=expr)
 }
