@@ -4,10 +4,10 @@
 \alias{getClozeNum}
 \title{Number of fields in cloze question}
 \usage{
-getClozeNum(q)
+getClozeNum(text)
 }
 \arguments{
-\item{q}{Question object}
+\item{text}{Some character string}
 }
 \description{
 Number of fields in cloze question

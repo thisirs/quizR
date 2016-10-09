@@ -23,6 +23,13 @@ fails <- function(language) {
 cleanenv <- function() {
     new.env(parent=parent.env(.GlobalEnv))
 }
+
+#' @export
+expr <- function(...) {
+    l <- as.list(match.call(expand.dots=TRUE)[-1])
+    if(length(l) == 1) l[[1]] else l
+}
+
 toString <- function(filename) {
     paste(readLines(filename), collapse="\n")
 }

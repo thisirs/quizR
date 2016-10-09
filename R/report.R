@@ -77,8 +77,7 @@ merge.list <- function (x, y)
     x
 }
 
-
-feedback_args <- c("numbered", "eval", "question.body", "alt.answer")
+feedback_args <- c("numbered", "eval", "question.body", "alt.answer", "header")
 
 general_feedback <- function(...) {
     args <- list(...)
@@ -95,25 +94,108 @@ general_feedback <- function(...) {
         if(is.null(env) & f.args$eval) stop("Cannot eval with a null environment")
         if(is.null(env)) f.args$eval <- FALSE
 
-        answer <- if(is.list(question$answer)) question$answer else list(question$answer)
-        answer <- replace_answers(answer, question$get_hdata())
-        answer <- answerstr(answer[[1]])
-        alt_answer <- if(is.null(f.args$alt.answer)) answer else answerstr(f.args$alt.answer)
+        if(question$type == "cloze") {
+            body <- replace_cloze_fields(question$text)
 
-        hdata <- answerstr(question$get_hdata())
+            hdata <- answerstr(question$get_hdata())
 
-        paste0(c(
-            sprintf("```{r include=FALSE}\n%s\n```\n", hdata),
-            if(f.args$numbered) sprintf("**Question %d.** ", qno),
-            if(f.args$question.body) trimws(question$text),
-            "\n\n**Réponse:**\n",
-            if(f.args$eval) sprintf("```{r include=FALSE}\nanswer <- {%s}\n```\n", answer),
-            if(f.args$eval)
-                sprintf("```{r}\n%s\n```\n", alt_answer)
-            else sprintf("```r\n%s\n```\n", alt_answer),
-            if(f.args$eval) "La réponse est: $`r answer`$"), collapse="")
+            paste0(c(
+                sprintf("```{r include=FALSE}\n%s\n```\n", hdata),
+                if(f.args$numbered) sprintf("**Question %d.** ", qno),
+                if(f.args$question.body) trimws(body),
+                "\n\n**Réponse:**\n",
+                if(!is.null(f.args$header)) f.args$header,
+                sapply(1:getClozeNum(question$text), function(i) {
+                    answer <- if(is.list(question$answer[[i]])) question$answer[[i]] else list(question$answer[[i]])
+                    answer <- replace_answers(answer, question$get_hdata())
+                    answer <- answerstr(answer[[1]])
+
+                    alt_answer <- if(is.null(f.args$alt.answer))
+                                      if(f.args$eval)
+                                          sprintf("```{r}\n%s\n```\n", answer)
+                                      else sprintf("```r\n%s\n```\n", answer)
+                                  else {
+                                      alt_answer <- if(is.list(f.args$alt.answer[[i]])) f.args$alt.answer[[i]] else list(f.args$alt.answer[[i]])
+                                      if(is.character(alt_answer[[1]]))
+                                          paste0(trimws(alt_answer[[1]]), "\n")
+                                      else if(f.args$eval)
+                                          sprintf("```{r}\n%s\n```\n", answerstr(alt_answer[[1]]))
+                                      else sprintf("```r\n%s\n```\n", answerstr(alt_answer[[1]]))
+                                  }
+
+                    c(if(f.args$eval) sprintf("```{r include=FALSE}\nanswer <- {%s}\n```\n", answer),
+                      sprintf("%d. ", i),
+                      alt_answer,
+                      "\n",
+                      if(f.args$eval) "La réponse est: $`r answer`$\n")
+                })), collapse="")
+        } else {
+            answer <- if(is.list(question$answer)) question$answer else list(question$answer)
+            answer <- replace_answers(answer, question$get_hdata())
+            answer <- answerstr(answer[[1]])
+            alt_answer <- if(is.null(f.args$alt.answer))
+                              if(f.args$eval)
+                                  sprintf("```{r}\n%s\n```\n", answer)
+                              else sprintf("```r\n%s\n```\n", answer)
+                          else {
+                              alt_answer <- if(is.list(f.args$alt.answer)) f.args$alt.answer else list(f.args$alt.answer)
+                              if(is.character(alt_answer[[1]]))
+                                  paste0(trimws(alt_answer[[1]]), "\n")
+                              else if(f.args$eval)
+                                  sprintf("```{r}\n%s\n```\n", answerstr(alt_answer[[1]]))
+                              else sprintf("```r\n%s\n```\n", answerstr(alt_answer[[1]]))
+                          }
+
+            hdata <- answerstr(question$get_hdata())
+
+            paste0(c(
+                sprintf("```{r include=FALSE}\n%s\n```\n", hdata),
+                if(f.args$numbered) sprintf("**Question %d.** ", qno),
+                if(f.args$question.body) trimws(question$text),
+                "\n\n**Réponse:**\n",
+                if(!is.null(f.args$header)) f.args$header,
+                if(f.args$eval) sprintf("```{r include=FALSE}\nanswer <- {%s}\n```\n", answer),
+                alt_answer,
+                "\n",
+                if(f.args$eval) "La réponse est: $`r answer`$"), collapse="")
+        }
     }
 }
+
+## general_feedback <- function(...) {
+##     args <- list(...)
+##     stopifnot(length(setdiff(names(args), feedback_args)) == 0)
+
+##     function(qno, question, env, ...) {
+##         override_args <- list(...)
+##         stopifnot(length(setdiff(names(override_args), feedback_args)) == 0)
+##         f.args <- merge.list(override_args, args)
+
+##         if(is.null(qno) & f.args$numbered) stop("Cannot number without numbers")
+##         if(is.null(qno)) f.args$numbered <- FALSE
+
+##         if(is.null(env) & f.args$eval) stop("Cannot eval with a null environment")
+##         if(is.null(env)) f.args$eval <- FALSE
+
+##         answer <- if(is.list(question$answer)) question$answer else list(question$answer)
+##         answer <- replace_answers(answer, question$get_hdata())
+##         answer <- answerstr(answer[[1]])
+##         alt_answer <- if(is.null(f.args$alt.answer)) answer else answerstr(f.args$alt.answer)
+
+##         hdata <- answerstr(question$get_hdata())
+
+##         paste0(c(
+##             sprintf("```{r include=FALSE}\n%s\n```\n", hdata),
+##             if(f.args$numbered) sprintf("**Question %d.** ", qno),
+##             if(f.args$question.body) trimws(question$text),
+##             "\n\n**Réponse:**\n",
+##             if(f.args$eval) sprintf("```{r include=FALSE}\nanswer <- {%s}\n```\n", answer),
+##             if(f.args$eval)
+##                 sprintf("```{r}\n%s\n```\n", alt_answer)
+##             else sprintf("```r\n%s\n```\n", alt_answer),
+##             if(f.args$eval) "La réponse est: $`r answer`$"), collapse="")
+##     }
+## }
 
 #' @export
 answer_feedback <- general_feedback(eval=TRUE, numbered=TRUE, question.body=TRUE)
@@ -121,6 +203,11 @@ answer_feedback <- general_feedback(eval=TRUE, numbered=TRUE, question.body=TRUE
 #' @export
 alt_feedback <- function(expr) {
     general_feedback(eval=TRUE, numbered=TRUE, question.body=TRUE, alt.answer=expr)
+}
+
+#' @export
+header_feedback <- function(header, alt.answer) {
+    general_feedback(eval=TRUE, numbered=TRUE, question.body=TRUE, header=header, alt.answer=alt.answer)
 }
 
 answerstr <- function(answer) {
@@ -140,5 +227,6 @@ answerstr <- function(answer) {
            },
            symbol={deparse(answer)},
            double={deparse(answer)},
+           character={answer},
            stop("Unhandled type in ", sQuote("answerstr"), ": ", type))
 }

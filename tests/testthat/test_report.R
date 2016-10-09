@@ -13,6 +13,7 @@ test_that("answerstr correctly returns a string from a language", {
 
     expect_identical(answerstr(2), "2")
     expect_identical(answerstr(1.34), "1.34")
+    expect_identical(answerstr("foo"), "foo")
 
     expect_error(answerstr(new.env()))
 })
