@@ -164,10 +164,9 @@ getNum <- function(group) {
 
 #' Number of fields in cloze question
 #'
-#' @param q Question object
-getClozeNum <- function(q) {
-    stopifnot(q$type == "cloze")
-    stringi::stri_count_regex(q$text, "\\{\\d+:(SHORTANSWER|SA):=")
+#' @param text Some character string
+getClozeNum <- function(text) {
+    stringi::stri_count_regex(text, "\\{\\d+:(SHORTANSWER|SA):=")
 }
 
 questionTypes <- c("shortanswer", "description", "cloze")
@@ -287,7 +286,7 @@ cloze_coefficients <- function(question) {
 correct_question <- function(question, env, guess) {
     if(question$type == "cloze") {
         stopifnot(is.list(question$answer))
-        num <- getClozeNum(question)
+        num <- getClozeNum(question$text)
         stopifnot(length(question$answer) == num)
         guesses <- split_cloze_guesses(num, guess)
         stopifnot(length(guesses) == num)

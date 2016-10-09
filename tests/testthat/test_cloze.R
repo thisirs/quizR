@@ -23,11 +23,11 @@ test_that("cloze_coefficients properly extracts the coefficients", {
 })
 
 test_that("getClozeNum retrieves the right number of cloze questions", {
-    q1 <- Question("{2:SA:=*}", type="cloze", answer=list(quote(a)))
-    expect_identical(getClozeNum(q1), as.integer(1))
+    text <- "{2:SA:=*}"
+    expect_identical(getClozeNum(text), as.integer(1))
 
-    q2 <- Question("{2:SA:=*} foo {1:SHORTANSWER:=*}", type="cloze", answer=list(quote(a)))
-    expect_identical(getClozeNum(q2), as.integer(2))
+    text <- "{2:SA:=*} foo {1:SHORTANSWER:=*}"
+    expect_identical(getClozeNum(text), as.integer(2))
 })
 
 test_that("correct_question returns the right structure", {
@@ -67,3 +67,22 @@ test_that("computeResultsFromData returns Cloze question record", {
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 1)
 
 })
+
+test_that("replace_cloze_fields is correctly replacing", {
+    expect_identical(replace_cloze_fields("blah {1:SA:=}"), "blah (1)")
+    expect_identical(replace_cloze_fields("foo {1:SA:=bar}"), "foo (1)")
+    expect_identical(replace_cloze_fields("foo {1:SA:=bar} blah {22:SHORTANSWER:=blah} bar"), "foo (1) blah (2) bar")
+})
+
+
+## quiz <- Quiz("quiz1",
+##              groups=list(
+##                  Group("G1",
+##                        type="sequential",
+##                        questions=list(
+##                            Question("Que vaut $`r b`$  et $`r a`$ {1:SA:=*}, {2:SA:=*}, {1:SA:=*}",
+##                                     hidden.data=quote({a <- rnorm(1)}),
+##                                     data=quote({ b <- pi}),
+##                                     type="cloze", answer=list(quote(a+b), quote("foo"), quote("bar")))))))
+## unrandomize_data(quiz)
+## generate_correction(quiz, output="foo.pdf")
