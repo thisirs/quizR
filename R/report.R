@@ -22,23 +22,27 @@ generate_correction <- function(quiz, output, lang) {
         soutput <- c(soutput, paste0("\n## ", g$title, "\n\n"))
         qno <- 0
         for (q in g$questions) {
-            qno <- qno + 1
-            if(is.function(q$feedback)) {
-                body <- q$feedback(qno, q, env)
-            } else if(is.character(q$feedback)) {
-                t_answers <- if(is.list(q$answer)) q$answer else list(q$answer)
-                r_answers <- replace_answers(t_answers, q$get_hdata())
+            if(q$type == "description") {
+                soutput <- c(soutput, paste0(q$text, "\n"))
+            } else {
+                qno <- qno + 1
+                if(is.function(q$feedback)) {
+                    body <- q$feedback(qno, q, env)
+                } else if(is.character(q$feedback)) {
+                    t_answers <- if(is.list(q$answer)) q$answer else list(q$answer)
+                    r_answers <- replace_answers(t_answers, q$get_hdata())
 
-                hdata <- paste(deparse(q$get_hdata()), collapse="\n")
-                answer <- paste(deparse(r_answers[[1]]), collapse="\n")
+                    hdata <- paste(deparse(q$get_hdata()), collapse="\n")
+                    answer <- paste(deparse(r_answers[[1]]), collapse="\n")
 
-                body <- sprintf("```{r include=FALSE}\n%s\n```\n\n", hdata)
-                body <- c(body, sprintf("**Question %d.** %s\n\n", qno, q$text))
-                body <- c(body, sprintf("```{r include=FALSE}\nanswer <- {%s}\n```\n\n", answer))
-                body <- c(body, "**Réponse:**\n")
-                body <- c(body, q$feedback)
-            } else stop("Unhandled")
-            soutput <- c(soutput, paste0("\n", body, "\n"))
+                    body <- sprintf("```{r include=FALSE}\n%s\n```\n\n", hdata)
+                    body <- c(body, sprintf("**Question %d.** %s\n\n", qno, q$text))
+                    body <- c(body, sprintf("```{r include=FALSE}\nanswer <- {%s}\n```\n\n", answer))
+                    body <- c(body, "**Réponse:**\n")
+                    body <- c(body, q$feedback)
+                } else stop("Unhandled feedback")
+                soutput <- c(soutput, paste0("\n", body, "\n"))
+            }
         }
     }
 
