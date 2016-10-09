@@ -95,7 +95,7 @@ general_feedback <- function(...) {
 
         paste0(c(
             sprintf("```{r include=FALSE}\n%s\n```\n", hdata),
-            if(f.args$numbered) sprintf("**Question %02d.** ", qno),
+            if(f.args$numbered) sprintf("**Question %d.** ", qno),
             if(f.args$question.body) trimws(question$text),
             "\n\n**Réponse:**\n",
             if(f.args$eval) sprintf("```{r include=FALSE}\nanswer <- {%s}\n```\n", answer),
