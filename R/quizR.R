@@ -70,10 +70,10 @@ validate_quiz <- function(quiz) {
 #' @param quiz Quiz
 #' @param filename CSV file of results
 #' @export
-computeGrades <- function(quiz, filename=NULL) {
+compute_grades <- function(quiz, filename=NULL) {
     stopifnot(is.character(filename))
     data <- utils::read.csv(filename, header=T, check.names=F, stringsAsFactors=F)
-    results <- computeResultsFromData(quiz, data)
+    results <- compute_results_from_data(quiz, data)
     grades <- sapply(results, function(e) { e$grade })
     data.frame(Nom=data[,1], `Prénom`=data[,2], note=grades)
 }
@@ -83,13 +83,13 @@ computeGrades <- function(quiz, filename=NULL) {
 #' @param quiz Quiz
 #' @param filename CSV file of results
 #' @export
-computeResults <- function(quiz, filename=NULL) {
+compute_results <- function(quiz, filename=NULL) {
     stopifnot(is.character(filename))
 
     ## Loading answers (there is a header, do not modify col names)
     data <- utils::read.csv(filename, header=T, check.names=F, stringsAsFactors=F)
 
-    return(computeResultsFromData(quiz, data))
+    return(compute_results_from_data(quiz, data))
 }
 
 #' Add group to quiz
@@ -97,7 +97,7 @@ computeResults <- function(quiz, filename=NULL) {
 #' @param quiz Quiz
 #' @param group Group
 #' @export
-addGroup <- function(quiz, group) {
+add_group <- function(quiz, group) {
     quiz$groups[[length(quiz$groups) + 1]] <- group
     return(quiz)
 }
@@ -145,7 +145,7 @@ Group <- function(title, type, num, data, hidden.data, questions) {
 #' @param group Group object
 #' @param question Question to add
 #' @export
-addQuestion <- function(group, question)
+add_question <- function(group, question)
 {
     group$questions[[length(group$questions) + 1]] <- question
     return(group)
@@ -154,7 +154,7 @@ addQuestion <- function(group, question)
 #' Number of real questions (except description questions)
 #'
 #' @param group Group object
-getNum <- function(group) {
+get_num <- function(group) {
     if(group$type == "random")
         return(group$num)
     else {
@@ -165,7 +165,7 @@ getNum <- function(group) {
 #' Number of fields in cloze question
 #'
 #' @param text Some character string
-getClozeNum <- function(text) {
+get_cloze_num <- function(text) {
     stringi::stri_count_regex(text, cloze_regex)
 }
 
@@ -206,7 +206,7 @@ Question <- function(text, type=NULL, answer=NULL, hidden.data=quote({}), data=q
         dist=dist,
         epsilon=epsilon)
 
-    me$id <- hexaHash(me)
+    me$id <- hexa_hash(me)
 
     me$get_hdata <- get_hdata
     me$set_hdata <- set_hdata
@@ -232,7 +232,7 @@ replace_answers <- function(answers, data) {
 #'
 #' @param answers List of answers
 #' @param env Environment in which to evaluate
-evalAnswers <- function(answers, env) {
+eval_answers <- function(answers, env) {
     lapply(answers, function(answer) {
         type <- typeof(answer)
         switch(type,
@@ -248,18 +248,18 @@ evalAnswers <- function(answers, env) {
                },
                character={answer},
                double={answer},
-               stop("Unhandled type in ", sQuote("evalAnswers"), ": ", type))
+               stop("Unhandled type in ", sQuote("eval_answers"), ": ", type))
     })
 }
 
 #' Match guess with list of evaluated answers
 #'
-#' @param evalAnswers List of evaluated answers
+#' @param eval_answers List of evaluated answers
 #' @param guess A guess
 #' @param dist Maximum edit distance for a match
 #' @param epsilon Relative error for numeric answers
-matchAnswers <- function(evalAnswers, guess, dist, epsilon) {
-    sapply(evalAnswers, function(answer) {
+match_answers <- function(eval_answers, guess, dist, epsilon) {
+    sapply(eval_answers, function(answer) {
         if(is.numeric(answer)) {
             guess <- as.numeric(guess)
             !is.na(guess) && abs(answer - guess) <= epsilon * abs(answer)
@@ -285,7 +285,7 @@ cloze_coefficients <- function(question) {
 correct_question <- function(question, env, guess) {
     if(question$type == "cloze") {
         stopifnot(is.list(question$answer))
-        num <- getClozeNum(question$text)
+        num <- get_cloze_num(question$text)
         stopifnot(length(question$answer) == num)
         guesses <- split_cloze_guesses(num, guess)
         stopifnot(length(guesses) == num)
@@ -299,8 +299,8 @@ correct_question <- function(question, env, guess) {
 
             # Possibly several right answers, listify them
             answers <- if(is.list(answer_raw)) answer_raw else list(answer_raw)
-            ea <- evalAnswers(answers, env)
-            match <- matchAnswers(ea, guess, question$dist, question$epsilon)
+            ea <- eval_answers(answers, env)
+            match <- match_answers(ea, guess, question$dist, question$epsilon)
 
             if(any(match)) {
                 cloze_points[i] <- 1
@@ -325,8 +325,8 @@ correct_question <- function(question, env, guess) {
         # Possibly several right answers, listify them
         answers <- if(is.list(question$answer)) question$answer else list(question$answer)
         ra <- replace_answers(answers, question$get_hdata())
-        ea <- evalAnswers(ra, env)
-        match <- matchAnswers(ea, guess, question$dist, question$epsilon)
+        ea <- eval_answers(ra, env)
+        match <- match_answers(ea, guess, question$dist, question$epsilon)
 
         if(any(match)) {
             points <- question$points
@@ -387,7 +387,7 @@ unrandomize_data.Question <- function(obj) {
     obj$set_hdata(unrandomize(obj$hidden.data))
 }
 
-getLocalLanguage <- function(obj) {
+get_local_language <- function(obj) {
     hidden.data.env <- new.env(parent=.GlobalEnv)
     eval(obj$get_hdata(), hidden.data.env)
     l <- pryr::substitute_q(obj$data, as.list(hidden.data.env))
@@ -397,23 +397,23 @@ getLocalLanguage <- function(obj) {
         return(l)
 }
 
-getRecursiveLanguage <- function(obj)
+get_recursive_language <- function(obj)
 {
-    UseMethod("getRecursiveLanguage", obj)
+    UseMethod("get_recursive_language", obj)
 }
 
 #' @export
-getRecursiveLanguage.Quiz <- function(obj) {
-    ll <- getLocalLanguage(obj)
-    rlgs <- lapply(obj$groups, getRecursiveLanguage)
+get_recursive_language.Quiz <- function(obj) {
+    ll <- get_local_language(obj)
+    rlgs <- lapply(obj$groups, get_recursive_language)
     ls <- unlist(c(ll, rlgs))
     if(is.null(ls)) NULL else merge_languages(ls)
 }
 
 #' @export
-getRecursiveLanguage.Group <- function(obj) {
-    ll <- getLocalLanguage(obj)
-    rlqs <- lapply(obj$questions, getLocalLanguage)
+get_recursive_language.Group <- function(obj) {
+    ll <- get_local_language(obj)
+    rlqs <- lapply(obj$questions, get_local_language)
     ls <- unlist(c(ll, rlqs))
     if(is.null(ls)) NULL else merge_languages(ls)
 }
@@ -441,11 +441,11 @@ distinct_language <- function (lang1, lang2) {
 }
 
 distinct_data <- function(quiz) {
-    languages <- list(getLocalLanguage(quiz))
+    languages <- list(get_local_language(quiz))
     for(g in quiz$groups) {
-        languages <- c(getLocalLanguage(g), languages)
+        languages <- c(get_local_language(g), languages)
         for(q in g$questions) {
-            languages <- c(getLocalLanguage(q), languages)
+            languages <- c(get_local_language(q), languages)
         }
     }
     errors <- sapply(languages, fails)
@@ -464,13 +464,13 @@ noerror_in_answers <- function(quiz, env) {
         eval(lang, env)
     }
 
-    l_global <- getRecursiveLanguage(quiz)
-    l_quiz <- getLocalLanguage(quiz)
+    l_global <- get_recursive_language(quiz)
+    l_quiz <- get_local_language(quiz)
     for (g in quiz$groups) {
         if(g$type == 'identifier') next
-        l_group <- getLocalLanguage(g)
+        l_group <- get_local_language(g)
         for (q in g$questions) {
-            l_question <- getLocalLanguage(q)
+            l_question <- get_local_language(q)
             l_branch <- merge_languages(l_quiz, l_group, l_question)
 
             parent.env(env) <- cleanenv()
@@ -494,7 +494,7 @@ noerror_in_answers <- function(quiz, env) {
     }
 }
 
-getMapping <- function(qs.text, questions) {
+get_mapping <- function(qs.text, questions) {
     map <- rep(0, length(qs.text))
     for(i in 1:length(qs.text)) {
         # Extract ID from the question's body
@@ -510,7 +510,7 @@ getMapping <- function(qs.text, questions) {
     return(map)
 }
 
-computeResultsFromData <- function(quiz, data) {
+compute_results_from_data <- function(quiz, data) {
     validate_quiz(quiz)
     stopifnot(distinct_data(quiz))
 
@@ -521,7 +521,7 @@ computeResultsFromData <- function(quiz, data) {
     ## Check that number of real questions in quiz and data match
     numQuestions <- 0
     for(g in quiz$groups)
-        numQuestions <- numQuestions + getNum(g)
+        numQuestions <- numQuestions + get_num(g)
 
     ncolq <- ncol(data) - 10            # first 10 columns are info like name, email,...
     stopifnot((ncolq == numQuestions) | (ncolq == 2*numQuestions))
@@ -550,7 +550,7 @@ computeResultsFromData <- function(quiz, data) {
             }
             assign('identifiant', identifier, env)
         }
-        eval(getRecursiveLanguage(quiz0), env)
+        eval(get_recursive_language(quiz0), env)
         res <- correctRecord(quiz0, record, env, isWithQuestionBody)
         allResults[[length(allResults) + 1]] <- res
     }
@@ -561,18 +561,18 @@ computeResultsFromData <- function(quiz, data) {
 correctRecord <- function(quiz0, record, env, isWithQuestionBody) {
     resultQuiz <- list(grade=0)
     for(g in quiz0$groups) {
-        numq <- getNum(g)
+        numq <- get_num(g)
         num <- if(isWithQuestionBody) 2*numq else numq
         recordg <- record[1:num]
         record <- record[-seq(1, num)]
-        resultg <- correctRecordGroup(g, recordg, env, isWithQuestionBody)
+        resultg <- correct_record_group(g, recordg, env, isWithQuestionBody)
         resultQuiz$grade <- resultQuiz$grade + resultg$grade
         resultQuiz$groups[[length(resultQuiz$groups) + 1]] <- resultg
     }
     return(resultQuiz)
 }
 
-correctRecordGroup <- function(group, record, env, isWithQuestionBody) {
+correct_record_group <- function(group, record, env, isWithQuestionBody) {
     stopifnot(!group$type == "random" | isWithQuestionBody)
 
     if(isWithQuestionBody) {
@@ -582,9 +582,9 @@ correctRecordGroup <- function(group, record, env, isWithQuestionBody) {
         qs.answer <- record
 
     if(group$type == "random") {
-        map <- getMapping(qs.text, group$questions)
+        map <- get_mapping(qs.text, group$questions)
     } else {
-        map <- 1:getNum(group)
+        map <- 1:get_num(group)
     }
 
     resultg <- list(points=0,

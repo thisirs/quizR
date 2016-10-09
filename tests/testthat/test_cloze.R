@@ -22,12 +22,12 @@ test_that("cloze_coefficients properly extracts the coefficients", {
     expect_identical(cloze_coefficients(q2), c(2, 1)/3)
 })
 
-test_that("getClozeNum retrieves the right number of cloze questions", {
+test_that("get_cloze_num retrieves the right number of cloze questions", {
     text <- "{2:SA:=*}"
-    expect_identical(getClozeNum(text), as.integer(1))
+    expect_identical(get_cloze_num(text), as.integer(1))
 
     text <- "{2:SA:=*} foo {1:SHORTANSWER:=*}"
-    expect_identical(getClozeNum(text), as.integer(2))
+    expect_identical(get_cloze_num(text), as.integer(2))
 })
 
 test_that("correct_question returns the right structure", {
@@ -50,7 +50,7 @@ test_that("correct_question returns the right structure", {
 })
 
 
-test_that("computeResultsFromData returns Cloze question record", {
+test_that("compute_results_from_data returns Cloze question record", {
     quiz <- Quiz("quiz1",
                  groups=list(
                      Group("G1",
@@ -61,7 +61,7 @@ test_that("computeResultsFromData returns Cloze question record", {
 
     r <- getRecord("partie 1 : blah; partie 2 : foo; partie 3 : bar")
     data <- as.data.frame(r)
-    results <- computeResultsFromData(quiz, data)
+    results <- compute_results_from_data(quiz, data)
 
     expect_identical(results[[1]]$groups[[1]]$points, 1)
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 1)

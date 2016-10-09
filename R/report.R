@@ -7,7 +7,7 @@ generate_correction <- function(quiz, output, lang) {
 
     soutput <- paste0("# ", quiz$title, "\n\n")
 
-    data <- getRecursiveLanguage(quiz)
+    data <- get_recursive_language(quiz)
     data0 <- merge_languages(lang, data)
 
     ## env <- cleanenv()
@@ -56,7 +56,7 @@ generate_correction <- function(quiz, output, lang) {
 cloze_regex <- "\\{(\\d+):(SHORTANSWER|SA|MW|SHORTANSWER_C|SAC|MWC|NUMERICAL|NM|MULTICHOICE|MC|MULTICHOICE_V|MCV|MULTICHOICE_H|MCH):=[^\\}]*\\}"
 
 replace_cloze_fields <- function(text) {
-    num <- getClozeNum(text)
+    num <- get_cloze_num(text)
     for(i in 1:num) {
         text <- stringi::stri_replace_first_regex(text, cloze_regex, paste0("(", i, ")"))
     }
@@ -105,7 +105,7 @@ general_feedback <- function(...) {
                 if(f.args$question.body) trimws(body),
                 "\n\n**Réponse:**\n",
                 if(!is.null(f.args$header)) f.args$header,
-                sapply(1:getClozeNum(question$text), function(i) {
+                sapply(1:get_cloze_num(question$text), function(i) {
                     answer <- if(is.list(question$answer[[i]])) question$answer[[i]] else list(question$answer[[i]])
                     answer <- replace_answers(answer, question$get_hdata())
                     answer <- answerstr(answer[[1]])

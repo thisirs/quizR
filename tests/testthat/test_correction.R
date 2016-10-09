@@ -69,7 +69,7 @@ test_that("body and result of quiz", {
 
     r <- getRecord("Q_1", 42)
     data <- as.data.frame(r)
-    results <- computeResultsFromData(quiz, data)
+    results <- compute_results_from_data(quiz, data)
 
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 1)
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$body, "Q_1")
@@ -77,21 +77,21 @@ test_that("body and result of quiz", {
 
     r <- getRecord("Q_1", 43)
     data <- as.data.frame(r)
-    results <- computeResultsFromData(quiz, data)
+    results <- compute_results_from_data(quiz, data)
 
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 0)
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$body, "Q_1")
 
     r <- getRecord(42)
     data <- as.data.frame(r)
-    results <- computeResultsFromData(quiz, data)
+    results <- compute_results_from_data(quiz, data)
 
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 1)
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$body, "Q1")
 
     r <- getRecord(43)
     data <- as.data.frame(r)
-    results <- computeResultsFromData(quiz, data)
+    results <- compute_results_from_data(quiz, data)
 
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 0)
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$body, "Q1")
@@ -110,7 +110,7 @@ test_that("blah", {
 
     r <- getRecord("Q_1", "blah", "Q_2", 42)
     data <- as.data.frame(r)
-    results <- computeResultsFromData(quiz, data)
+    results <- compute_results_from_data(quiz, data)
 
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 1)
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$body, "Q_1")
@@ -120,7 +120,7 @@ test_that("blah", {
 
     r <- getRecord("Q_1", "blahfoo", "Q_2", 43)
     data <- as.data.frame(r)
-    results <- computeResultsFromData(quiz, data)
+    results <- compute_results_from_data(quiz, data)
 
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 0)
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$body, "Q_1")
@@ -146,7 +146,7 @@ test_that("blah", {
 
     r <- getRecord("Q_0", "ident", "Q_1", 42)
     data <- as.data.frame(r)
-    results <- computeResultsFromData(quiz, data)
+    results <- compute_results_from_data(quiz, data)
 
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$body, "Q_1")
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 1)
@@ -154,21 +154,21 @@ test_that("blah", {
 
     r <- getRecord("Q_0", "ident", "Q_1", 43)
     data <- as.data.frame(r)
-    results <- computeResultsFromData(quiz, data)
+    results <- compute_results_from_data(quiz, data)
 
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$body, "Q_1")
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 0)
 
     r <- getRecord("ident", 42)
     data <- as.data.frame(r)
-    results <- computeResultsFromData(quiz, data)
+    results <- compute_results_from_data(quiz, data)
 
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$body, "Q1")
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 1)
 
     r <- getRecord("ident", 43)
     data <- as.data.frame(r)
-    results <- computeResultsFromData(quiz, data)
+    results <- compute_results_from_data(quiz, data)
 
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$body, "Q1")
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 0)
@@ -192,7 +192,7 @@ test_that("blah", {
 
     r <- getRecord("Q_0", "ident", "Q_1", "blah", "Q_2", 42)
     data <- as.data.frame(r)
-    results <- computeResultsFromData(quiz, data)
+    results <- compute_results_from_data(quiz, data)
 
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 1)
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$body, "Q_1")
@@ -202,7 +202,7 @@ test_that("blah", {
 
     r <- getRecord("Q_0", "ident", "Q_1", "blahfoo", "Q_2", 43)
     data <- as.data.frame(r)
-    results <- computeResultsFromData(quiz, data)
+    results <- compute_results_from_data(quiz, data)
 
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 0)
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$body, "Q_1")
@@ -223,19 +223,19 @@ test_that("blah", {
 
     r <- getRecord("Q_1", 42)
     data <- as.data.frame(r)
-    results <- computeResultsFromData(quiz, data)
+    results <- compute_results_from_data(quiz, data)
 
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 1)
 
     r <- getRecord("Q_1", 43)
     data <- as.data.frame(r)
-    results <- computeResultsFromData(quiz, data)
+    results <- compute_results_from_data(quiz, data)
 
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 1)
 
     r <- getRecord("Q_1", 45)
     data <- as.data.frame(r)
-    results <- computeResultsFromData(quiz, data)
+    results <- compute_results_from_data(quiz, data)
 
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 0)
 })
@@ -253,7 +253,7 @@ test_that("blah", {
 
     r <- getRecord(42, 42)
     data <- as.data.frame(r)
-    results <- computeResultsFromData(quiz, data)
+    results <- compute_results_from_data(quiz, data)
 
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 1)
     expect_identical(results[[1]]$groups[[1]]$questions[[2]]$points, 1)
@@ -273,7 +273,7 @@ test_that("blah", {
 
     r <- getRecord(1, 2)
     data <- as.data.frame(r)
-    results <- computeResultsFromData(quiz, data)
+    results <- compute_results_from_data(quiz, data)
 
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 1)
     expect_identical(results[[1]]$groups[[1]]$questions[[2]]$points, 1)
@@ -290,7 +290,7 @@ test_that("blah", {
 
     r <- getRecord(1, 2)
     data <- as.data.frame(r)
-    results <- computeResultsFromData(quiz, data)
+    results <- compute_results_from_data(quiz, data)
 
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 1)
     expect_identical(results[[1]]$groups[[1]]$questions[[2]]$points, 1)
@@ -310,7 +310,7 @@ test_that("blah", {
 
     r <- getRecord(1, 2)
     data <- as.data.frame(r)
-    results <- computeResultsFromData(quiz, data)
+    results <- compute_results_from_data(quiz, data)
 
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 1)
     expect_identical(results[[1]]$groups[[1]]$questions[[2]]$points, 1)
@@ -319,7 +319,7 @@ test_that("blah", {
 
 ## Generate a data.frame of 100 records
 generateRandomRecord <- function(quiz, N, with.question=T, right.answers) {
-    numQuestions <- getNum(quiz)
+    numQuestions <- get_num(quiz)
     data <- data.frame(matrix(NA, N, 2*numQuestions + 10), stringsAsFactors=FALSE)
 
     for(i in 1:N) {
@@ -348,7 +348,7 @@ generateRandomRecord <- function(quiz, N, with.question=T, right.answers) {
                            q <- qs[[j]]
                            env <- new.env(globalenv())
                            assign('identifiant', identifier, env)
-                           eval(getRecursiveLanguage(quiz), env)
+                           eval(get_recursive_language(quiz), env)
                            if ((i %% 6) + 1 <= qno) {
                                ans <- evalAnswerInEnv(q$answer, env)
                                if(is.numeric(ans)) ans <- ans + 1e-6
