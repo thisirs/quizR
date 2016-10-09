@@ -1,5 +1,9 @@
-*.Rcheck
-quizR*.tar.gz
 R/obsolete.R
 todo.org
 .dir-locals.el
+
+# Output files from R CMD build
+/*.tar.gz
+
+# Output files from R CMD check
+/*.Rcheck/
