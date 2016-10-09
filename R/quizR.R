@@ -166,7 +166,7 @@ getNum <- function(group) {
 #'
 #' @param text Some character string
 getClozeNum <- function(text) {
-    stringi::stri_count_regex(text, "\\{\\d+:(SHORTANSWER|SA):=")
+    stringi::stri_count_regex(text, cloze_regex)
 }
 
 questionTypes <- c("shortanswer", "description", "cloze")
@@ -277,8 +277,7 @@ matchAnswers <- function(evalAnswers, guess, dist, epsilon) {
 #' @param question A question
 cloze_coefficients <- function(question) {
     stopifnot(question$type == "cloze")
-    cloze_fields <- "\\{(\\d+):(SHORTANSWER|SA):="
-    coeffs <- as.numeric(stringi::stri_match_all_regex(question$text, cloze_fields)[[1]][,2])
+    coeffs <- as.numeric(stringi::stri_match_all_regex(question$text, cloze_regex)[[1]][,2])
     coeffs / sum(coeffs)
 }
 
