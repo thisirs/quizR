@@ -14,6 +14,8 @@ Quiz(title, groups, data, hidden.data, seed = NULL)
 \item{data}{Language object defining the data}
 
 \item{hidden.data}{Language object defining the hidden data}
+
+\item{seed}{The seed used to generate hidden data}
 }
 \value{
 A quiz object

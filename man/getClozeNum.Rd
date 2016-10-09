@@ -7,7 +7,7 @@
 getClozeNum(q)
 }
 \arguments{
-\item{group}{Questoin object}
+\item{q}{Question object}
 }
 \description{
 Number of fields in cloze question

@@ -6,6 +6,9 @@
 \usage{
 uniqueIDs(quiz)
 }
+\arguments{
+\item{quiz}{The quiz}
+}
 \description{
 Return TRUE if all questions' ID are unique
 }
