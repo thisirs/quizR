@@ -102,7 +102,7 @@ general_feedback <- function(...) {
             if(f.args$eval)
                 sprintf("```{r}\n%s\n```\n", alt_answer)
             else sprintf("```r\n%s\n```\n", alt_answer),
-            if(f.args$eval) "La réponse est: `r answer`"), collapse="")
+            if(f.args$eval) "La réponse est: $`r answer`$"), collapse="")
     }
 }
 
