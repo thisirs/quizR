@@ -14,50 +14,7 @@ getRecord <- function(...) {
     record <- c(rep(NA, 10), list(...))
 }
 
-
-context("Data is distinct")
-
-test_that("distinct_data see data that conflicts", {
-    quiz <- Quiz("quiz1",
-                 data=quote({a <- 1}),
-                 groups=list(
-                     Group("G1",
-                           type="sequential",
-                           data=quote({a <- 2}),
-                           questions=list(
-                               Question("Q1", type="shortanswer", answer=quote(a))))))
-
-    expect_identical(distinct_data(quiz), FALSE)
-
-    quiz <- Quiz("quiz1",
-                 data=quote({a <- 1}),
-                 groups=list(
-                     Group("G1",
-                           type="sequential",
-                           data=quote({a <- 1}),
-                           questions=list(
-                               Question("Q1", type="shortanswer", answer=quote(a))))))
-
-    expect_identical(distinct_data(quiz), TRUE)
-
-    quiz <- Quiz("quiz1",
-                 data=quote({a <- 1; blah}),
-                 groups=list(
-                     Group("G1",
-                           type="sequential",
-                           data=quote({a <- 2}),
-                           questions=list(
-                               Question("Q1", type="shortanswer", answer=quote(a))))))
-
-    ## blah is undefined
-    expect_warning(distinct_data(quiz))
-
-    # First block is discarded, so no error
-    expect_identical(suppressWarnings(distinct_data(quiz)), TRUE)
-})
-
-
-context("Checking Results, no identifier")
+context("Computing results")
 
 test_that("body and result of quiz", {
     quiz <- Quiz("quiz1",
@@ -97,9 +54,7 @@ test_that("body and result of quiz", {
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$body, "Q1")
 })
 
-context("Checking Results, no identifier, 2 questions")
-
-test_that("blah", {
+test_that("Checking Results, no identifier, 2 questions", {
     quiz <- Quiz("quiz1",
                  groups=list(
                      Group("G1",
@@ -129,9 +84,7 @@ test_that("blah", {
     expect_identical(results[[1]]$groups[[1]]$questions[[2]]$body, "Q_2")
 })
 
-context("Checking Results, with identifier")
-
-test_that("blah", {
+test_that("Checking Results, with identifier", {
 
     quiz <- Quiz("quiz1",
                  groups=list(
@@ -175,9 +128,7 @@ test_that("blah", {
 
 })
 
-context("Checking Results, with identifier, 2 questions")
-
-test_that("blah", {
+test_that("Checking Results, with identifier, 2 questions", {
     quiz <- Quiz("quiz1",
                  groups=list(
                      Group("G0", type="identifier",
@@ -211,9 +162,7 @@ test_that("blah", {
     expect_identical(results[[1]]$groups[[1]]$questions[[2]]$body, "Q_2")
 })
 
-context("Multiple answers")
-
-test_that("blah", {
+test_that("Multiple answers", {
     quiz <- Quiz("quiz1",
                  groups=list(
                      Group("G1",
@@ -240,9 +189,7 @@ test_that("blah", {
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 0)
 })
 
-context("Expression in answers")
-
-test_that("blah", {
+test_that("Expression in answers", {
     quiz <- Quiz("quiz1",
                  groups=list(
                      Group("G1",
@@ -259,9 +206,7 @@ test_that("blah", {
     expect_identical(results[[1]]$groups[[1]]$questions[[2]]$points, 1)
 })
 
-context("Expression in answers + context")
-
-test_that("blah", {
+test_that("Expression in answers + context", {
     quiz <- Quiz("quiz1",
                  data=quote({a <- 1; b <- 2}),
                  groups=list(

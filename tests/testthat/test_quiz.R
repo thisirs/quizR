@@ -31,8 +31,44 @@ test_that("identifiers are unique", {
     expect_identical(uniqueIDs(gen_quiz("a", "b", "b")), FALSE)
 })
 
-context("Answers")
+test_that("distinct_data see data that conflicts", {
+    quiz <- Quiz("quiz1",
+                 data=quote({a <- 1}),
+                 groups=list(
+                     Group("G1",
+                           type="sequential",
+                           data=quote({a <- 2}),
+                           questions=list(
+                               Question("Q1", type="shortanswer", answer=quote(a))))))
 
+    expect_identical(distinct_data(quiz), FALSE)
+
+    quiz <- Quiz("quiz1",
+                 data=quote({a <- 1}),
+                 groups=list(
+                     Group("G1",
+                           type="sequential",
+                           data=quote({a <- 1}),
+                           questions=list(
+                               Question("Q1", type="shortanswer", answer=quote(a))))))
+
+    expect_identical(distinct_data(quiz), TRUE)
+
+    quiz <- Quiz("quiz1",
+                 data=quote({a <- 1; blah}),
+                 groups=list(
+                     Group("G1",
+                           type="sequential",
+                           data=quote({a <- 2}),
+                           questions=list(
+                               Question("Q1", type="shortanswer", answer=quote(a))))))
+
+    ## blah is undefined
+    expect_warning(distinct_data(quiz))
+
+    # First block is discarded, so no error
+    expect_identical(suppressWarnings(distinct_data(quiz)), TRUE)
+})
 
 test_that("replace_answers is correctly working", {
     answers <- list(quote(a), quote(b), "blah", 42)

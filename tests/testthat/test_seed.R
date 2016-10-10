@@ -1,4 +1,4 @@
-context("Test setting the seed ")
+context("Setting the seed ")
 
 test_that("get_recursive_language is idempotent", {
     quiz <- Quiz("quiz1",
