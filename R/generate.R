@@ -53,7 +53,7 @@ toXML.Quiz <- function(obj, ...)
 {
     gs <- lapply(obj$groups, function(g) { toXML(g, obj) })
     gs <- do.call(paste, c(gs, sep="\n"))
-    output <- sprintf(quiz.xml, addSpacesLeft(gs, 2))
+    output <- sprintf(quiz.xml, add_spaces_left(gs, 2))
     return(output)
 }
 
