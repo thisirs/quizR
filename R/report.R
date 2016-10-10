@@ -19,7 +19,14 @@ generate_correction <- function(quiz, output, lang) {
 
     for (g in quiz$groups) {
         if(g$type == "identifier") next
-        soutput <- c(soutput, paste0("\n## ", g$title, "\n\n"))
+        if(g$type == "random")
+            soutput <- c(soutput,
+                         sprintf("\n## %s (aléatoire %d parmi %d)\n\n", g$title, g$num, length(g$questions)))
+        else if(g$type == "sequential")
+            soutput <- c(soutput, sprintf("\n## %s \n\n", g$title))
+        else
+            stop("Unhandled group type")
+
         qno <- 0
         for (q in g$questions) {
             if(q$type == "description") {
