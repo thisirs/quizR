@@ -7,11 +7,20 @@ add_spaces_left <- function(s, spaces) {
     gsub("(?m)^", indent, s, perl=T)
 }
 
-# Concatenate languages
 merge_languages <- function(...) {
     ls <- unlist(list(...))
     if(length(ls) == 1) return(ls[[1]])
-    if(is.null(ls)) quote({}) else do.call(call, c("{", ls), quote=TRUE)
+    if(is.null(ls))
+        quote({})
+    else {
+        langs <- sapply(ls, function(l) {
+            if(length(l) > 1 && l[[1]] == as.name("{"))
+                return(as.list(l)[-1])
+            else
+                return(list(l))
+        })
+        do.call(call, c("{", unlist(langs)), quote=TRUE)
+    }
 }
 
 fails <- function(language) {
