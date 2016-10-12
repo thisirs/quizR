@@ -440,12 +440,20 @@ distinct_language <- function (lang1, lang2) {
     all(sapply(intersect(ls(env1), ls(env2)), function(e) identical(get(e, envir=env1), get(e, envir=env2))))
 }
 
-distinct_data <- function(quiz) {
-    languages <- list(get_local_language(quiz))
+#' Check that data do not overlap
+#'
+#' @param quiz A quiz object
+#' @param lang Optional additionnal language object
+#'
+#' @return Return TRUE if data do not overlap
+distinct_data <- function(quiz, lang) {
+    if(missing(lang)) lang <- quote({})
+
+    languages <- list(merge_languages(lang, get_local_language(quiz)))
     for(g in quiz$groups) {
-        languages <- c(get_local_language(g), languages)
+        languages <- c(merge_languages(lang, get_local_language(g)), languages)
         for(q in g$questions) {
-            languages <- c(get_local_language(q), languages)
+            languages <- c(merge_languages(lang, get_local_language(q)), languages)
         }
     }
     errors <- sapply(languages, fails)
