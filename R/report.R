@@ -57,7 +57,10 @@ generate_correction <- function(quiz, output, lang) {
     tmpfile <- tempfile("quiz", fileext=".Rmd")
     write(soutput, tmpfile)
 
-    rmarkdown::render(input=tmpfile, output_dir=getwd(), output_file=output, "pdf_document")
+    rmarkdown::render(input=tmpfile,
+                      output_dir=dirname(output),
+                      output_file=basename(output),
+                      "pdf_document")
 }
 
 cloze_regex <- "\\{(\\d+):(SHORTANSWER|SA|MW|SHORTANSWER_C|SAC|MWC|NUMERICAL|NM|MULTICHOICE|MC|MULTICHOICE_V|MCV|MULTICHOICE_H|MCH):=[^\\}]*\\}"
