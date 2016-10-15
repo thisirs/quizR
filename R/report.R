@@ -221,6 +221,7 @@ header_feedback <- function(header, alt.answer) {
 }
 
 answerstr <- function(answer) {
+    if(is.null(answer)) return("")
     type <- typeof(answer)
     switch(type,
            closure={
