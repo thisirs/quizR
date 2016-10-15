@@ -51,7 +51,10 @@ toXML.default <- function(obj, ...)
 #' @export
 toXML.Quiz <- function(obj, ...)
 {
-    gs <- lapply(obj$groups, function(g) { toXML(g, obj) })
+    args <- list(...)
+    if(is.null(args$data)) stop("Missing data when calling toXML.Group")
+
+    gs <- lapply(obj$groups, function(g) { toXML(g, quiz=obj, data=args$data) })
     gs <- do.call(paste, c(gs, sep="\n"))
     output <- sprintf(quiz.xml, add_spaces_left(gs, 2))
     return(output)
@@ -60,24 +63,48 @@ toXML.Quiz <- function(obj, ...)
 #' @export
 toXML.Group <- function(obj, ...)
 {
-    quiz <- list(...)[[1]]
-    title <- paste(quiz$title, "/", obj$title, sep="")
-    qs <- do.call(paste, c(lapply(obj$questions, function(q) { toXML(q) }), sep="\n"))
+    args <- list(...)
+    if(is.null(args$quiz)) stop("Missing quiz when calling toXML.Group")
+    if(is.null(args$data)) stop("Missing data when calling toXML.Group")
+
+    title <- paste(args$quiz$title, "/", obj$title, sep="")
+    qs <- do.call(paste, c(lapply(obj$questions, function(q) { toXML(q, quiz=args$quiz, data=args$data) }), sep="\n"))
     return(paste(sprintf(group.xml, title), qs, sep="\n"))
 }
 
 #' @export
-toXML.Question <- function(obj, ...)
-{
+toXML.Question <- function(obj, ...) {
+    args <- list(...)
+    if(is.null(args$quiz)) stop("Missing quiz when calling toXML.Group")
+    if(is.null(args$data)) stop("Missing data when calling toXML.Group")
+
+    ## Add chunk containing data of quiz
+    md_data <- sprintf("```{r include=FALSE}\n%s\n```\n\n", paste(deparse(args$data), collapse="\n"))
+    md_hdata <- sprintf("```{r include=FALSE}\n%s\n```\n\n", paste(deparse(obj$get_hdata()), collapse="\n"))
     title <- "-"
-    body <- paste0("<!-- Q(", obj$id, ") -->", renderHTML(obj$text, obj$get_hdata()))
-    if(is.function(obj$feedback)) {
-        feedback <- obj$feedback(NULL, obj, NULL, numbered=FALSE, eval=FALSE, question.body=FALSE)
-    } else {
-        feedback <- obj$feedback
-    }
-    rdr_feedback <- renderHTML(feedback, obj$get_hdata())
-    return(sprintf(question.xml, obj$type, title, "html", body, rdr_feedback))
+
+    md_question <- paste0(md_data, md_hdata, obj$text)
+    HTML_question <- paste0("<!-- Q(", obj$id, ") -->", renderHTML(md_question))
+
+    if(obj$type == "description") {
+        return(sprintf(question.xml, obj$type, title, "html", HTML_question, ""))
+    } else if(is.character(obj$feedback)) {
+        t_answers <- if(is.list(obj$answer)) obj$answer else list(obj$answer)
+        r_answers <- replace_answers(t_answers, obj$get_hdata())
+
+        if(obj$type == "cloze")
+            md_answer <- sprintf("```{r include=FALSE}\nanswer <- {%s}\n```\n\n", answerstr(r_answers))
+        else
+            md_answer <- sprintf("```{r include=FALSE}\nanswer <- {%s}\n```\n\n", answerstr(r_answers[[1]]))
+
+        md_feedback <- paste0(md_data, md_hdata, md_answer, obj$feedback)
+        HTML_feedback <- renderHTML(md_feedback)
+        return(sprintf(question.xml, obj$type, title, "html", HTML_question, HTML_feedback))
+    } else if(is.function(obj$feedback)) {
+        md_feedback <- paste0(md_data, obj$feedback(NULL, obj, NULL, numbered=FALSE, eval=FALSE, question.body=FALSE))
+        HTML_feedback <- renderHTML(md_feedback)
+        return(sprintf(question.xml, obj$type, title, "html", HTML_question, HTML_feedback))
+    } else stop("Unhandled feedback type")
 }
 
 #' Generate XML Moodle quiz file and data file
@@ -87,14 +114,25 @@ toXML.Question <- function(obj, ...)
 #' @param quiz.name Name of XML file
 #'
 #' @export
-generate_files <- function(quiz, data.name=paste0(quiz$title, "-data.R"), quiz.name=paste0(quiz$title, "-quiz.xml")) {
+generate_files <- function(quiz, data.name=paste0(quiz$title, "-data.R"),
+                           quiz.name=paste0(quiz$title, "-quiz.xml"),
+                           language) {
+    ## args <- list(...)
+    ## stopifnot(length(setdiff(names(args), c("language", "eval"))) == 0)
     stopifnot(uniqueIDs(quiz))
     stopifnot(distinct_data(quiz))
 
-    if(!is.null(quiz.name)) write(toXML(quiz), quiz.name)
-    if(!is.null(data.name)) {
-        l <- get_recursive_language(quiz)
-        if(!is.null(l))
-            write(deparse(l), data.name)
+    ## if(is.null(args$language)) language <- quote({})
+    if(missing(language)) language <- quote({})
+    data <- get_recursive_language(quiz)
+    data0 <- merge_languages(language, data)
+
+    # Write XML Moodle file
+    if(!is.null(quiz.name))
+        write(toXML(quiz, data=data0), quiz.name)
+
+    ## Write data file if any
+    if(!is.null(data.name) & length(data0) > 1) {
+        write(answerstr(data0), data.name)
     }
 }
