@@ -536,7 +536,7 @@ get_mapping <- function(qs.text, questions) {
 }
 
 compute_results_from_data <- function(quiz, data) {
-    validate_quiz(quiz, data)
+    validate_quiz(quiz)
 
     ## No factor, numeric or character vector
     i <- sapply(data, is.factor)
