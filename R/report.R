@@ -91,6 +91,8 @@ feedback_defaults <- list(numbered=TRUE, eval=TRUE, question.body=TRUE, alt.answ
 
 feedback_args <- c("numbered", "eval", "question.body", "alt.answer", "header")
 
+
+
 #' @export
 general_feedback <- function(...) {
     args <- list(...)
@@ -183,16 +185,17 @@ automatic_cloze_feedback <- function(qno, question, env, ...) {
 
             c(md_answer_blk,
               sprintf("%d. ", i),
-              md_answer,
+              if(args$eval) "La réponse est: $`r answer`$",
               "\n",
-              if(args$eval) "La réponse est: $`r answer`$\n")
+              md_answer,
+              "\n")
         })), collapse="")
 }
 
 automatic_normal_feedback <- function(qno, question, env, ...) {
     args <- list(...)
 
-    ## Blocks defining hidden data and answer
+    ## Blocks defining hidden data
     hdata <- answerstr(question$get_hdata())
     md_hdata_blk <- sprintf("```{r include=FALSE}\n%s\n```\n", hdata)
 
@@ -227,13 +230,14 @@ automatic_normal_feedback <- function(qno, question, env, ...) {
     ## Concatenating for final markdown
     paste0(c(
         md_hdata_blk,
+        md_answer_blk,
         if(args$numbered) sprintf("**Question %d.** ", qno),
         if(args$question.body) trimws(question$text),
-        "\n\n**Réponse:**\n",
-        md_answer_blk,
+        "\n\n**Réponse:** ",
+        if(args$eval) "$`r answer`$\n",
         md_answer,
-        "\n",
-        if(args$eval) "La réponse est: $`r answer`$"), collapse="")
+        "\n"),
+        collapse="")
 }
 
 ## eval_noeval <- function(feedback_eval, feedback_noeval) {
