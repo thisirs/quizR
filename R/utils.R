@@ -19,7 +19,7 @@ merge_languages <- function(...) {
             else
                 return(list(l))
         })
-        do.call(call, c("{", unlist(langs)), quote=TRUE)
+        do.call(call, c(list("{"), unlist(langs)), quote=TRUE)
     }
 }
 
