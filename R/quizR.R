@@ -571,13 +571,13 @@ compute_results_from_data <- function(quiz, data) {
             assign('identifiant', identifier, env)
         }
         eval(get_recursive_language(quiz0), env)
-        res <- correctRecord(quiz0, record, env, isWithQuestionBody)
+        res <- correct_record(quiz0, record, env, isWithQuestionBody)
         allResults[[length(allResults) + 1]] <- res
     }
     return(allResults)
 }
 
-correctRecord <- function(quiz0, record, env, isWithQuestionBody) {
+correct_record <- function(quiz0, record, env, isWithQuestionBody) {
     resultQuiz <- list(grade=0)
     for(g in quiz0$groups) {
         numq <- get_num(g)
