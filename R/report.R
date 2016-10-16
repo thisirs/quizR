@@ -1,5 +1,5 @@
 #' @export
-generate_correction <- function(quiz, output, lang) {
+generate_correction <- function(quiz, output, lang, eval=TRUE) {
     validate_quiz(quiz)
 
     if(missing(output)) output <- paste0(quiz$title, ".pdf")
@@ -34,7 +34,7 @@ generate_correction <- function(quiz, output, lang) {
             } else {
                 qno <- qno + 1
                 if(is.function(q$feedback)) {
-                    body <- q$feedback(qno, q, env)
+                    body <- q$feedback(qno, q, env, eval=eval)
                 } else if(is.character(q$feedback)) {
                     t_answers <- if(is.list(q$answer)) q$answer else list(q$answer)
                     r_answers <- replace_answers(t_answers, q$get_hdata())
