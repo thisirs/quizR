@@ -33,7 +33,7 @@ renderHTML <- function(text, data) {
     write(data_chunk, tmpfile)
     write(text, tmpfile, append=T)
     output <- rmarkdown::render(tmpfile, rmarkdown::html_fragment())
-    toString(output)
+    to_string(output)
 }
 
 

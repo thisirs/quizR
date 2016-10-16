@@ -39,6 +39,6 @@ expr <- function(...) {
     if(length(l) == 1) l[[1]] else l
 }
 
-toString <- function(filename) {
+to_string <- function(filename) {
     paste(readLines(filename), collapse="\n")
 }
