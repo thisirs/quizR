@@ -62,6 +62,20 @@ validate_quiz <- function(quiz) {
 
     ## Check that IDs are unique
     stopifnot(uniqueIDs(quiz))
+
+    ## Check that seed is present if hidden data present
+    if(is.null(quiz$seed)) {
+        if(paste0(deparse(quiz$hidden.data), collapse="") != "{}")
+            stop("Seed should be specified when using hidden data")
+        for(g in quiz$groups) {
+            if(paste0(deparse(g$hidden.data), collapse="") != "{}")
+                stop("Seed should be specified when using hidden data")
+            for(q in g$questions) {
+                if(paste0(deparse(q$hidden.data), collapse="") != "{}")
+                    stop("Seed should be specified when using hidden data")
+            }
+        }
+    }
 }
 
 

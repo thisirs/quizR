@@ -93,3 +93,35 @@ test_that("eval_answers is properly evaluating", {
     env$a <- 2
     expect_identical(eval_answers(list(function() a), env), list(2))
 })
+
+test_that("validate_quiz is working", {
+    quiz <- Quiz("Quiz1")
+    expect_error(validate_quiz(quiz))
+
+    quiz <- Quiz("Quiz1",
+                 groups=list(Group("G1",
+                              type="sequential")))
+    expect_error(validate_quiz(quiz))
+
+    quiz <- Quiz("Quiz1",
+                 hidden.data=quote({a}),
+                 groups=list(Group("G1",
+                                   type="sequential",
+                                   questions=list(Question("Q1")))))
+    expect_error(validate_quiz(quiz))
+
+    quiz <- Quiz("Quiz1",
+                 groups=list(Group("G1",
+                                   hidden.data=quote({a}),
+                                   type="sequential",
+                                   questions=list(Question("Q1")))))
+    expect_error(validate_quiz(quiz))
+
+    quiz <- Quiz("Quiz1",
+                 groups=list(Group("G1",
+                                   type="sequential",
+                                   questions=list(Question("Q1",
+                                                           hidden.data=quote({a}))))))
+    expect_error(validate_quiz(quiz))
+
+})
