@@ -308,3 +308,68 @@ generateRandomRecord <- function(quiz, N, with.question=T, right.answers) {
     }
     return(data)
 }
+
+
+test_that("compute_results_from_data works with random data", {
+    quiz <- Quiz("quiz1",
+                 data=quote({
+                     set.seed(1234)
+                     a <- runif(1)
+                 }),
+                 groups=list(
+                     Group("G1",
+                           type="sequential",
+                           data=quote({b <- runif(1)}),
+                           questions=list(
+                               Question("Q1",
+                                        type="shortanswer",
+                                        data=quote({c <- runif(1)}),
+                                        answer=quote({a + b + c}))))))
+
+    tmpfile <- tempfile("data", fileext=".R")
+    generate_files(quiz, quiz.name=NULL, data.name=tmpfile)
+
+    answer <- local({
+        source(tmpfile, local=TRUE)
+        a + b + c
+    })
+    r <- getRecord("Q1", answer)
+    data <- as.data.frame(r)
+
+    results <- compute_results_from_data(quiz, data)
+    expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 1)
+})
+
+test_that("compute_results_from_data works with random data and hidden data", {
+    quiz <- Quiz("quiz1",
+                 seed=1,
+                 hidden.data=quote({
+                     a <- runif(1)
+                 }),
+                 data=quote({
+                     b <- a
+                 }),
+                 groups=list(
+                     Group("G1",
+                           type="sequential",
+                           questions=list(
+                               Question("Q1",
+                                        type="shortanswer",
+                                        answer=quote({b}))))))
+
+    unrandomize_data(quiz)
+
+    tmpfile <- tempfile("data", fileext=".R")
+    generate_files(quiz, quiz.name=NULL, data.name=tmpfile)
+
+    # What students do
+    answer <- local({
+        source(tmpfile, local=TRUE)
+        b
+    })
+    r <- getRecord("Q1", answer)
+    data <- as.data.frame(r)
+
+    results <- compute_results_from_data(quiz, data)
+    expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 1)
+})
