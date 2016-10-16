@@ -117,13 +117,9 @@ toXML.Question <- function(obj, ...) {
 generate_files <- function(quiz, data.name=paste0(quiz$title, "-data.R"),
                            quiz.name=paste0(quiz$title, "-quiz.xml"),
                            language) {
-    ## args <- list(...)
-    ## stopifnot(length(setdiff(names(args), c("language", "eval"))) == 0)
-    stopifnot(uniqueIDs(quiz))
-    stopifnot(distinct_data(quiz))
-
-    ## if(is.null(args$language)) language <- quote({})
     if(missing(language)) language <- quote({})
+    validate_quiz(quiz, language)
+
     data <- get_recursive_language(quiz)
     data0 <- merge_languages(language, data)
 
