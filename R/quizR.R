@@ -561,7 +561,7 @@ compute_results_from_data <- function(quiz, data) {
     allResults <- list()
     for(i in 1:nrow(data)) {
         record <- as.list(data[i, 11:ncol(data)])
-        env <- new.env(parent=baseenv())
+        env <- cleanenv()
         if(identEnabled) {
             if(isWithQuestionBody) {
                 identifier <- record[[2]]
