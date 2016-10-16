@@ -79,9 +79,7 @@ validate_quiz <- function(quiz, lang) {
 
     ## Data is distinct
     stopifnot(distinct_data(quiz, lang))
-
 }
-
 
 #' Compute grades for given quiz and results
 #'
@@ -188,7 +186,6 @@ get_cloze_num <- function(text) {
 }
 
 questionTypes <- c("shortanswer", "description", "cloze")
-
 
 #' Create a question object
 #'
@@ -298,7 +295,6 @@ cloze_coefficients <- function(question) {
     coeffs <- as.numeric(stringi::stri_match_all_regex(question$text, cloze_regex)[[1]][,2])
     coeffs / sum(coeffs)
 }
-
 
 correct_question <- function(question, env, guess) {
     if(question$type == "cloze") {
@@ -580,7 +576,6 @@ compute_results_from_data <- function(quiz, data) {
     }
     return(allResults)
 }
-
 
 correctRecord <- function(quiz0, record, env, isWithQuestionBody) {
     resultQuiz <- list(grade=0)
