@@ -5,7 +5,7 @@
 \title{Generate XML Moodle quiz file and data file}
 \usage{
 generate_files(quiz, data.name = paste0(quiz$title, "-data.R"),
-  quiz.name = paste0(quiz$title, "-quiz.xml"))
+  quiz.name = paste0(quiz$title, "-quiz.xml"), language)
 }
 \arguments{
 \item{quiz}{Quiz}

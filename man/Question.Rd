@@ -5,8 +5,8 @@
 \title{Create a question object}
 \usage{
 Question(text, type = NULL, answer = NULL, hidden.data = quote({ }),
-  data = quote({ }), feedback = answer_feedback, points = 1, dist = 2,
-  epsilon = 1e-04)
+  data = quote({ }), feedback = automatic_feedback, points = 1,
+  dist = 2, epsilon = 1e-04)
 }
 \arguments{
 \item{text}{Body of question}
