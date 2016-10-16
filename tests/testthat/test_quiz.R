@@ -59,15 +59,14 @@ test_that("distinct_data see data that conflicts", {
                  groups=list(
                      Group("G1",
                            type="sequential",
-                           data=quote({a <- 2}),
                            questions=list(
                                Question("Q1", type="shortanswer", answer=quote(a))))))
 
     ## blah is undefined
-    expect_warning(distinct_data(quiz))
+    expect_error(distinct_data(quiz))
 
-    # First block is discarded, so no error
-    expect_identical(suppressWarnings(distinct_data(quiz)), TRUE)
+    # Add blah, so no error
+    expect_identical(distinct_data(quiz, quote({blah <- 1})), TRUE)
 })
 
 test_that("replace_answers is correctly working", {

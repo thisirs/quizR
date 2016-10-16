@@ -39,7 +39,7 @@ Quiz <- function(title, groups, data, hidden.data, seed=NULL) {
 #' @param quiz A quiz object
 #'
 #' @return Return TRUE if quiz is a valid one
-validate_quiz <- function(quiz) {
+validate_quiz <- function(quiz, lang) {
     stopifnot(length(quiz$groups) > 0)
 
     # Only one question in identifier group if any
@@ -76,6 +76,10 @@ validate_quiz <- function(quiz) {
             }
         }
     }
+
+    ## Data is distinct
+    stopifnot(distinct_data(quiz, lang))
+
 }
 
 
@@ -471,7 +475,7 @@ distinct_data <- function(quiz, lang) {
         }
     }
     errors <- sapply(languages, fails)
-    if(any(errors)) warning("Some errors in data code chunks")
+    if(any(errors)) stop("Some errors in data code chunks")
     languages <- languages[!errors]
     length(languages) < 2 || all(utils::combn(languages, 2, function(args) do.call(distinct_language, args, quote=TRUE)))
 }
@@ -533,8 +537,7 @@ get_mapping <- function(qs.text, questions) {
 }
 
 compute_results_from_data <- function(quiz, data) {
-    validate_quiz(quiz)
-    stopifnot(distinct_data(quiz))
+    validate_quiz(quiz, data)
 
     ## No factor, numeric or character vector
     i <- sapply(data, is.factor)
