@@ -476,7 +476,6 @@ distinct_data <- function(quiz, lang) {
     }
     errors <- sapply(languages, fails)
     if(any(errors)) stop("Some errors in data code chunks")
-    languages <- languages[!errors]
     length(languages) < 2 || all(utils::combn(languages, 2, function(args) do.call(distinct_language, args, quote=TRUE)))
 }
 
