@@ -117,7 +117,7 @@ toXML.Question <- function(obj, ...) {
 generate_files <- function(quiz, data.name=paste0(quiz$title, "-data.R"),
                            quiz.name=paste0(quiz$title, "-quiz.xml"),
                            language) {
-    if(missing(language)) language <- quote({})
+    if(missing(language)) language <- NULL
     validate_quiz(quiz, language)
 
     data <- get_recursive_language(quiz)
