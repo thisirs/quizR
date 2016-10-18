@@ -36,7 +36,6 @@ renderHTML <- function(text, data) {
     to_string(output)
 }
 
-
 toXML <- function(obj, ...)
 {
     UseMethod("toXML")

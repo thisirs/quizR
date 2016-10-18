@@ -91,8 +91,6 @@ feedback_defaults <- list(numbered=TRUE, eval=TRUE, question.body=TRUE, alt.answ
 
 feedback_args <- c("numbered", "eval", "question.body", "alt.answer", "header")
 
-
-
 #' @export
 general_feedback <- function(...) {
     args <- list(...)
@@ -138,7 +136,6 @@ automatic_feedback <- function(qno, question, env, ...) {
         do.call(automatic_normal_feedback, c(list(qno, question, env), args), quote=TRUE)
     }
 }
-
 
 automatic_cloze_feedback <- function(qno, question, env, ...) {
     args <- list(...)

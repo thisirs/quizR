@@ -27,7 +27,6 @@ split_cloze_guesses <- function(num, s_answers) {
     sub(";$", "", answers0)
 }
 
-
 correct_question_cloze <- function(question, env, guess) {
     stopifnot(is.list(question$answer))
     num <- get_cloze_num(question$text)
