@@ -4,7 +4,7 @@
 \alias{validate_quiz}
 \title{Validate a quiz object}
 \usage{
-validate_quiz(quiz)
+validate_quiz(quiz, lang)
 }
 \arguments{
 \item{quiz}{A quiz object}
