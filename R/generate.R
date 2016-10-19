@@ -113,6 +113,7 @@ toXML.Question <- function(obj, ...) {
 #' @param quiz Quiz
 #' @param data.name Name of data file
 #' @param quiz.name Name of XML file
+#' @param language Additionnal language for validation
 #'
 #' @export
 generate_files <- function(quiz,
