@@ -56,10 +56,6 @@ validate_quiz <- function(quiz, lang) {
     ## No other identifier group
     stopifnot(!"identifier" %in% lapply(groups, function(g) {g$type}))
 
-    ## No group with no question
-    for(g in groups)
-        stopifnot(length(g$questions) > 0)
-
     ## Check that IDs are unique
     stopifnot(uniqueIDs(quiz))
 
@@ -79,6 +75,8 @@ validate_quiz <- function(quiz, lang) {
 
     ## Data is distinct
     stopifnot(distinct_data(quiz, lang))
+
+    lapply(quiz$groups, validate_group)
 }
 
 #' Compute grades for given quiz and results
@@ -156,6 +154,13 @@ Group <- function(title, type, num, data, hidden.data, questions) {
     return(me)
 }
 
+validate_group <- function(group) {
+    if(length(group$questions) == 0) {
+        stop(sprintf("Group %s is empty", sQuote(group$title)))
+    }
+    lapply(group$questions, validate_question)
+}
+
 #' Add question to group
 #'
 #' @param group Group object
@@ -221,6 +226,14 @@ Question <- function(text, type=NULL, answer=NULL, hidden.data=quote({}), data=q
 
     class(me) <- append(class(me), "Question")
     return(me)
+}
+
+validate_question <- function(question) {
+    if(question$type == "cloze") {
+        if(get_cloze_num(question$text) != length(question$answer)) {
+            stop("Number of answers and number of detected cloze fields are not the same")
+        }
+    }
 }
 
 #' Replace data in list of answers
