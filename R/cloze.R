@@ -2,6 +2,7 @@
 #'
 #' @param text Some character string
 get_cloze_num <- function(text) {
+    stopifnot(is.character(text))
     stringi::stri_count_regex(text, cloze_regex)
 }
 
