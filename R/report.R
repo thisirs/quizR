@@ -5,7 +5,9 @@ generate_correction <- function(quiz, output, lang, eval=TRUE) {
     if(missing(output)) output <- paste0(quiz$title, ".pdf")
     if(missing(lang)) lang <- quote({})
 
-    soutput <- paste0("# ", quiz$title, "\n\n")
+    soutput <- sprintf("---
+title: \"%s\"
+---\n\n", quiz$title)
 
     data <- get_recursive_language(quiz)
     data0 <- merge_languages(lang, data)
