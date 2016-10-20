@@ -10,8 +10,7 @@ generate_correction <- function(quiz, output, lang, eval=TRUE) {
     data <- get_recursive_language(quiz)
     data0 <- merge_languages(lang, data)
 
-    ## env <- cleanenv()
-    env <- new.env(parent=.GlobalEnv)
+    env <- cleanenv()
     eval(data0, env)
     data_chunk <- sprintf("```{r include=FALSE}\n%s\n```\n\n", paste(deparse(data0), collapse="\n"))
 

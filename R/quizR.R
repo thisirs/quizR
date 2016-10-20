@@ -228,7 +228,7 @@ Question <- function(text, type=NULL, answer=NULL, hidden.data=quote({}), data=q
 #' @param answers List of answers
 #' @param data Data to replace
 replace_answers <- function(answers, data) {
-    env <- new.env(parent=.GlobalEnv)
+    env <- cleanenv()
     eval(data, env)
     lapply(answers, function(e) {
         call <- substitute(substitute(e, env), list(e = e))
@@ -311,7 +311,7 @@ expression_to_lang <- function(expr) {
 
 unrandomize <- function(lang) {
     if(is.null(lang) | length(lang) == 1) return(quote({}))
-    env <- new.env(parent=.GlobalEnv)
+    env <- cleanenv()
     eval(lang, env)
     tmpfile <- tempfile("data", fileext=".R")
 
@@ -350,7 +350,7 @@ unrandomize_data.Question <- function(obj) {
 }
 
 get_local_language <- function(obj) {
-    hidden.data.env <- new.env(parent=.GlobalEnv)
+    hidden.data.env <- cleanenv()
     eval(obj$get_hdata(), hidden.data.env)
     l <- pryr::substitute_q(obj$data, as.list(hidden.data.env))
     if(length(l) == 1)
