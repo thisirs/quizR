@@ -37,6 +37,7 @@ Quiz <- function(title, groups, data, hidden.data, seed=NULL) {
 #' Validate a quiz object
 #'
 #' @param quiz A quiz object
+#' @param lang Additionnal language object
 #'
 #' @return Return TRUE if quiz is a valid one
 validate_quiz <- function(quiz, lang) {
@@ -121,9 +122,9 @@ add_group <- function(quiz, group) {
 #' @param title Title of group
 #' @param type Type of group
 #' @param num Number of questions of group if of random type
-#' @param questions List of questions
 #' @param data Language object defining the data
 #' @param hidden.data Language object defining the hidden data
+#' @param questions List of questions
 #' @export
 Group <- function(title, type, num, data, hidden.data, questions) {
     if(missing(hidden.data)) hidden.data <- quote({}) else stopifnot(is.language(hidden.data))
@@ -190,8 +191,8 @@ questionTypes <- c("shortanswer", "description", "cloze")
 #' @param text Body of question
 #' @param type Type of question
 #' @param answer Answer of question
-#' @param data Language object defining the data
 #' @param hidden.data Language object defining the hidden data
+#' @param data Language object defining the data
 #' @param feedback Feedback of question
 #' @param points Number of points of question
 #' @param dist Tolerance of answer for character string answer
@@ -293,6 +294,11 @@ match_answers <- function(eval_answers, guess, dist, epsilon) {
     })
 }
 
+#' Correct question
+#'
+#' @param question A question
+#' @param env The environment in which to evaluate answers
+#' @param guess A guess
 correct_question <- function(question, env, guess) {
     if(question$type == "cloze") {
         correct_question_cloze(question, env, guess)
