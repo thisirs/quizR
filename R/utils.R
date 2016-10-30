@@ -24,7 +24,6 @@ merge_languages <- function(...) {
 }
 
 fails <- function(language) {
-    result <- NULL
     tryCatch({eval(language, cleanenv()); FALSE},
              error=function(e) TRUE)
 }
