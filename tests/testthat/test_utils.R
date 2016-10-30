@@ -7,7 +7,7 @@ test_that("fails is working", {
 
 test_that("merge_languages is working", {
     expect_deparse <- function(a, b) {
-        expect_identical(paste0(deparse(a), collapse="\n"), b)
+        expect_identical(paste0(deparse(a), collapse = "\n"), b)
     }
     expect_deparse(merge_languages(), "{\n}")
     expect_deparse(merge_languages(NULL), "{\n}")
@@ -21,4 +21,3 @@ test_that("merge_languages is working", {
 
 
 })
-

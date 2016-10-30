@@ -3,8 +3,8 @@ hexa_hash <- function(s) {
 }
 
 add_spaces_left <- function(s, spaces) {
-    indent <- paste(rep(" ", spaces), collapse="")
-    gsub("(?m)^", indent, s, perl=T)
+    indent <- paste(rep(" ", spaces), collapse = "")
+    gsub("(?m)^", indent, s, perl = T)
 }
 
 merge_languages <- function(...) {
@@ -19,25 +19,25 @@ merge_languages <- function(...) {
             else
                 return(list(l))
         })
-        do.call(call, c(list("{"), unlist(langs)), quote=TRUE)
+        do.call(call, c(list("{"), unlist(langs)), quote = TRUE)
     }
 }
 
 fails <- function(language) {
     tryCatch({eval(language, cleanenv()); FALSE},
-             error=function(e) TRUE)
+             error = function(e) TRUE)
 }
 
 cleanenv <- function() {
-    new.env(parent=parent.env(.GlobalEnv))
+    new.env(parent = parent.env(.GlobalEnv))
 }
 
 #' @export
 expr <- function(...) {
-    l <- as.list(match.call(expand.dots=TRUE)[-1])
+    l <- as.list(match.call(expand.dots = TRUE)[-1])
     if(length(l) == 1) l[[1]] else l
 }
 
 to_string <- function(filename) {
-    paste(readLines(filename), collapse="\n")
+    paste(readLines(filename), collapse = "\n")
 }

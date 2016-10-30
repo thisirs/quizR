@@ -1,11 +1,11 @@
-getRandString <- function(len=12)
-    return(paste0(sample(c(0:9, letters[1:6]), len, replace=TRUE), collapse=""))
+getRandString <- function(len = 12)
+    return(paste0(sample(c(0:9, letters[1:6]), len, replace = TRUE), collapse = ""))
 
 getBullshit <- function() {
     list(NA, "3.14", "fuck R", 42)[[sample.int(4, 1)]]
 }
 
-getRightAnswers <- function(quiz, identifier=NULL) {
+getRightAnswers <- function(quiz, identifier = NULL) {
 
 }
 
@@ -18,11 +18,11 @@ context("Computing results")
 
 test_that("body and result of quiz", {
     quiz <- Quiz("quiz1",
-                 groups=list(
+                 groups = list(
                      Group("G1",
-                           type="sequential",
-                           questions=list(
-                               Question("Q1", type="shortanswer", answer=42)))))
+                           type = "sequential",
+                           questions = list(
+                               Question("Q1", type = "shortanswer", answer = 42)))))
 
     r <- getRecord("Q_1", 42)
     data <- as.data.frame(r)
@@ -56,12 +56,12 @@ test_that("body and result of quiz", {
 
 test_that("Checking Results, no identifier, 2 questions", {
     quiz <- Quiz("quiz1",
-                 groups=list(
+                 groups = list(
                      Group("G1",
-                           type="sequential",
-                           questions=list(
-                               Question("Q1", type="shortanswer", answer="blah"),
-                               Question("Q2", type="shortanswer", answer=42)))))
+                           type = "sequential",
+                           questions = list(
+                               Question("Q1", type = "shortanswer", answer = "blah"),
+                               Question("Q2", type = "shortanswer", answer = 42)))))
 
     r <- getRecord("Q_1", "blah", "Q_2", 42)
     data <- as.data.frame(r)
@@ -87,15 +87,15 @@ test_that("Checking Results, no identifier, 2 questions", {
 test_that("Checking Results, with identifier", {
 
     quiz <- Quiz("quiz1",
-                 groups=list(
-                     Group("G0", type="identifier",
-                           questions=list(
-                               Question("Q0", type="shortanswer")
+                 groups = list(
+                     Group("G0", type = "identifier",
+                           questions = list(
+                               Question("Q0", type = "shortanswer")
                            )),
                      Group("G1",
-                           type="sequential",
-                           questions=list(
-                               Question("Q1", type="shortanswer", answer=42)))))
+                           type = "sequential",
+                           questions = list(
+                               Question("Q1", type = "shortanswer", answer = 42)))))
 
     r <- getRecord("Q_0", "ident", "Q_1", 42)
     data <- as.data.frame(r)
@@ -130,16 +130,16 @@ test_that("Checking Results, with identifier", {
 
 test_that("Checking Results, with identifier, 2 questions", {
     quiz <- Quiz("quiz1",
-                 groups=list(
-                     Group("G0", type="identifier",
-                           questions=list(
-                               Question("Q0", type="shortanswer")
+                 groups = list(
+                     Group("G0", type = "identifier",
+                           questions = list(
+                               Question("Q0", type = "shortanswer")
                            )),
                      Group("G1",
-                           type="sequential",
-                           questions=list(
-                               Question("Q1", type="shortanswer", answer="blah"),
-                               Question("Q2", type="shortanswer", answer=42)))))
+                           type = "sequential",
+                           questions = list(
+                               Question("Q1", type = "shortanswer", answer = "blah"),
+                               Question("Q2", type = "shortanswer", answer = 42)))))
 
     r <- getRecord("Q_0", "ident", "Q_1", "blah", "Q_2", 42)
     data <- as.data.frame(r)
@@ -164,11 +164,11 @@ test_that("Checking Results, with identifier, 2 questions", {
 
 test_that("Multiple answers", {
     quiz <- Quiz("quiz1",
-                 groups=list(
+                 groups = list(
                      Group("G1",
-                           type="sequential",
-                           questions=list(
-                               Question("Q1", type="shortanswer", answer=list(42, 43))))))
+                           type = "sequential",
+                           questions = list(
+                               Question("Q1", type = "shortanswer", answer = list(42, 43))))))
 
     r <- getRecord("Q_1", 42)
     data <- as.data.frame(r)
@@ -191,12 +191,12 @@ test_that("Multiple answers", {
 
 test_that("Expression in answers", {
     quiz <- Quiz("quiz1",
-                 groups=list(
+                 groups = list(
                      Group("G1",
-                           type="sequential",
-                           questions=list(
-                               Question("Q1", type="shortanswer", answer=quote({42})),
-                               Question("Q2", type="shortanswer", answer=quote({20+22}))))))
+                           type = "sequential",
+                           questions = list(
+                               Question("Q1", type = "shortanswer", answer = quote({42})),
+                               Question("Q2", type = "shortanswer", answer = quote({20+22}))))))
 
     r <- getRecord(42, 42)
     data <- as.data.frame(r)
@@ -208,13 +208,13 @@ test_that("Expression in answers", {
 
 test_that("Expression in answers + context", {
     quiz <- Quiz("quiz1",
-                 data=quote({a <- 1; b <- 2}),
-                 groups=list(
+                 data = quote({a <- 1; b <- 2}),
+                 groups = list(
                      Group("G1",
-                           type="sequential",
-                           questions=list(
-                               Question("Q1", type="shortanswer", answer=quote(a)),
-                               Question("Q2", type="shortanswer", answer=quote(b))))))
+                           type = "sequential",
+                           questions = list(
+                               Question("Q1", type = "shortanswer", answer = quote(a)),
+                               Question("Q2", type = "shortanswer", answer = quote(b))))))
 
     r <- getRecord(1, 2)
     data <- as.data.frame(r)
@@ -225,13 +225,13 @@ test_that("Expression in answers + context", {
 
 
     quiz <- Quiz("quiz1",
-                 groups=list(
+                 groups = list(
                      Group("G1",
-                           data=quote({a <- 1; b <- 2}),
-                           type="sequential",
-                           questions=list(
-                               Question("Q1", type="shortanswer", answer=quote(a)),
-                               Question("Q2", type="shortanswer", answer=quote(b))))))
+                           data = quote({a <- 1; b <- 2}),
+                           type = "sequential",
+                           questions = list(
+                               Question("Q1", type = "shortanswer", answer = quote(a)),
+                               Question("Q2", type = "shortanswer", answer = quote(b))))))
 
     r <- getRecord(1, 2)
     data <- as.data.frame(r)
@@ -242,16 +242,16 @@ test_that("Expression in answers + context", {
 
 
     quiz <- Quiz("quiz1",
-                 groups=list(
+                 groups = list(
                      Group("G1",
-                           type="sequential",
-                           questions=list(
+                           type = "sequential",
+                           questions = list(
                                Question("Q1",
-                                        data=quote({a <- 1}),
-                                        type="shortanswer", answer=quote(a)),
+                                        data = quote({a <- 1}),
+                                        type = "shortanswer", answer = quote(a)),
                                Question("Q2",
-                                        data=quote({b <- 2}),
-                                        type="shortanswer", answer=quote(b))))))
+                                        data = quote({b <- 2}),
+                                        type = "shortanswer", answer = quote(b))))))
 
     r <- getRecord(1, 2)
     data <- as.data.frame(r)
@@ -263,9 +263,9 @@ test_that("Expression in answers + context", {
 
 
 ## Generate a data.frame of 100 records
-generateRandomRecord <- function(quiz, N, with.question=T, right.answers) {
+generateRandomRecord <- function(quiz, N, with.question = T, right.answers) {
     numQuestions <- get_num(quiz)
-    data <- data.frame(matrix(NA, N, 2*numQuestions + 10), stringsAsFactors=FALSE)
+    data <- data.frame(matrix(NA, N, 2*numQuestions + 10), stringsAsFactors = FALSE)
 
     for(i in 1:N) {
         # Random name and family name
@@ -275,12 +275,12 @@ generateRandomRecord <- function(quiz, N, with.question=T, right.answers) {
         qno <- 0
         for(group in quiz$groups) {
             switch(group$type,
-                   identifier={
+                   identifier = {
                        identifier <- getRandString()
                        record <- list("Ident", identifier)
                    },
-                   description=next,
-                   default={
+                   description = next,
+                   default = {
                        ## Get questions asked
                        qs <- if(group$type == "random") {
                                  group$questions[sample(1:length(group$questions), group$num)]
@@ -300,7 +300,7 @@ generateRandomRecord <- function(quiz, N, with.question=T, right.answers) {
                            } else
                                ans <- getBullshit()
 
-                           record <- c(record, paste('(Q', q$id, ') ', q$text, sep=""), ans)
+                           record <- c(record, paste('(Q', q$id, ') ', q$text, sep = ""), ans)
                        }
                    })
         }
@@ -312,25 +312,25 @@ generateRandomRecord <- function(quiz, N, with.question=T, right.answers) {
 
 test_that("compute_results_from_data works with random data", {
     quiz <- Quiz("quiz1",
-                 data=quote({
+                 data = quote({
                      set.seed(1234)
                      a <- runif(1)
                  }),
-                 groups=list(
+                 groups = list(
                      Group("G1",
-                           type="sequential",
-                           data=quote({b <- runif(1)}),
-                           questions=list(
+                           type = "sequential",
+                           data = quote({b <- runif(1)}),
+                           questions = list(
                                Question("Q1",
-                                        type="shortanswer",
-                                        data=quote({c <- runif(1)}),
-                                        answer=quote({a + b + c}))))))
+                                        type = "shortanswer",
+                                        data = quote({c <- runif(1)}),
+                                        answer = quote({a + b + c}))))))
 
-    tmpfile <- tempfile("data", fileext=".R")
-    generate_files(quiz, quiz.name=NULL, data.name=tmpfile)
+    tmpfile <- tempfile("data", fileext = ".R")
+    generate_files(quiz, quiz.name = NULL, data.name = tmpfile)
 
     answer <- local({
-        source(tmpfile, local=TRUE)
+        source(tmpfile, local = TRUE)
         a + b + c
     })
     r <- getRecord("Q1", answer)
@@ -342,29 +342,29 @@ test_that("compute_results_from_data works with random data", {
 
 test_that("compute_results_from_data works with random data and hidden data", {
     quiz <- Quiz("quiz1",
-                 seed=1,
-                 hidden.data=quote({
+                 seed = 1,
+                 hidden.data = quote({
                      a <- runif(1)
                  }),
-                 data=quote({
+                 data = quote({
                      b <- a
                  }),
-                 groups=list(
+                 groups = list(
                      Group("G1",
-                           type="sequential",
-                           questions=list(
+                           type = "sequential",
+                           questions = list(
                                Question("Q1",
-                                        type="shortanswer",
-                                        answer=quote({b}))))))
+                                        type = "shortanswer",
+                                        answer = quote({b}))))))
 
     unrandomize_data(quiz)
 
-    tmpfile <- tempfile("data", fileext=".R")
-    generate_files(quiz, quiz.name=NULL, data.name=tmpfile)
+    tmpfile <- tempfile("data", fileext = ".R")
+    generate_files(quiz, quiz.name = NULL, data.name = tmpfile)
 
     # What students do
     answer <- local({
-        source(tmpfile, local=TRUE)
+        source(tmpfile, local = TRUE)
         b
     })
     r <- getRecord("Q1", answer)

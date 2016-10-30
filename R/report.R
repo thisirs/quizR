@@ -1,5 +1,5 @@
 #' @export
-generate_correction <- function(quiz, output, lang, eval=TRUE) {
+generate_correction <- function(quiz, output, lang, eval = TRUE) {
     validate_quiz(quiz)
 
     if(missing(output)) output <- paste0(quiz$title, ".pdf")
@@ -14,7 +14,7 @@ title: \"%s\"
 
     env <- cleanenv()
     eval(data0, env)
-    data_chunk <- sprintf("```{r include=FALSE}\n%s\n```\n\n", paste(deparse(data0), collapse="\n"))
+    data_chunk <- sprintf("```{r include=FALSE}\n%s\n```\n\n", paste(deparse(data0), collapse = "\n"))
 
     soutput <- c(soutput, data_chunk)
 
@@ -35,13 +35,13 @@ title: \"%s\"
             } else {
                 qno <- qno + 1
                 if(is.function(q$feedback)) {
-                    body <- q$feedback(qno, q, env, eval=eval)
+                    body <- q$feedback(qno, q, env, eval = eval)
                 } else if(is.character(q$feedback)) {
                     t_answers <- if(is.list(q$answer)) q$answer else list(q$answer)
                     r_answers <- replace_answers(t_answers, q$get_hdata())
 
-                    hdata <- paste(deparse(q$get_hdata()), collapse="\n")
-                    answer <- paste(deparse(r_answers[[1]]), collapse="\n")
+                    hdata <- paste(deparse(q$get_hdata()), collapse = "\n")
+                    answer <- paste(deparse(r_answers[[1]]), collapse = "\n")
 
                     body <- sprintf("```{r include=FALSE}\n%s\n```\n\n", hdata)
                     body <- c(body, sprintf("**Question %d.** %s\n\n", qno, q$text))
@@ -54,13 +54,13 @@ title: \"%s\"
         }
     }
 
-    soutput <- paste(soutput, collapse="")
-    tmpfile <- tempfile("quiz", fileext=".Rmd")
+    soutput <- paste(soutput, collapse = "")
+    tmpfile <- tempfile("quiz", fileext = ".Rmd")
     write(soutput, tmpfile)
 
-    rmarkdown::render(input=tmpfile,
-                      output_dir=dirname(output),
-                      output_file=basename(output),
+    rmarkdown::render(input = tmpfile,
+                      output_dir = dirname(output),
+                      output_file = basename(output),
                       "pdf_document")
 }
 
@@ -88,7 +88,7 @@ merge.list <- function (x, y)
     x
 }
 
-feedback_defaults <- list(numbered=TRUE, eval=TRUE, question.body=TRUE, alt.answer=NULL, header=NULL)
+feedback_defaults <- list(numbered = TRUE, eval = TRUE, question.body = TRUE, alt.answer = NULL, header = NULL)
 
 feedback_args <- c("numbered", "eval", "question.body", "alt.answer", "header")
 
@@ -103,19 +103,19 @@ general_feedback <- function(...) {
         f.args <- merge.list(override_args, args)
 
         all_args <- c(list(qno, question, env), f.args)
-        do.call(automatic_feedback, all_args, quote=TRUE)
+        do.call(automatic_feedback, all_args, quote = TRUE)
     }
     return(general_feedback0)
 }
 
 #' @export
 header_feedback <- function(header, alt.answer) {
-    general_feedback(eval=TRUE, numbered=TRUE, question.body=TRUE, header=header, alt.answer=alt.answer)
+    general_feedback(eval = TRUE, numbered = TRUE, question.body = TRUE, header = header, alt.answer = alt.answer)
 }
 
 #' @export
 alt_feedback <- function(alt_answer) {
-    general_feedback(alt.answer=alt_answer)
+    general_feedback(alt.answer = alt_answer)
 }
 
 #' @export
@@ -132,9 +132,9 @@ automatic_feedback <- function(qno, question, env, ...) {
     if(is.null(env)) args$eval <- FALSE
 
     if(question$type == "cloze") {
-        do.call(automatic_cloze_feedback, c(list(qno, question, env), args), quote=TRUE)
+        do.call(automatic_cloze_feedback, c(list(qno, question, env), args), quote = TRUE)
     } else {
-        do.call(automatic_normal_feedback, c(list(qno, question, env), args), quote=TRUE)
+        do.call(automatic_normal_feedback, c(list(qno, question, env), args), quote = TRUE)
     }
 }
 
@@ -187,7 +187,7 @@ automatic_cloze_feedback <- function(qno, question, env, ...) {
               "\n",
               md_answer,
               "\n")
-        })), collapse="")
+        })), collapse = "")
 }
 
 automatic_normal_feedback <- function(qno, question, env, ...) {
@@ -235,7 +235,7 @@ automatic_normal_feedback <- function(qno, question, env, ...) {
         if(args$eval) "$`r answer`$\n",
         md_answer,
         "\n"),
-        collapse="")
+        collapse = "")
 }
 
 ## eval_noeval <- function(feedback_eval, feedback_noeval) {
@@ -256,20 +256,20 @@ answerstr <- function(answer) {
     if(is.null(answer)) return("")
     type <- typeof(answer)
     switch(type,
-           closure={
+           closure = {
                d <- deparse(body(answer))
                lines <- d[-c(1, length(d))]
                indent <- min(attr(regexpr("^ *", lines), "match.length"))
-               paste(substring(lines, indent + 1), collapse="\n")
+               paste(substring(lines, indent + 1), collapse = "\n")
            },
-           language={
+           language = {
                d <- deparse(answer)
                lines <- if (length(d) >=3) d[-c(1, length(d))] else d
                indent <- min(attr(regexpr("^ *", lines), "match.length"))
-               paste(substring(lines, indent + 1), collapse="\n")
+               paste(substring(lines, indent + 1), collapse = "\n")
            },
-           symbol={deparse(answer)},
-           double={deparse(answer)},
-           character={answer},
+           symbol = {deparse(answer)},
+           double = {deparse(answer)},
+           character = {answer},
            stop("Unhandled type in ", sQuote("answerstr"), ": ", type))
 }

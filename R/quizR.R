@@ -8,7 +8,7 @@
 #'
 #' @return A quiz object
 #' @export
-Quiz <- function(title, groups, data, hidden.data, seed=NULL) {
+Quiz <- function(title, groups, data, hidden.data, seed = NULL) {
     if(missing(title)) stop("Quiz needs a title")
     if(missing(groups)) groups <- list()
     if(missing(data)) data <- quote({})
@@ -21,13 +21,13 @@ Quiz <- function(title, groups, data, hidden.data, seed=NULL) {
     get_hdata <- function() .hdata
 
     me <- list(
-        title=title,
-        groups=groups,
-        data=data,
-        hidden.data=hidden.data,
-        seed=seed,
-        get_hdata=get_hdata,
-        set_hdata=set_hdata
+        title = title,
+        groups = groups,
+        data = data,
+        hidden.data = hidden.data,
+        seed = seed,
+        get_hdata = get_hdata,
+        set_hdata = set_hdata
     )
 
     class(me) <- append(class(me), "Quiz")
@@ -62,13 +62,13 @@ validate_quiz <- function(quiz, lang) {
 
     ## Check that seed is specified if hidden data somewhere
     if(is.null(quiz$seed)) {
-        if(paste0(deparse(quiz$hidden.data), collapse="") != "{}")
+        if(paste0(deparse(quiz$hidden.data), collapse = "") != "{}")
             stop("Seed should be specified when using hidden data")
         for(g in quiz$groups) {
-            if(paste0(deparse(g$hidden.data), collapse="") != "{}")
+            if(paste0(deparse(g$hidden.data), collapse = "") != "{}")
                 stop("Seed should be specified when using hidden data")
             for(q in g$questions) {
-                if(paste0(deparse(q$hidden.data), collapse="") != "{}")
+                if(paste0(deparse(q$hidden.data), collapse = "") != "{}")
                     stop("Seed should be specified when using hidden data")
             }
         }
@@ -85,12 +85,12 @@ validate_quiz <- function(quiz, lang) {
 #' @param quiz Quiz
 #' @param filename CSV file of results
 #' @export
-compute_grades <- function(quiz, filename=NULL) {
+compute_grades <- function(quiz, filename = NULL) {
     stopifnot(is.character(filename))
-    data <- utils::read.csv(filename, header=T, check.names=F, stringsAsFactors=F)
+    data <- utils::read.csv(filename, header = T, check.names = F, stringsAsFactors = F)
     results <- compute_results_from_data(quiz, data)
     grades <- sapply(results, function(e) { e$grade })
-    data.frame(Nom=data[,1], `Prénom`=data[,2], note=grades)
+    data.frame(Nom = data[,1], `Prénom` = data[,2], note = grades)
 }
 
 #' Compute full results of given quiz
@@ -98,11 +98,11 @@ compute_grades <- function(quiz, filename=NULL) {
 #' @param quiz Quiz
 #' @param filename CSV file of results
 #' @export
-compute_results <- function(quiz, filename=NULL) {
+compute_results <- function(quiz, filename = NULL) {
     stopifnot(is.character(filename))
 
     ## Loading answers (there is a header, do not modify col names)
-    data <- utils::read.csv(filename, header=T, check.names=F, stringsAsFactors=F)
+    data <- utils::read.csv(filename, header = T, check.names = F, stringsAsFactors = F)
 
     return(compute_results_from_data(quiz, data))
 }
@@ -142,14 +142,14 @@ Group <- function(title, type, num, data, hidden.data, questions) {
     get_hdata <- function() .hdata
 
     me <- list(
-        title=title,
-        type=type,
-        num=num,
-        questions=questions,
-        data=data,
-        hidden.data=hidden.data,
-        get_hdata=get_hdata,
-        set_hdata=set_hdata
+        title = title,
+        type = type,
+        num = num,
+        questions = questions,
+        data = data,
+        hidden.data = hidden.data,
+        get_hdata = get_hdata,
+        set_hdata = set_hdata
     )
     class(me) <- append(class(me), "Group")
     return(me)
@@ -198,7 +198,7 @@ questionTypes <- c("shortanswer", "description", "cloze")
 #' @param dist Tolerance of answer for character string answer
 #' @param epsilon Relative error for numeric answer
 #' @export
-Question <- function(text, type=NULL, answer=NULL, hidden.data=quote({}), data=quote({}), feedback=automatic_feedback, points=1, dist=2, epsilon=1e-4) {
+Question <- function(text, type = NULL, answer = NULL, hidden.data = quote({}), data = quote({}), feedback = automatic_feedback, points = 1, dist = 2, epsilon = 1e-4) {
     stopifnot(is.character(text))
     type <- ifelse(is.null(type), "shortanswer", type)
     match.arg(type, questionTypes)
@@ -210,15 +210,15 @@ Question <- function(text, type=NULL, answer=NULL, hidden.data=quote({}), data=q
     get_hdata <- function() .hdata
 
     me <- list(
-        text=text,
-        type=type,
-        hidden.data=hidden.data,
-        data=data,
-        answer=answer,
-        feedback=feedback,
-        points=points,
-        dist=dist,
-        epsilon=epsilon)
+        text = text,
+        type = type,
+        hidden.data = hidden.data,
+        data = data,
+        answer = answer,
+        feedback = feedback,
+        points = points,
+        dist = dist,
+        epsilon = epsilon)
 
     me$id <- hexa_hash(me)
 
@@ -320,30 +320,30 @@ correct_question <- function(question, env, guess) {
             points <- 0
             right_answer <- answers[[1]]
         }
-        list(type="shortanswer",
-             points=points,
-             guess=guess,
-             right_answer=right_answer)
+        list(type = "shortanswer",
+             points = points,
+             guess = guess,
+             right_answer = right_answer)
     }
 }
 
 expression_to_lang <- function(expr) {
     ls <- as.list(expr)
-    do.call(call, c("{", ls), quote=TRUE)
+    do.call(call, c("{", ls), quote = TRUE)
 }
 
 unrandomize <- function(lang) {
     if(is.null(lang) | length(lang) == 1) return(quote({}))
     env <- cleanenv()
     eval(lang, env)
-    tmpfile <- tempfile("data", fileext=".R")
+    tmpfile <- tempfile("data", fileext = ".R")
 
     # Remove keepInteger from default dump option
-    dump(ls(env), tmpfile, envir=env, control=c("quoteExpressions",
-                                                "showAttributes",
-                                                "useSource",
-                                                "warnIncomplete",
-                                                "keepNA"))
+    dump(ls(env), tmpfile, envir = env, control = c("quoteExpressions",
+                                                    "showAttributes",
+                                                    "useSource",
+                                                    "warnIncomplete",
+                                                    "keepNA"))
     expression_to_lang(parse(tmpfile))
 }
 
@@ -422,7 +422,7 @@ distinct_language <- function (lang1, lang2) {
     env2 <- cleanenv()
     eval(lang1, env1)
     eval(lang2, env2)
-    all(sapply(intersect(ls(env1), ls(env2)), function(e) identical(get(e, envir=env1), get(e, envir=env2))))
+    all(sapply(intersect(ls(env1), ls(env2)), function(e) identical(get(e, envir = env1), get(e, envir = env2))))
 }
 
 #' Check that data do not overlap
@@ -443,16 +443,16 @@ distinct_data <- function(quiz, lang) {
     }
     errors <- sapply(languages, fails)
     if(any(errors)) stop("Some errors in data code chunks", languages[errors])
-    length(languages) < 2 || all(utils::combn(languages, 2, function(args) do.call(distinct_language, args, quote=TRUE)))
+    length(languages) < 2 || all(utils::combn(languages, 2, function(args) do.call(distinct_language, args, quote = TRUE)))
 }
 
 #' Check that all given answers are consistent
 #' @export
 noerror_in_answers <- function(quiz, env) {
-    if(missing(env)) env <- new.env(parent=baseenv())
+    if(missing(env)) env <- new.env(parent = baseenv())
     if(is.language(env)) {
         lang <- env
-        env <- new.env(parent=baseenv())
+        env <- new.env(parent = baseenv())
         eval(lang, env)
     }
 
@@ -467,19 +467,19 @@ noerror_in_answers <- function(quiz, env) {
 
             parent.env(env) <- cleanenv()
 
-            env_branch <- new.env(parent=env)
+            env_branch <- new.env(parent = env)
             eval(l_branch, env_branch)
 
-            env_global <- new.env(parent=env)
+            env_global <- new.env(parent = env)
             eval(l_global, env_global)
 
             tryCatch(eval(q$answer, env_branch),
-                     error=function(e) {
+                     error = function(e) {
                          stop(paste("Error in question \"", substring(q$text, 1, 16), "...\": ", e))
                      })
 
             tryCatch(eval(q$answer, env_global),
-                     error=function(e) {
+                     error = function(e) {
                          stop(paste("Error in question \"", substring(q$text, 1, 16), "...\": ", e))
                      })
         }
@@ -549,7 +549,7 @@ compute_results_from_data <- function(quiz, data) {
 }
 
 correct_record <- function(quiz0, record, env, isWithQuestionBody) {
-    resultQuiz <- list(grade=0)
+    resultQuiz <- list(grade = 0)
     for(g in quiz0$groups) {
         numq <- get_num(g)
         num <- if(isWithQuestionBody) 2*numq else numq
@@ -577,13 +577,13 @@ correct_record_group <- function(group, record, env, isWithQuestionBody) {
         map <- 1:get_num(group)
     }
 
-    resultg <- list(points=0,
-                    questions=list())
+    resultg <- list(points = 0,
+                    questions = list())
 
     for(i in 1:length(qs.answer)) {
         q.answer <- qs.answer[[i]]
         q <- group$questions[[map[i]]]
-        result <- correct_question(q, new.env(parent=env), q.answer)
+        result <- correct_question(q, new.env(parent = env), q.answer)
 
         ## Add body of question to result
         result$body <- if(isWithQuestionBody) qs.text[i] else paste0("Q", i)
