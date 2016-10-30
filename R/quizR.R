@@ -258,18 +258,22 @@ eval_answers <- function(answers, env) {
     lapply(answers, function(answer) {
         type <- typeof(answer)
         switch(type,
-               closure={
-                   environment(answer) <- new.env(parent=env)
+               closure = {
+                   environment(answer) <- env
                    answer()
                },
-               language={
-                   eval(answer, new.env(parent=env))
+               language = {
+                   eval(answer, env)
                },
-               symbol={
-                   eval(answer, new.env(parent=env))
+               symbol = {
+                   eval(answer, env)
                },
-               character={answer},
-               double={answer},
+               character = {
+                   answer
+               },
+               double = {
+                   answer
+               },
                stop("Unhandled type in ", sQuote("eval_answers"), ": ", type))
     })
 }
