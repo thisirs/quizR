@@ -2,8 +2,8 @@
 generate_correction <- function(quiz, output, lang, eval = TRUE) {
     validate_quiz(quiz)
 
-    if(missing(output)) output <- paste0(quiz$title, ".pdf")
-    if(missing(lang)) lang <- quote({})
+    if (missing(output)) output <- paste0(quiz$title, ".pdf")
+    if (missing(lang)) lang <- quote({})
 
     soutput <- sprintf("---
 title: \"%s\"
@@ -19,25 +19,25 @@ title: \"%s\"
     soutput <- c(soutput, data_chunk)
 
     for (g in quiz$groups) {
-        if(g$type == "identifier") next
-        if(g$type == "random")
+        if (g$type == "identifier") next
+        if (g$type == "random")
             soutput <- c(soutput,
                          sprintf("\n## %s (aléatoire %d parmi %d)\n\n", g$title, g$num, length(g$questions)))
-        else if(g$type == "sequential")
+        else if (g$type == "sequential")
             soutput <- c(soutput, sprintf("\n## %s \n\n", g$title))
         else
             stop("Unhandled group type")
 
         qno <- 0
         for (q in g$questions) {
-            if(q$type == "description") {
+            if (q$type == "description") {
                 soutput <- c(soutput, paste0(q$text, "\n"))
             } else {
                 qno <- qno + 1
-                if(is.function(q$feedback)) {
+                if (is.function(q$feedback)) {
                     body <- q$feedback(qno, q, env, eval = eval)
-                } else if(is.character(q$feedback)) {
-                    t_answers <- if(is.list(q$answer)) q$answer else list(q$answer)
+                } else if (is.character(q$feedback)) {
+                    t_answers <- if (is.list(q$answer)) q$answer else list(q$answer)
                     r_answers <- replace_answers(t_answers, q$get_hdata())
 
                     hdata <- paste(deparse(q$get_hdata()), collapse = "\n")
@@ -68,7 +68,7 @@ cloze_regex <- "\\{(\\d+):(SHORTANSWER|SA|MW|SHORTANSWER_C|SAC|MWC|NUMERICAL|NM|
 
 replace_cloze_fields <- function(text) {
     num <- get_cloze_num(text)
-    for(i in 1:num) {
+    for (i in 1:num) {
         text <- stringi::stri_replace_first_regex(text, cloze_regex, paste0("(", i, ")"))
     }
     return(text)
@@ -125,13 +125,13 @@ automatic_feedback <- function(qno, question, env, ...) {
     stopifnot(length(setdiff(names(args), feedback_args)) == 0)
     args <- merge.list(args, feedback_defaults)
 
-    if(is.null(qno) & args$numbered) stop("Cannot number without numbers")
-    if(is.null(qno)) args$numbered <- FALSE
+    if (is.null(qno) & args$numbered) stop("Cannot number without numbers")
+    if (is.null(qno)) args$numbered <- FALSE
 
-    if(is.null(env) & args$eval) stop("Cannot eval with a null environment")
-    if(is.null(env)) args$eval <- FALSE
+    if (is.null(env) & args$eval) stop("Cannot eval with a null environment")
+    if (is.null(env)) args$eval <- FALSE
 
-    if(question$type == "cloze") {
+    if (question$type == "cloze") {
         do.call(automatic_cloze_feedback, c(list(qno, question, env), args), quote = TRUE)
     } else {
         do.call(automatic_normal_feedback, c(list(qno, question, env), args), quote = TRUE)
@@ -150,32 +150,32 @@ automatic_cloze_feedback <- function(qno, question, env, ...) {
 
     paste0(c(
         md_hdata_blk,
-        if(args$numbered) sprintf("**Question %d.** ", qno),
-        if(args$question.body) trimws(body),
+        if (args$numbered) sprintf("**Question %d.** ", qno),
+        if (args$question.body) trimws(body),
         "\n\n**Réponse:**\n",
-        if(!is.null(args$header)) args$header,
+        if (!is.null(args$header)) args$header,
         sapply(1:get_cloze_num(question$text), function(i) {
-            answer <- if(is.list(question$answer[[i]])) question$answer[[i]] else list(question$answer[[i]])
+            answer <- if (is.list(question$answer[[i]])) question$answer[[i]] else list(question$answer[[i]])
             answer <- replace_answers(answer, question$get_hdata())
             answer <- answerstr(answer[[1]])
-            if(args$eval)
+            if (args$eval)
                 md_answer_blk <- sprintf("```{r include=FALSE}\nanswer <- {%s}\n```\n", answer)
             else
                 md_answer_blk <- "```{r include=FALSE}\nanswer <- \"undefined\"\n```\n"
 
             ## Real answer: alt_answer if any, answer otherwise
-            if(is.null(args$alt.answer)) {
-                if(args$eval)
+            if (is.null(args$alt.answer)) {
+                if (args$eval)
                     md_answer <- sprintf("```{r}\n%s\n```\n", answer)
                 else
                     md_answer <- sprintf("```r\n%s\n```\n", answer)
             } else {
-                alt_answer <- if(is.list(args$alt.answer[[i]])) args$alt.answer[[i]] else list(args$alt.answer[[i]])
+                alt_answer <- if (is.list(args$alt.answer[[i]])) args$alt.answer[[i]] else list(args$alt.answer[[i]])
                 alt_answer <- replace_answers(alt_answer, question$get_hdata())
                 alt_answer <- alt_answer[[1]]
-                if(is.character(alt_answer)) {
+                if (is.character(alt_answer)) {
                     md_answer <- paste0(trimws(alt_answer), "\n")
-                } else if(args$eval)
+                } else if (args$eval)
                     md_answer <- sprintf("```{r}\n%s\n```\n", answerstr(alt_answer))
                 else
                     md_answer <- sprintf("```r\n%s\n```\n", answerstr(alt_answer))
@@ -183,7 +183,7 @@ automatic_cloze_feedback <- function(qno, question, env, ...) {
 
             c(md_answer_blk,
               sprintf("%d. ", i),
-              if(args$eval) "La réponse est: $`r answer`$",
+              if (args$eval) "La réponse est: $`r answer`$",
               "\n",
               md_answer,
               "\n")
@@ -199,27 +199,27 @@ automatic_normal_feedback <- function(qno, question, env, ...) {
 
     ## Listify answer, replace by hidden data and select first
     ## possible answer
-    answer <- if(is.list(question$answer)) question$answer else list(question$answer)
+    answer <- if (is.list(question$answer)) question$answer else list(question$answer)
     answer <- replace_answers(answer, question$get_hdata())
     answer <- answerstr(answer[[1]])
-    if(args$eval)
+    if (args$eval)
         md_answer_blk <- sprintf("```{r include=FALSE}\nanswer <- {%s}\n```\n", answer)
     else
         md_answer_blk <- "```{r include=FALSE}\nanswer <- \"undefined\"\n```\n"
 
     ## Real answer: alt_answer if any, answer otherwise
-    if(is.null(args$alt.answer)) {
-        if(args$eval)
+    if (is.null(args$alt.answer)) {
+        if (args$eval)
             md_answer <- sprintf("```{r}\n%s\n```\n", answer)
         else
             md_answer <- sprintf("```r\n%s\n```\n", answer)
     } else {
-        alt_answer <- if(is.list(args$alt.answer)) args$alt.answer else list(args$alt.answer)
+        alt_answer <- if (is.list(args$alt.answer)) args$alt.answer else list(args$alt.answer)
         alt_answer <- replace_answers(alt_answer, question$get_hdata())
         alt_answer <- alt_answer[[1]]
-        if(is.character(alt_answer)) {
+        if (is.character(alt_answer)) {
             md_answer <- paste0(trimws(alt_answer), "\n")
-        } else if(args$eval)
+        } else if (args$eval)
             md_answer <- sprintf("```{r}\n%s\n```\n", answerstr(alt_answer))
         else
             md_answer <- sprintf("```r\n%s\n```\n", answerstr(alt_answer))
@@ -229,10 +229,10 @@ automatic_normal_feedback <- function(qno, question, env, ...) {
     paste0(c(
         md_hdata_blk,
         md_answer_blk,
-        if(args$numbered) sprintf("**Question %d.** ", qno),
-        if(args$question.body) trimws(question$text),
+        if (args$numbered) sprintf("**Question %d.** ", qno),
+        if (args$question.body) trimws(question$text),
         "\n\n**Réponse:** ",
-        if(args$eval) "$`r answer`$\n",
+        if (args$eval) "$`r answer`$\n",
         md_answer,
         "\n"),
         collapse = "")
@@ -241,8 +241,8 @@ automatic_normal_feedback <- function(qno, question, env, ...) {
 ## eval_noeval <- function(feedback_eval, feedback_noeval) {
 ##     function(qno, question, env, ...) {
 ##         args <- list(...)
-##         if(is.null(args$eval))
-##             if(is.character(feedback_eval))
+##         if (is.null(args$eval))
+##             if (is.character(feedback_eval))
 
 ##                 else
 
@@ -253,7 +253,7 @@ automatic_normal_feedback <- function(qno, question, env, ...) {
 ## }
 
 answerstr <- function(answer) {
-    if(is.null(answer)) return("")
+    if (is.null(answer)) return("")
     type <- typeof(answer)
     switch(type,
            closure = {

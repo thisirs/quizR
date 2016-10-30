@@ -1,6 +1,6 @@
 library(stringi)
 
-getRecord <- function(...) {
+get_record <- function(...) {
     record <- c(rep(NA, 10), list(...))
 }
 
@@ -59,7 +59,7 @@ test_that("compute_results_from_data returns Cloze question record", {
                                Question("{1:SA:=*}, {2:SA:=*}, {1:SA:=*}",
                                         type = "cloze", answer = expr("blah", "foo", "bar"))))))
 
-    r <- getRecord("partie 1 : blah; partie 2 : foo; partie 3 : bar")
+    r <- get_record("partie 1 : blah; partie 2 : foo; partie 3 : bar")
     data <- as.data.frame(r)
     results <- compute_results_from_data(quiz, data)
 

@@ -13,6 +13,8 @@ generate_files(quiz, data.name = paste0(quiz$title, "-data.R"),
 \item{data.name}{Name of data file}
 
 \item{quiz.name}{Name of XML file}
+
+\item{language}{Additionnal language for validation}
 }
 \description{
 Generate XML Moodle quiz file and data file

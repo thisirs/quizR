@@ -26,9 +26,9 @@ test_that("identifiers are unique", {
                        questions = list(
                            Question(id3)))))
     }
-    expect_identical(uniqueIDs(gen_quiz("a", "b", "c")), TRUE)
-    expect_identical(uniqueIDs(gen_quiz("a", "a", "b")), FALSE)
-    expect_identical(uniqueIDs(gen_quiz("a", "b", "b")), FALSE)
+    expect_identical(unique_IDs(gen_quiz("a", "b", "c")), TRUE)
+    expect_identical(unique_IDs(gen_quiz("a", "a", "b")), FALSE)
+    expect_identical(unique_IDs(gen_quiz("a", "b", "b")), FALSE)
 })
 
 test_that("distinct_data see data that conflicts", {

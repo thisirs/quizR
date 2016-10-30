@@ -8,6 +8,8 @@ validate_quiz(quiz, lang)
 }
 \arguments{
 \item{quiz}{A quiz object}
+
+\item{lang}{Additionnal language object}
 }
 \value{
 Return TRUE if quiz is a valid one
