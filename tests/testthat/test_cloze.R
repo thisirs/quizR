@@ -74,6 +74,29 @@ test_that("replace_cloze_fields is correctly replacing", {
     expect_identical(replace_cloze_fields("foo {1:SA:=bar} blah {22:SHORTANSWER:=blah} bar"), "foo (1) blah (2) bar")
 })
 
+test_that("environment is the same for all cloze fields", {
+    quiz <- Quiz("quiz1",
+                 groups = list(
+                     Group("G1",
+                           type = "sequential",
+                           questions = list(
+                               Question("{1:SA:=*}, {2:SA:=*}, {1:SA:=*}",
+                                        type = "cloze",
+                                        answer = expr(
+                                            a <- 2,
+                                            {
+                                                tmp <- 2
+                                                a**2 + tmp
+                                            },
+                                            tmp + 1))))))
+
+    r <- get_record("partie 1 : 2; partie 2 : 6; partie 3 : 3")
+    data <- as.data.frame(r)
+    results <- compute_results_from_data(quiz, data)
+
+    expect_identical(results[[1]]$groups[[1]]$points, 1)
+    expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 1)
+})
 
 ## quiz <- Quiz("quiz1",
 ##              groups=list(
