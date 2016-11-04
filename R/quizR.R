@@ -337,7 +337,7 @@ unrandomize <- function(lang) {
     eval(lang, env)
     tmpfile <- tempfile("data", fileext = ".R")
 
-    vars <- ls(env)
+    vars <- ls(env, all.names = TRUE)
     if (length(vars) == 0) return(quote({}))
 
     # Remove keepInteger from default dump option
