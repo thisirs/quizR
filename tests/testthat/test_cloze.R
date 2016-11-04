@@ -69,7 +69,7 @@ test_that("compute_results_from_data returns Cloze question record", {
 })
 
 test_that("replace_cloze_fields is correctly replacing", {
-    expect_identical(replace_cloze_fields("blah {1:SA:=}"), "blah (1)")
+    expect_identical(replace_cloze_fields("blah {1:SA:=*}"), "blah (1)")
     expect_identical(replace_cloze_fields("foo {1:SA:=bar}"), "foo (1)")
     expect_identical(replace_cloze_fields("foo {1:SA:=bar} blah {22:SHORTANSWER:=blah} bar"), "foo (1) blah (2) bar")
 })
