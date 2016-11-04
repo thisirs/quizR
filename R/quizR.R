@@ -337,8 +337,11 @@ unrandomize <- function(lang) {
     eval(lang, env)
     tmpfile <- tempfile("data", fileext = ".R")
 
+    vars <- ls(env)
+    if (length(vars) == 0) return(quote({}))
+
     # Remove keepInteger from default dump option
-    dump(ls(env), tmpfile, envir = env, control = c("quoteExpressions",
+    dump(vars, tmpfile, envir = env, control = c("quoteExpressions",
                                                     "showAttributes",
                                                     "useSource",
                                                     "warnIncomplete",
