@@ -144,9 +144,14 @@ automatic_cloze_feedback <- function(qno, question, env, ...) {
     ## Replace cloze fields by numbers enclosed in parens
     body <- replace_cloze_fields(question$text)
 
-    ## Blocks defining hidden data
-    hdata <- answerstr(question$get_hdata())
-    md_hdata_blk <- sprintf("```{r include=FALSE}\n%s\n```\n", hdata)
+    ## Block defining hidden data
+    hdata <- question$get_hdata()
+    if (length(hdata) == 1 && hdata[[1]] == as.name("{")) {
+        md_hdata_blk <- NULL
+    } else {
+        hdata_s <- answerstr(hdata)
+        md_hdata_blk <- sprintf("```{r include=FALSE}\n%s\n```\n", hdata_s)
+    }
 
     paste0(c(
         md_hdata_blk,
@@ -212,9 +217,14 @@ automatic_cloze_feedback <- function(qno, question, env, ...) {
 automatic_normal_feedback <- function(qno, question, env, ...) {
     args <- list(...)
 
-    ## Blocks defining hidden data
-    hdata <- answerstr(question$get_hdata())
-    md_hdata_blk <- sprintf("```{r include=FALSE}\n%s\n```\n", hdata)
+    ## Block defining hidden data
+    hdata <- question$get_hdata()
+    if (length(hdata) == 1 && hdata[[1]] == as.name("{")) {
+        md_hdata_blk <- NULL
+    } else {
+        hdata_s <- answerstr(hdata)
+        md_hdata_blk <- sprintf("```{r include=FALSE}\n%s\n```\n", hdata_s)
+    }
 
     ## Listify answer, replace by hidden data and select first
     ## possible answer
