@@ -88,9 +88,9 @@ merge.list <- function (x, y)
     x
 }
 
-feedback_defaults <- list(numbered = TRUE, eval = TRUE, question.body = TRUE, alt.answer = NULL, header = NULL)
+feedback_defaults <- list(numbered = TRUE, eval = TRUE, question.body = TRUE, alt.answer = NULL, header = NULL, eval_feedback = NULL, noeval_feedback = NULL)
 
-feedback_args <- c("numbered", "eval", "question.body", "alt.answer", "header")
+feedback_args <- names(feedback_defaults)
 
 #' @export
 general_feedback <- function(...) {
@@ -163,22 +163,41 @@ automatic_cloze_feedback <- function(qno, question, env, ...) {
             else
                 md_answer_blk <- "```{r include=FALSE}\nanswer <- \"undefined\"\n```\n"
 
-            ## Real answer: alt_answer if any, answer otherwise
-            if (is.null(args$alt.answer)) {
-                if (args$eval)
-                    md_answer <- sprintf("```{r}\n%s\n```\n", answer)
+            ## Setting md_answer
+            if (args$eval) {
+                ## Selecting the feedback to display
+                if (!is.null(args$eval_feedback))
+                    feedback <- args$eval_feedback[[i]]
+                else if (!is.null(args$alt.answer))
+                    feedback <- args$alt.answer[[i]]
+                else if (!is.null(args$noeval_feedback))
+                    feedback <- args$noeval_feedback[[i]]
+                else feedback <- sprintf("```{r}\n%s\n```\n", answerstr(answer))
+
+                ## Listify, replace with hdata and extract first
+                feedback <- if (is.list(feedback)) feedback else list(feedback)
+                feedback <- replace_answers(feedback, question$get_hdata())
+                feedback <- feedback[[1]]
+
+                if (is.character(feedback))
+                    md_answer <- paste0(trimws(feedback), "\n")
                 else
-                    md_answer <- sprintf("```r\n%s\n```\n", answer)
+                    md_answer <- sprintf("```{r}\n%s\n```\n", answerstr(feedback))
             } else {
-                alt_answer <- if (is.list(args$alt.answer[[i]])) args$alt.answer[[i]] else list(args$alt.answer[[i]])
-                alt_answer <- replace_answers(alt_answer, question$get_hdata())
-                alt_answer <- alt_answer[[1]]
-                if (is.character(alt_answer)) {
-                    md_answer <- paste0(trimws(alt_answer), "\n")
-                } else if (args$eval)
-                    md_answer <- sprintf("```{r}\n%s\n```\n", answerstr(alt_answer))
+                if (!is.null(args$noeval_feedback))
+                    feedback <- args$noeval_feedback[[i]]
+                else if (!is.null(args$alt.answer))
+                    feedback <- args$alt.answer[[i]]
+                else feedback <- sprintf("```r\n%s\n```\n", answerstr(answer))
+
+                feedback <- if (is.list(feedback)) feedback else list(feedback)
+                feedback <- replace_answers(feedback, question$get_hdata())
+                feedback <- feedback[[1]]
+
+                if (is.character(feedback))
+                    md_answer <- paste0(trimws(feedback), "\n")
                 else
-                    md_answer <- sprintf("```r\n%s\n```\n", answerstr(alt_answer))
+                    md_answer <- sprintf("```r\n%s\n```\n", answerstr(feedback))
             }
 
             c(md_answer_blk,
@@ -207,22 +226,41 @@ automatic_normal_feedback <- function(qno, question, env, ...) {
     else
         md_answer_blk <- "```{r include=FALSE}\nanswer <- \"undefined\"\n```\n"
 
-    ## Real answer: alt_answer if any, answer otherwise
-    if (is.null(args$alt.answer)) {
-        if (args$eval)
-            md_answer <- sprintf("```{r}\n%s\n```\n", answer)
+    ## Setting md_answer
+    if (args$eval) {
+        ## Selecting the feedback to display
+        if (!is.null(args$eval_feedback))
+            feedback <- args$eval_feedback
+        else if (!is.null(args$alt.answer))
+            feedback <- args$alt.answer
+        else if (!is.null(args$noeval_feedback))
+            feedback <- args$noeval_feedback
+        else feedback <- sprintf("```{r}\n%s\n```\n", answerstr(answer))
+
+        ## Listify, replace with hdata and extract first
+        feedback <- if (is.list(feedback)) feedback else list(feedback)
+        feedback <- replace_answers(feedback, question$get_hdata())
+        feedback <- feedback[[1]]
+
+        if (is.character(feedback))
+            md_answer <- paste0(trimws(feedback), "\n")
         else
-            md_answer <- sprintf("```r\n%s\n```\n", answer)
+            md_answer <- sprintf("```{r}\n%s\n```\n", answerstr(feedback))
     } else {
-        alt_answer <- if (is.list(args$alt.answer)) args$alt.answer else list(args$alt.answer)
-        alt_answer <- replace_answers(alt_answer, question$get_hdata())
-        alt_answer <- alt_answer[[1]]
-        if (is.character(alt_answer)) {
-            md_answer <- paste0(trimws(alt_answer), "\n")
-        } else if (args$eval)
-            md_answer <- sprintf("```{r}\n%s\n```\n", answerstr(alt_answer))
+        if (!is.null(args$noeval_feedback))
+            feedback <- args$noeval_feedback
+        else if (!is.null(args$alt.answer))
+            feedback <- args$alt.answer
+        else feedback <- sprintf("```r\n%s\n```\n", answerstr(answer))
+
+        feedback <- if (is.list(feedback)) feedback else list(feedback)
+        feedback <- replace_answers(feedback, question$get_hdata())
+        feedback <- feedback[[1]]
+
+        if (is.character(feedback))
+            md_answer <- paste0(trimws(feedback), "\n")
         else
-            md_answer <- sprintf("```r\n%s\n```\n", answerstr(alt_answer))
+            md_answer <- sprintf("```r\n%s\n```\n", answerstr(feedback))
     }
 
     ## Concatenating for final markdown
@@ -232,25 +270,12 @@ automatic_normal_feedback <- function(qno, question, env, ...) {
         if (args$numbered) sprintf("**Question %d.** ", qno),
         if (args$question.body) trimws(question$text),
         "\n\n**Réponse:** ",
-        if (args$eval) "$`r answer`$\n",
+        if (args$eval) "$`r answer`$",
+        "\n\n",
         md_answer,
         "\n"),
         collapse = "")
 }
-
-## eval_noeval <- function(feedback_eval, feedback_noeval) {
-##     function(qno, question, env, ...) {
-##         args <- list(...)
-##         if (is.null(args$eval))
-##             if (is.character(feedback_eval))
-
-##                 else
-
-##             feedback_noeval(qno, question, env, ...)
-##         else
-##             feedback_eval(qno, question, env, ...)
-##     }
-## }
 
 answerstr <- function(answer) {
     if (is.null(answer)) return("")
