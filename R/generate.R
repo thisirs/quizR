@@ -27,7 +27,7 @@ quiz.xml <- "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 
 render_HTML <- function(text, data) {
     if (missing(data)) data <- quote({})
-    data_chunk <- sprintf("```{r include=FALSE}\n%s\n```\n\n", paste(deparse(data), collapse = "\n"))
+    data_chunk <- sprintf("```{r include=FALSE}\n%s\n```\n\n", answerstr(data))
 
     tmpfile <- tempfile("question", fileext = ".Rmd")
     write(data_chunk, tmpfile)
@@ -80,8 +80,8 @@ to_XML.Question <- function(obj, ...) {
     if (is.null(args$data)) stop("Missing data when calling to_XML.Group")
 
     ## Add chunk containing data of quiz
-    md_data <- sprintf("```{r include=FALSE}\n%s\n```\n\n", paste(deparse(args$data), collapse = "\n"))
-    md_hdata <- sprintf("```{r include=FALSE}\n%s\n```\n\n", paste(deparse(obj$get_hdata()), collapse = "\n"))
+    md_data <- sprintf("```{r include=FALSE}\n%s\n```\n\n", answerstr(args$data))
+    md_hdata <- sprintf("```{r include=FALSE}\n%s\n```\n\n", answerstr(obj$get_hdata()))
     title <- "-"
 
     md_question <- paste0(md_data, md_hdata, obj$text)

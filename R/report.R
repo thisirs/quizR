@@ -14,7 +14,7 @@ title: \"%s\"
 
     env <- cleanenv()
     eval(data0, env)
-    data_chunk <- sprintf("```{r include=FALSE}\n%s\n```\n\n", paste(deparse(data0), collapse = "\n"))
+    data_chunk <- sprintf("```{r include=FALSE}\n%s\n```\n\n", answerstr(data0))
 
     soutput <- c(soutput, data_chunk)
 
@@ -40,8 +40,8 @@ title: \"%s\"
                     t_answers <- if (is.list(q$answer)) q$answer else list(q$answer)
                     r_answers <- replace_answers(t_answers, q$get_hdata())
 
-                    hdata <- paste(deparse(q$get_hdata()), collapse = "\n")
-                    answer <- paste(deparse(r_answers[[1]]), collapse = "\n")
+                    hdata <- answerstr(q$get_hdata())
+                    answer <- answerstr(r_answers[[1]])
 
                     body <- sprintf("```{r include=FALSE}\n%s\n```\n\n", hdata)
                     body <- c(body, sprintf("**Question %d.** %s\n\n", qno, q$text))
