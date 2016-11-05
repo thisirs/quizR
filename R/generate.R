@@ -54,7 +54,10 @@ to_XML.Quiz <- function(obj, ...)
     if (is.null(args$data)) stop("Missing data when calling to_XML.Group")
 
     ## Call to_XML on each group with args
-    gs <- lapply(obj$groups, function(g) { do.call(to_XML, c(list(g, quiz = obj), args)) })
+    gs <- lapply(obj$groups, function(g) {
+        args0 <- c(list(g, quiz = obj), args)
+        do.call(to_XML, args0, quote = TRUE)
+    })
     gs <- paste(gs, collapse = "\n")
     output <- sprintf(quiz.xml, add_spaces_left(gs, 2))
     return(output)
@@ -68,7 +71,9 @@ to_XML.Group <- function(obj, ...)
     if (is.null(args$data)) stop("Missing data when calling to_XML.Group")
 
     title <- paste(args$quiz$title, "/", obj$title, sep = "")
-    qs <- lapply(obj$questions, function(q) { do.call(to_XML, c(list(q), args)) })
+    qs <- lapply(obj$questions, function(q) {
+        args0 <- c(list(q), args)
+        do.call(to_XML, args0, quote = TRUE) })
     qs <- paste(qs, collapse = "\n")
     return(paste(sprintf(group.xml, title), qs, sep = "\n"))
 }
