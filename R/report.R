@@ -157,7 +157,7 @@ automatic_cloze_feedback <- function(qno, question, env, ...) {
         md_hdata_blk,
         if (args$numbered) sprintf("**Question %d.** ", qno),
         if (args$question.body) trimws(body),
-        "\n\n**Réponse:**\n",
+        "\n\n**Réponse:**\n\n",
         if (!is.null(args$header)) args$header,
         sapply(1:get_cloze_num(question$text), function(i) {
             answer <- if (is.list(question$answer[[i]])) question$answer[[i]] else list(question$answer[[i]])
