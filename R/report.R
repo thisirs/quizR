@@ -230,9 +230,11 @@ automatic_normal_feedback <- function(qno, question, env, ...) {
     ## possible answer
     answer <- if (is.list(question$answer)) question$answer else list(question$answer)
     answer <- replace_answers(answer, question$get_hdata())
-    answer <- answerstr(answer[[1]])
+    answer <- answer[[1]]
+    answer_s <- answerstr(answer)
+
     if (args$eval)
-        md_answer_blk <- sprintf("```{r include=FALSE}\nanswer <- {%s}\n```\n", answer)
+        md_answer_blk <- sprintf("```{r include=FALSE}\nanswer <- {%s}\n```\n", answer_s)
     else
         md_answer_blk <- "```{r include=FALSE}\nanswer <- \"undefined\"\n```\n"
 
@@ -245,7 +247,7 @@ automatic_normal_feedback <- function(qno, question, env, ...) {
             feedback <- args$alt.answer
         else if (!is.null(args$noeval_feedback))
             feedback <- args$noeval_feedback
-        else feedback <- sprintf("```{r}\n%s\n```\n", answerstr(answer))
+        else feedback <- sprintf("```{r}\n%s\n```\n", answer_s)
 
         ## Listify, replace with hdata and extract first
         feedback <- if (is.list(feedback)) feedback else list(feedback)
@@ -261,7 +263,7 @@ automatic_normal_feedback <- function(qno, question, env, ...) {
             feedback <- args$noeval_feedback
         else if (!is.null(args$alt.answer))
             feedback <- args$alt.answer
-        else feedback <- sprintf("```r\n%s\n```\n", answerstr(answer))
+        else feedback <- sprintf("```r\n%s\n```\n", answer_s)
 
         feedback <- if (is.list(feedback)) feedback else list(feedback)
         feedback <- replace_answers(feedback, question$get_hdata())
