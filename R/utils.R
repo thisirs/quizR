@@ -4,7 +4,7 @@ hexa_hash <- function(s) {
 
 add_spaces_left <- function(s, spaces) {
     indent <- paste(rep(" ", spaces), collapse = "")
-    gsub("(?m)^", indent, s, perl = T)
+    gsub("(?m)^", indent, s, perl = TRUE)
 }
 
 merge_languages <- function(...) {

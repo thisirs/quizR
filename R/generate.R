@@ -31,7 +31,7 @@ render_HTML <- function(text, data) {
 
     tmpfile <- tempfile("question", fileext = ".Rmd")
     write(data_chunk, tmpfile)
-    write(text, tmpfile, append = T)
+    write(text, tmpfile, append = TRUE)
     output <- rmarkdown::render(tmpfile, rmarkdown::html_fragment())
     to_string(output)
 }

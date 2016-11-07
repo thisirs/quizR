@@ -87,7 +87,7 @@ validate_quiz <- function(quiz, lang) {
 #' @export
 compute_grades <- function(quiz, filename = NULL) {
     stopifnot(is.character(filename))
-    data <- utils::read.csv(filename, header = T, check.names = F, stringsAsFactors = F)
+    data <- utils::read.csv(filename, header = TRUE, check.names = FALSE, stringsAsFactors = FALSE)
     results <- compute_results_from_data(quiz, data)
     grades <- sapply(results, function(e) { e$grade })
     data.frame(Nom = data[,1], `Prénom` = data[,2], note = grades)
@@ -102,7 +102,7 @@ compute_results <- function(quiz, filename = NULL) {
     stopifnot(is.character(filename))
 
     ## Loading answers (there is a header, do not modify col names)
-    data <- utils::read.csv(filename, header = T, check.names = F, stringsAsFactors = F)
+    data <- utils::read.csv(filename, header = TRUE, check.names = FALSE, stringsAsFactors = FALSE)
 
     return(compute_results_from_data(quiz, data))
 }
@@ -573,8 +573,8 @@ correct_record_group <- function(group, record, env, is_with_question_body) {
     stopifnot(!group$type == "random" | is_with_question_body)
 
     if (is_with_question_body) {
-        qs.answer <- record[c(F, T)]
-        qs.text <- as.character(record[c(T, F)])
+        qs.answer <- record[c(FALSE, TRUE)]
+        qs.text <- as.character(record[c(TRUE, FALSE)])
     } else
         qs.answer <- record
 
