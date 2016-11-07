@@ -340,12 +340,17 @@ unrandomize <- function(lang) {
     vars <- ls(env, all.names = TRUE)
     if (length(vars) == 0) return(quote({}))
 
+    # dump appears to obey to deparse.max.lines
+    dml <- options(deparse.max.lines = NULL)
+    on.exit(options(deparse.max.lines = dml))
+
     # Remove keepInteger from default dump option
     dump(vars, tmpfile, envir = env, control = c("quoteExpressions",
-                                                    "showAttributes",
-                                                    "useSource",
-                                                    "warnIncomplete",
-                                                    "keepNA"))
+                                                 "showAttributes",
+                                                 "useSource",
+                                                 "warnIncomplete",
+                                                 "keepNA"))
+
     expression_to_lang(parse(tmpfile))
 }
 
