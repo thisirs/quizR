@@ -5,9 +5,7 @@ Version: 1.0
 Date: 2016-09-24
 Author: Sylvain Rousseau
 Maintainer: Sylvain Rousseau <sylvain.rousseau@hds.utc.fr>
-Description: More details about what the package does. See <http://http://
-    cran.r-project.org/doc/manuals/r-release/R-exts.html#The-DESCRIPTION-file> for
-    details on how to write this part.
+Description: The main feature of this package is to be able to create XML files designed to be imported as quizzes in the LMS Moodle. There are additional features for R quizzes like automatic grades based on the CSV file of results provided by Moodle, PDF file of quizzes, R file of datasets used in the quiz.
 License: GPL (>= 3)
 Imports:
     pryr,
