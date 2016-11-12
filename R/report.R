@@ -1,5 +1,8 @@
 #' @export
 generate_correction <- function(quiz, output, lang, eval = TRUE) {
+    # Instantiate random data with quiz$seed
+    unrandomize_data(quiz)
+
     validate_quiz(quiz)
 
     if (missing(output)) output <- paste0(quiz$title, ".pdf")
