@@ -163,11 +163,17 @@ automatic_cloze_feedback <- function(qno, question, env, ...) {
         "\n\n**Réponse:**\n\n",
         if (!is.null(args$header)) args$header,
         sapply(1:get_cloze_num(question$text), function(i) {
-            answer <- if (is.list(question$answer[[i]])) question$answer[[i]] else list(question$answer[[i]])
-            answer <- replace_answers(answer, question$get_hdata())
-            answer <- answerstr(answer[[1]])
+            answers <- if (is.list(question$answer[[i]])) question$answer[[i]] else list(question$answer[[i]])
+            answers_rep <- replace_answers(answers, question$get_hdata())
+            answers_eval <- eval_answers(answers_rep, env)
+
+            # First answer in raw form, as a string and evaluated
+            answer_lang <- answers_rep[[1]]
+            answer_str <- answerstr(answer_lang)
+            answer_eval <- answers_eval[[1]]
+
             if (args$eval)
-                md_answer_blk <- sprintf("```{r include=FALSE}\nanswer <- {%s}\n```\n", answer)
+                md_answer_blk <- sprintf("```{r include=FALSE}\nanswer <- {%s}\n```\n", answer_str)
             else
                 md_answer_blk <- "```{r include=FALSE}\nanswer <- \"undefined\"\n```\n"
 
@@ -180,7 +186,7 @@ automatic_cloze_feedback <- function(qno, question, env, ...) {
                     feedback <- args$alt.answer[[i]]
                 else if (!is.null(args$noeval_feedback))
                     feedback <- args$noeval_feedback[[i]]
-                else feedback <- sprintf("```{r}\n%s\n```\n", answerstr(answer))
+                else feedback <- sprintf("```{r}\n%s\n```\n", answer_str)
 
                 ## Listify, replace with hdata and extract first
                 feedback <- if (is.list(feedback)) feedback else list(feedback)
@@ -196,7 +202,7 @@ automatic_cloze_feedback <- function(qno, question, env, ...) {
                     feedback <- args$noeval_feedback[[i]]
                 else if (!is.null(args$alt.answer))
                     feedback <- args$alt.answer[[i]]
-                else feedback <- sprintf("```r\n%s\n```\n", answerstr(answer))
+                else feedback <- sprintf("```r\n%s\n```\n", answer_str)
 
                 feedback <- if (is.list(feedback)) feedback else list(feedback)
                 feedback <- replace_answers(feedback, question$get_hdata())
@@ -210,7 +216,12 @@ automatic_cloze_feedback <- function(qno, question, env, ...) {
 
             c(md_answer_blk,
               sprintf("%d. ", i),
-              if (args$eval) "La réponse est: $`r answer`$",
+              if (args$eval) {
+                  if (is.character(answer_eval))
+                      "La réponse est: ``r answer``"
+                  else
+                      "La réponse est: $`r answer`$"
+              },
               "\n",
               md_answer,
               "\n")
@@ -229,15 +240,18 @@ automatic_normal_feedback <- function(qno, question, env, ...) {
         md_hdata_blk <- sprintf("```{r include=FALSE}\n%s\n```\n", hdata_s)
     }
 
-    ## Listify answer, replace by hidden data and select first
-    ## possible answer
-    answer <- if (is.list(question$answer)) question$answer else list(question$answer)
-    answer <- replace_answers(answer, question$get_hdata())
-    answer <- answer[[1]]
-    answer_s <- answerstr(answer)
+    ## Listify answer, replace by hidden data and eval in env
+    answers <- if (is.list(question$answer)) question$answer else list(question$answer)
+    answers_rep <- replace_answers(answers, question$get_hdata())
+    answers_eval <- eval_answers(answers_rep, env)
+
+    # First answer in raw form, as a string and evaluated
+    answer_lang <- answers_rep[[1]]
+    answer_str <- answerstr(answer_lang)
+    answer_eval <- answers_eval[[1]]
 
     if (args$eval)
-        md_answer_blk <- sprintf("```{r include=FALSE}\nanswer <- {%s}\n```\n", answer_s)
+        md_answer_blk <- sprintf("```{r include=FALSE}\nanswer <- {%s}\n```\n", answer_str)
     else
         md_answer_blk <- "```{r include=FALSE}\nanswer <- \"undefined\"\n```\n"
 
@@ -250,7 +264,7 @@ automatic_normal_feedback <- function(qno, question, env, ...) {
             feedback <- args$alt.answer
         else if (!is.null(args$noeval_feedback))
             feedback <- args$noeval_feedback
-        else feedback <- sprintf("```{r}\n%s\n```\n", answer_s)
+        else feedback <- sprintf("```{r}\n%s\n```\n", answer_str)
 
         ## Listify, replace with hdata and extract first
         feedback <- if (is.list(feedback)) feedback else list(feedback)
@@ -266,7 +280,7 @@ automatic_normal_feedback <- function(qno, question, env, ...) {
             feedback <- args$noeval_feedback
         else if (!is.null(args$alt.answer))
             feedback <- args$alt.answer
-        else feedback <- sprintf("```r\n%s\n```\n", answer_s)
+        else feedback <- sprintf("```r\n%s\n```\n", answer_str)
 
         feedback <- if (is.list(feedback)) feedback else list(feedback)
         feedback <- replace_answers(feedback, question$get_hdata())
@@ -284,8 +298,13 @@ automatic_normal_feedback <- function(qno, question, env, ...) {
         md_answer_blk,
         if (args$numbered) sprintf("**Question %d.** ", qno),
         if (args$question.body) trimws(question$text),
-        "\n\n**Réponse:** ",
-        if (args$eval) "$`r answer`$",
+        "\n\n**Réponse:**",
+        if (args$eval) {
+            if (is.character(answer_eval))
+                " ``r answer``"
+            else
+                " $`r answer`$"
+        },
         "\n\n",
         md_answer,
         "\n"),
