@@ -1,6 +1,6 @@
 #' @export
 generate_correction <- function(quiz, output, lang, eval = TRUE) {
-    # Instantiate random data with quiz$seed
+    # Instantiate random data with quiz$hidden.seed
     unrandomize_data(quiz)
 
     validate_quiz(quiz)
@@ -14,6 +14,12 @@ title: \"%s\"
 
     data <- get_recursive_language(quiz)
     data0 <- merge_languages(lang, data)
+
+    ## Saving seed state
+    if (exists(".Random.seed", .GlobalEnv))
+        oldseed <- .GlobalEnv$.Random.seed
+    else
+        oldseed <- NULL
 
     env <- cleanenv()
     eval(data0, env)
@@ -60,6 +66,12 @@ title: \"%s\"
     soutput <- paste(soutput, collapse = "")
     tmpfile <- tempfile("quiz", fileext = ".Rmd")
     write(soutput, tmpfile)
+
+    ## Restoring seed state
+    if (!is.null(oldseed))
+        .GlobalEnv$.Random.seed <- oldseed
+    else
+        rm(".Random.seed", envir = .GlobalEnv)
 
     rmarkdown::render(input = tmpfile,
                       output_dir = dirname(output),

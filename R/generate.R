@@ -127,7 +127,7 @@ generate_files <- function(quiz,
                            language) {
     if (missing(language)) language <- NULL
 
-    # Instantiate random data with quiz$seed
+    # Instantiate random data with quiz$hidden.seed
     unrandomize_data(quiz)
 
     validate_quiz(quiz, language)
@@ -160,7 +160,7 @@ generate_XML <- function(quiz,
                          language = NULL,
                          feedback = TRUE,
                          eval = feedback) {
-    # Instantiate random data with quiz$seed
+    # Instantiate random data with quiz$hidden.seed
     unrandomize_data(quiz)
 
     validate_quiz(quiz, language)
@@ -182,7 +182,7 @@ generate_XML <- function(quiz,
 generate_data_file <- function(quiz,
                                data.name = paste0(quiz$title, "-data.R"),
                                language = NULL) {
-    # Instantiate random data with quiz$seed
+    # Instantiate random data with quiz$hidden.seed
     unrandomize_data(quiz)
 
     validate_quiz(quiz, language)

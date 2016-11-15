@@ -4,11 +4,11 @@
 #' @param groups List of groups
 #' @param data Language object defining the data
 #' @param hidden.data Language object defining the hidden data
-#' @param seed The seed used to generate hidden data
+#' @param hidden.seed The seed used to generate hidden data
 #'
 #' @return A quiz object
 #' @export
-Quiz <- function(title, groups, data, hidden.data, seed = NULL) {
+Quiz <- function(title, groups, data, hidden.data, hidden.seed = NULL) {
     if (missing(title)) stop("Quiz needs a title")
     if (missing(groups)) groups <- list()
     if (missing(data)) data <- quote({})
@@ -25,7 +25,7 @@ Quiz <- function(title, groups, data, hidden.data, seed = NULL) {
         groups = groups,
         data = data,
         hidden.data = hidden.data,
-        seed = seed,
+        hidden.seed = hidden.seed,
         get_hdata = get_hdata,
         set_hdata = set_hdata
     )
@@ -60,16 +60,16 @@ validate_quiz <- function(quiz, lang) {
     ## Check that IDs are unique
     stopifnot(unique_IDs(quiz))
 
-    ## Check that seed is specified if hidden data somewhere
-    if (is.null(quiz$seed)) {
+    ## Check that hidden seed is specified if hidden data somewhere
+    if (is.null(quiz$hidden.seed)) {
         if (paste0(deparse(quiz$hidden.data), collapse = "") != "{}")
-            stop("Seed should be specified when using hidden data")
+            stop("Hidden seed should be specified when using hidden data")
         for (g in quiz$groups) {
             if (paste0(deparse(g$hidden.data), collapse = "") != "{}")
-                stop("Seed should be specified when using hidden data")
+                stop("Hidden seed should be specified when using hidden data")
             for (q in g$questions) {
                 if (paste0(deparse(q$hidden.data), collapse = "") != "{}")
-                    stop("Seed should be specified when using hidden data")
+                    stop("Hidden seed should be specified when using hidden data")
             }
         }
     }
@@ -362,10 +362,20 @@ unrandomize_data <- function(obj)
 
 #' @export
 unrandomize_data.Quiz <- function(obj) {
-    if (!is.null(obj$seed))
-        set.seed(obj$seed)
+    if (exists(".Random.seed", .GlobalEnv))
+        oldseed <- .GlobalEnv$.Random.seed
+    else
+        oldseed <- NULL
+
+    if (!is.null(obj$hidden.seed))
+        set.seed(obj$hidden.seed)
     obj$set_hdata(unrandomize(obj$hidden.data))
     lapply(obj$groups, unrandomize_data)
+
+    if (!is.null(oldseed))
+        .GlobalEnv$.Random.seed <- oldseed
+    else
+        rm(".Random.seed", envir = .GlobalEnv)
 }
 
 #' @export
