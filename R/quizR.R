@@ -8,7 +8,7 @@
 #'
 #' @return A quiz object
 #' @export
-Quiz <- function(title, groups, data, hidden.data, hidden.seed = NULL) {
+Quiz <- function(title, groups, data, hidden.data, seed = NULL, hidden.seed = NULL) {
     if (missing(title)) stop("Quiz needs a title")
     if (missing(groups)) groups <- list()
     if (missing(data)) data <- quote({})
@@ -25,6 +25,7 @@ Quiz <- function(title, groups, data, hidden.data, hidden.seed = NULL) {
         groups = groups,
         data = data,
         hidden.data = hidden.data,
+        seed = seed,
         hidden.seed = hidden.seed,
         get_hdata = get_hdata,
         set_hdata = set_hdata
