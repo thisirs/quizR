@@ -188,10 +188,9 @@ generate_data_file <- function(quiz,
     validate_quiz(quiz, language)
 
     data <- get_recursive_language(quiz)
-    data0 <- merge_languages(language, data)
 
     ## Write data file if any
-    if (length(data0) > 1) {
-        write(answerstr(data0), data.name)
+    if (length(data) > 1) {
+        write(answerstr(data), data.name)
     }
 }
