@@ -4,12 +4,14 @@
 #' @param groups List of groups
 #' @param data Language object defining the data
 #' @param hidden.data Language object defining the hidden data
+#' @param seed The seed used to generate data
 #' @param hidden.seed The seed used to generate hidden data
 #'
 #' @return A quiz object
 #' @export
 Quiz <- function(title, groups, data, hidden.data, seed = NULL, hidden.seed = NULL) {
     if (missing(title)) stop("Quiz needs a title")
+    if (missing(seed)) stop("Quiz needs a seed to generate its data")
     if (missing(groups)) groups <- list()
     if (missing(data)) data <- quote({})
     if (missing(hidden.data)) hidden.data <- quote({})
