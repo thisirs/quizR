@@ -3,10 +3,10 @@ generate_correction <- function(quiz, output, lang, eval = TRUE) {
     # Instantiate random data with quiz$hidden.seed
     unrandomize_data(quiz)
 
-    validate_quiz(quiz)
-
     if (missing(output)) output <- paste0(quiz$title, ".pdf")
     if (missing(lang)) lang <- quote({})
+
+    validate_quiz(quiz, lang)
 
     soutput <- sprintf("---
 title: \"%s\"
