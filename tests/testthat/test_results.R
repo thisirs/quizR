@@ -342,7 +342,7 @@ test_that("compute_results_from_data works with random data", {
 
 test_that("compute_results_from_data works with random data and hidden data", {
     quiz <- Quiz("quiz1",
-                 seed = 1,
+                 hidden.seed = 1,
                  hidden.data = quote({
                      a <- runif(1)
                  }),
