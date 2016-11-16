@@ -70,6 +70,9 @@ to_XML.Group <- function(obj, ...)
     if (is.null(args$quiz)) stop("Missing quiz when calling to_XML.Group")
     if (is.null(args$data)) stop("Missing data when calling to_XML.Group")
 
+    if (obj$type == "identifier")
+        args$feedback <- FALSE
+
     title <- paste(args$quiz$title, "/", obj$title, sep = "")
     qs <- lapply(obj$questions, function(q) {
         args0 <- c(list(q), args)
@@ -84,33 +87,58 @@ to_XML.Question <- function(obj, ...) {
     if (is.null(args$quiz)) stop("Missing quiz when calling to_XML.Group")
     if (is.null(args$data)) stop("Missing data when calling to_XML.Group")
 
-    ## Add chunk containing data of quiz
-    md_data <- sprintf("```{r include=FALSE}\n%s\n```\n\n", answerstr(args$data))
-    md_hdata <- sprintf("```{r include=FALSE}\n%s\n```\n\n", answerstr(obj$get_hdata()))
-    title <- "-"
+    ## Saving seed and setting specified one
+    if (exists(".Random.seed", .GlobalEnv))
+        oldseed <- .GlobalEnv$.Random.seed
+    else
+        oldseed <- NULL
+    set.seed(obj$quiz$seed)
 
-    md_question <- paste0(md_data, md_hdata, obj$text)
+    ## Set environment corresponding to quiz data
+    env <- cleanenv()
+    eval(args$data, env)
+
+    ## Block defining data of quiz
+    data_s <- answerstr(args$data)
+    md_qdata_blk <- sprintf("```{r include=FALSE}\n%s\n```\n\n", data_s)
+
+    ## Block defining hidden data
+    hdata <- obj$get_hdata()
+    if (length(hdata) == 1 && hdata[[1]] == as.name("{")) {
+        md_hdata_blk <- NULL
+    } else {
+        hdata_s <- answerstr(hdata)
+        md_hdata_blk <- sprintf("```{r include=FALSE}\n%s\n```\n", hdata_s)
+    }
+
+    # Get title of question
+    if (is.null(args$title))
+        title <- "-"
+    else
+        title <- args$title
+
+    # Get HTML of question body
+    md_question <- paste0(md_qdata_blk, md_hdata_blk, obj$text)
     HTML_question <- paste0("<!-- Q(", obj$id, ") -->", render_HTML(md_question))
 
-    if (obj$type == "description" | args$feedback == FALSE) {
-        return(sprintf(question.xml, obj$type, title, "html", HTML_question, ""))
-    } else if (is.character(obj$feedback)) {
-        t_answers <- if (is.list(obj$answer)) obj$answer else list(obj$answer)
-        r_answers <- replace_answers(t_answers, obj$get_hdata())
-
-        if (obj$type == "cloze")
-            md_answer <- sprintf("```{r include=FALSE}\nanswer <- {%s}\n```\n\n", answerstr(r_answers))
-        else
-            md_answer <- sprintf("```{r include=FALSE}\nanswer <- {%s}\n```\n\n", answerstr(r_answers[[1]]))
-
-        md_feedback <- paste0(md_data, md_hdata, md_answer, obj$feedback)
-        HTML_feedback <- render_HTML(md_feedback)
-        return(sprintf(question.xml, obj$type, title, "html", HTML_question, HTML_feedback))
+    # Get HTML of feedback
+    if (obj$type == "description" | !args$feedback) {
+        md_feedback <- ""
     } else if (is.function(obj$feedback)) {
-        md_feedback <- paste0(md_data, obj$feedback(NULL, obj, NULL, numbered = FALSE, eval = FALSE, question.body = FALSE))
-        HTML_feedback <- render_HTML(md_feedback)
-        return(sprintf(question.xml, obj$type, title, "html", HTML_question, HTML_feedback))
+        md_feedback <- obj$feedback(NULL, obj, env, numbered = FALSE, eval = args$eval, question.body = FALSE)
     } else stop("Unhandled feedback type")
+
+    md_feedback <- paste0(md_qdata_blk, md_feedback)
+    HTML_feedback <- render_HTML(md_feedback)
+
+    ## Restoring old seed
+    if (!is.null(oldseed))
+        .GlobalEnv$.Random.seed <- oldseed
+    else
+        rm(".Random.seed", envir = .GlobalEnv)
+
+    # Return XML
+    return(sprintf(question.xml, obj$type, title, "html", HTML_question, HTML_feedback))
 }
 
 #' Generate XML Moodle quiz file and data file
