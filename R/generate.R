@@ -87,11 +87,6 @@ to_XML.Question <- function(obj, ...) {
     if (is.null(args$quiz)) stop("Missing quiz when calling to_XML.Group")
     if (is.null(args$data)) stop("Missing data when calling to_XML.Group")
 
-    ## Saving seed and setting specified one
-    if (exists(".Random.seed", .GlobalEnv))
-        oldseed <- .GlobalEnv$.Random.seed
-    else
-        oldseed <- NULL
     set.seed(obj$quiz$seed)
 
     ## Set environment corresponding to quiz data
@@ -130,12 +125,6 @@ to_XML.Question <- function(obj, ...) {
 
     md_feedback <- paste0(md_qdata_blk, md_feedback)
     HTML_feedback <- render_HTML(md_feedback)
-
-    ## Restoring old seed
-    if (!is.null(oldseed))
-        .GlobalEnv$.Random.seed <- oldseed
-    else
-        rm(".Random.seed", envir = .GlobalEnv)
 
     # Return XML
     return(sprintf(question.xml, obj$type, title, "html", HTML_question, HTML_feedback))

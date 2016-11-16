@@ -365,20 +365,10 @@ unrandomize_data <- function(obj)
 
 #' @export
 unrandomize_data.Quiz <- function(obj) {
-    if (exists(".Random.seed", .GlobalEnv))
-        oldseed <- .GlobalEnv$.Random.seed
-    else
-        oldseed <- NULL
-
     if (!is.null(obj$hidden.seed))
         set.seed(obj$hidden.seed)
     obj$set_hdata(unrandomize(obj$hidden.data))
     lapply(obj$groups, unrandomize_data)
-
-    if (!is.null(oldseed))
-        .GlobalEnv$.Random.seed <- oldseed
-    else
-        rm(".Random.seed", envir = .GlobalEnv)
 }
 
 #' @export

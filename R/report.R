@@ -15,16 +15,8 @@ title: \"%s\"
     data <- get_recursive_language(quiz)
     data0 <- merge_languages(lang, data)
 
-    ## Saving seed state
-    if (exists(".Random.seed", .GlobalEnv))
-        oldseed <- .GlobalEnv$.Random.seed
-    else
-        oldseed <- NULL
-
     ## Setting seed to evaluate data0
-    if (!is.null(quiz$seed)) {
-        set.seed(quiz$seed)
-    }
+    set.seed(quiz$seed)
 
     env <- cleanenv()
     eval(data0, env)
@@ -72,28 +64,13 @@ title: \"%s\"
     tmpfile <- tempfile("quiz", fileext = ".Rmd")
     write(soutput, tmpfile)
 
-    ## Restoring seed to same state
-    if (!is.null(oldseed))
-        .GlobalEnv$.Random.seed <- oldseed
-    else
-        rm(".Random.seed", envir = .GlobalEnv)
-
     ## Setting seed to evaluate data0
-    if (!is.null(quiz$seed)) {
-        set.seed(quiz$seed)
-    }
+    set.seed(quiz$seed)
 
     rmarkdown::render(input = tmpfile,
                       output_dir = dirname(output),
                       output_file = basename(output),
                       "pdf_document")
-
-    ## Finally restoring seed state
-    if (!is.null(oldseed))
-        .GlobalEnv$.Random.seed <- oldseed
-    else
-        rm(".Random.seed", envir = .GlobalEnv)
-
 }
 
 cloze_regex <- "\\{(\\d+):(SHORTANSWER|SA|MW|SHORTANSWER_C|SAC|MWC|NUMERICAL|NM|MULTICHOICE|MC|MULTICHOICE_V|MCV|MULTICHOICE_H|MCH):=[^\\}]+\\}"
