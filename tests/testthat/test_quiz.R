@@ -1,7 +1,7 @@
 context("Quiz")
 
 test_that("groups are correctly added", {
-    quiz <- Quiz("test")
+    quiz <- Quiz("test", seed = 1)
     expect_identical(quiz$groups, list())
 
     g1 <- Group("group1", type = "sequential")
@@ -10,13 +10,14 @@ test_that("groups are correctly added", {
     quiz <- add_group(quiz, g2)
     expect_identical(quiz$groups, list(g1, g2))
 
-    quiz <- Quiz("test", groups = list(g1, g2))
+    quiz <- Quiz("test", seed = 1, groups = list(g1, g2))
     expect_identical(quiz$groups, list(g1, g2))
 })
 
 test_that("identifiers are unique", {
     gen_quiz <- function(id1, id2, id3) {
         Quiz("test",
+             seed = 1,
              groups = list(
                  Group("g1", type = "sequential",
                        questions = list(
@@ -33,6 +34,7 @@ test_that("identifiers are unique", {
 
 test_that("distinct_data see data that conflicts", {
     quiz <- Quiz("quiz1",
+                 seed = 1,
                  data = quote({a <- 1}),
                  groups = list(
                      Group("G1",
@@ -44,6 +46,7 @@ test_that("distinct_data see data that conflicts", {
     expect_identical(distinct_data(quiz), FALSE)
 
     quiz <- Quiz("quiz1",
+                 seed = 1,
                  data = quote({a <- 1}),
                  groups = list(
                      Group("G1",
@@ -55,6 +58,7 @@ test_that("distinct_data see data that conflicts", {
     expect_identical(distinct_data(quiz), TRUE)
 
     quiz <- Quiz("quiz1",
+                 seed = 1,
                  data = quote({a <- 1; blah}),
                  groups = list(
                      Group("G1",
@@ -94,15 +98,17 @@ test_that("eval_answers is properly evaluating", {
 })
 
 test_that("validate_quiz is working", {
-    quiz <- Quiz("Quiz1")
+    quiz <- Quiz("Quiz1", seed = 1)
     expect_error(validate_quiz(quiz))
 
     quiz <- Quiz("Quiz1",
+                 seed = 1,
                  groups = list(Group("G1",
                                      type = "sequential")))
     expect_error(validate_quiz(quiz))
 
     quiz <- Quiz("Quiz1",
+                 seed = 1,
                  hidden.data = quote({a}),
                  groups = list(Group("G1",
                                      type = "sequential",
@@ -110,6 +116,7 @@ test_that("validate_quiz is working", {
     expect_error(validate_quiz(quiz))
 
     quiz <- Quiz("Quiz1",
+                 seed = 1,
                  groups = list(Group("G1",
                                      hidden.data = quote({a}),
                                      type = "sequential",
@@ -117,6 +124,7 @@ test_that("validate_quiz is working", {
     expect_error(validate_quiz(quiz))
 
     quiz <- Quiz("Quiz1",
+                 seed = 1,
                  groups = list(Group("G1",
                                      type = "sequential",
                                      questions = list(Question("Q1",

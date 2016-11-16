@@ -18,6 +18,7 @@ context("Computing results")
 
 test_that("body and result of quiz", {
     quiz <- Quiz("quiz1",
+                 seed = 1,
                  groups = list(
                      Group("G1",
                            type = "sequential",
@@ -56,6 +57,7 @@ test_that("body and result of quiz", {
 
 test_that("Checking Results, no identifier, 2 questions", {
     quiz <- Quiz("quiz1",
+                 seed = 1,
                  groups = list(
                      Group("G1",
                            type = "sequential",
@@ -87,6 +89,7 @@ test_that("Checking Results, no identifier, 2 questions", {
 test_that("Checking Results, with identifier", {
 
     quiz <- Quiz("quiz1",
+                 seed = 1,
                  groups = list(
                      Group("G0", type = "identifier",
                            questions = list(
@@ -130,6 +133,7 @@ test_that("Checking Results, with identifier", {
 
 test_that("Checking Results, with identifier, 2 questions", {
     quiz <- Quiz("quiz1",
+                 seed = 1,
                  groups = list(
                      Group("G0", type = "identifier",
                            questions = list(
@@ -164,6 +168,7 @@ test_that("Checking Results, with identifier, 2 questions", {
 
 test_that("Multiple answers", {
     quiz <- Quiz("quiz1",
+                 seed = 1,
                  groups = list(
                      Group("G1",
                            type = "sequential",
@@ -191,6 +196,7 @@ test_that("Multiple answers", {
 
 test_that("Expression in answers", {
     quiz <- Quiz("quiz1",
+                 seed = 1,
                  groups = list(
                      Group("G1",
                            type = "sequential",
@@ -208,6 +214,7 @@ test_that("Expression in answers", {
 
 test_that("Expression in answers + context", {
     quiz <- Quiz("quiz1",
+                 seed = 1,
                  data = quote({a <- 1; b <- 2}),
                  groups = list(
                      Group("G1",
@@ -225,6 +232,7 @@ test_that("Expression in answers + context", {
 
 
     quiz <- Quiz("quiz1",
+                 seed = 1,
                  groups = list(
                      Group("G1",
                            data = quote({a <- 1; b <- 2}),
@@ -242,6 +250,7 @@ test_that("Expression in answers + context", {
 
 
     quiz <- Quiz("quiz1",
+                 seed = 1,
                  groups = list(
                      Group("G1",
                            type = "sequential",
@@ -312,6 +321,7 @@ generateRandomRecord <- function(quiz, N, with.question = T, right.answers) {
 
 test_that("compute_results_from_data works with random data", {
     quiz <- Quiz("quiz1",
+                 seed = 1,
                  data = quote({
                      set.seed(1234)
                      a <- runif(1)
@@ -342,6 +352,7 @@ test_that("compute_results_from_data works with random data", {
 
 test_that("compute_results_from_data works with random data and hidden data", {
     quiz <- Quiz("quiz1",
+                 seed = 1,
                  hidden.seed = 1,
                  hidden.data = quote({
                      a <- runif(1)

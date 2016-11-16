@@ -52,6 +52,7 @@ test_that("correct_question returns the right structure", {
 
 test_that("compute_results_from_data returns Cloze question record", {
     quiz <- Quiz("quiz1",
+                 seed = 1,
                  groups = list(
                      Group("G1",
                            type = "sequential",
@@ -76,6 +77,7 @@ test_that("replace_cloze_fields is correctly replacing", {
 
 test_that("environment is the same for all cloze fields", {
     quiz <- Quiz("quiz1",
+                 seed = 1,
                  groups = list(
                      Group("G1",
                            type = "sequential",
