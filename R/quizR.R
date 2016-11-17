@@ -457,7 +457,6 @@ distinct_data <- function(quiz, lang) {
 }
 
 #' Check that all given answers are consistent
-#' @export
 noerror_in_answers <- function(quiz, env) {
     if (missing(env)) env <- new.env(parent = baseenv())
     if (is.language(env)) {
