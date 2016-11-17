@@ -112,8 +112,13 @@ to_XML.Question <- function(obj, ...) {
     else
         title <- args$title
 
+    if (obj$type == "cloze") {
+        body <- stringi::stri_replace_all_regex(obj$text, "=\\*\\}", "=********}")
+    } else
+        body <- obj$text
+
     # Get HTML of question body
-    md_question <- paste0(md_qdata_blk, md_hdata_blk, obj$text)
+    md_question <- paste0(md_qdata_blk, md_hdata_blk, body)
     HTML_question <- paste0("<!-- Q(", obj$id, ") -->", render_HTML(md_question))
 
     # Get HTML of feedback
