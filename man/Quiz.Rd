@@ -4,7 +4,7 @@
 \alias{Quiz}
 \title{Create a quiz object}
 \usage{
-Quiz(title, groups, data, hidden.data, seed = NULL)
+Quiz(title, groups, data, hidden.data, seed = NULL, hidden.seed = NULL)
 }
 \arguments{
 \item{title}{Title of the quiz}
@@ -15,7 +15,9 @@ Quiz(title, groups, data, hidden.data, seed = NULL)
 
 \item{hidden.data}{Language object defining the hidden data}
 
-\item{seed}{The seed used to generate hidden data}
+\item{seed}{The seed used to generate data}
+
+\item{hidden.seed}{The seed used to generate hidden data}
 }
 \value{
 A quiz object
