@@ -571,18 +571,51 @@ correct_record <- function(quiz0, record, env, is_with_question_body) {
     return(result_quiz)
 }
 
+matching_id <- function(qs.text, questions) {
+    # Extract id from questions body
+    bodies_id <- sapply(qs.text, function(text) {
+        stringr::str_match(text, "\\(Q([A-Za-z0-9]+)\\)")[1, 2]
+    })
+
+    # If no id in questions body, return OK
+    if (all(is.na(bodies_id)))
+        return(TRUE)
+
+    if (any(is.na(bodies_id)))
+        stop("Some questions do not have an id")
+
+    qs_id <- sapply(questions, function(q) q$id)
+
+    mapply(function(i, q_id, b_id) {
+        if (q_id != b_id)
+            stop("Id do not match")
+    },
+    1:length(questions), qs_id, bodies_id)
+}
+
 correct_record_group <- function(group, record, env, is_with_question_body) {
     stopifnot(!group$type == "random" | is_with_question_body)
 
-    if (is_with_question_body) {
-        qs.answer <- record[c(FALSE, TRUE)]
-        qs.text <- as.character(record[c(TRUE, FALSE)])
-    } else
-        qs.answer <- record
-
+    # Set mapping of questions with records
     if (group$type == "random") {
-        map <- get_mapping(qs.text, group$questions)
+        if (is_with_question_body) {
+            qs.text <- as.character(record[c(TRUE, FALSE)])
+            qs.answer <- record[c(FALSE, TRUE)]
+            map <- get_mapping(qs.text, group$questions)
+        } else {
+            stop("Cannot get mapping with no question body")
+        }
     } else {
+        if (is_with_question_body) {
+            qs.answer <- record[c(FALSE, TRUE)]
+            qs.text <- as.character(record[c(TRUE, FALSE)])
+
+            ## Check that ids are the same
+            matching_id(qs.text, group$questions)
+        } else {
+            qs.answer <- record
+        }
+
         map <- 1:get_num(group)
     }
 
