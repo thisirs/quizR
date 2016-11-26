@@ -495,20 +495,42 @@ noerror_in_answers <- function(quiz, env) {
     }
 }
 
-get_mapping <- function(qs.text, questions) {
-    map <- rep(0, length(qs.text))
-    for (i in 1:length(qs.text)) {
-        # Extract ID from the question's body
-        text <- qs.text[i]
-        id <- stringr::str_match(text, "\\(Q([A-Za-z0-9]+)\\)")[1, 2]
-        if (is.na(id)) stop("`id' not found")
+get_mapping <- function(res.text, questions) {
+    text <- res.text[1]
+    id <- stringr::str_match(text, "\\(Q([A-Za-z0-9]+)\\)")[1, 2]
+    if (is.na(id)) {
+        # No id present, matching text directly
+        res.text0 <- gsub("^[a-zA-Z0-9]", "", res.text)
 
-        # Look for corresponding id in list of questions
-        index <- Position(function(q){ id == q$id}, questions)
-        if (is.na(index)) stop("No corresponding `id' found for ", q$text)
-        map[i] <- index
+        qs.text <- gsub("^[a-zA-Z0-9]", "", sapply(questions, function(q) {
+            q$text
+        }))
+        ## adist_vect <- function(x, y) {
+        ##     mapply(adist, x, y)
+        ## }
+        ## d <- outer(res.text0, qs.text, adist_vect)
+        d <- adist(res.text0, qs.text)
+        print(d)
+        map <- apply(d, 1, which.min)
+        print(map)
+        stopifnot(any(!duplicated(map)))
+        return(map)
+    } else {
+        map <- rep(0, length(res.text))
+
+        for (i in 1:length(qs.text)) {
+            # Extract ID from the question's body
+            text <- qs.text[i]
+            id <- stringr::str_match(text, "\\(Q([A-Za-z0-9]+)\\)")[1, 2]
+            if (is.na(id)) stop("`id' not found")
+
+            # Look for corresponding id in list of questions
+            index <- Position(function(q){ id == q$id}, questions)
+            if (is.na(index)) stop("No corresponding `id' found for ", q$text)
+            map[i] <- index
+        }
+        return(map)
     }
-    return(map)
 }
 
 compute_results_from_data <- function(quiz, data, lang) {
