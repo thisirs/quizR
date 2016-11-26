@@ -583,7 +583,7 @@ correct_record <- function(quiz0, record, env, is_with_question_body) {
         recordg <- record[1:num]
         record <- record[-seq(1, num)]
         resultg <- correct_record_group(g, recordg, env, is_with_question_body)
-        result_quiz$grade <- result_quiz$grade + resultg$grade
+        result_quiz$grade <- result_quiz$grade + resultg$points
         result_quiz$groups[[length(result_quiz$groups) + 1]] <- resultg
     }
     return(result_quiz)
