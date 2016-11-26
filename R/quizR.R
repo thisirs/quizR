@@ -505,14 +505,8 @@ get_mapping <- function(res.text, questions) {
         qs.text <- gsub("^[a-zA-Z0-9]", "", sapply(questions, function(q) {
             q$text
         }))
-        ## adist_vect <- function(x, y) {
-        ##     mapply(adist, x, y)
-        ## }
-        ## d <- outer(res.text0, qs.text, adist_vect)
         d <- adist(res.text0, qs.text)
-        print(d)
         map <- apply(d, 1, which.min)
-        print(map)
         stopifnot(any(!duplicated(map)))
         return(map)
     } else {
