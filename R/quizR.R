@@ -90,7 +90,7 @@ validate_quiz <- function(quiz, lang) {
 #' @export
 compute_grades <- function(quiz, filename = NULL, lang = NULL) {
     stopifnot(is.character(filename))
-    data <- utils::read.csv(filename, header = TRUE, check.names = FALSE, stringsAsFactors = FALSE)
+    data <- utils::read.csv(filename, header = TRUE, check.names = FALSE, stringsAsFactors = FALSE, na.strings = "-")
     results <- compute_results_from_data(quiz, data, lang)
     grades <- sapply(results, function(e) { e$grade })
     data.frame(Nom = data[,1], `Prénom` = data[,2], note = grades)
@@ -105,7 +105,7 @@ compute_results <- function(quiz, filename = NULL, lang = NULL) {
     stopifnot(is.character(filename))
 
     ## Loading answers (there is a header, do not modify col names)
-    data <- utils::read.csv(filename, header = TRUE, check.names = FALSE, stringsAsFactors = FALSE)
+    data <- utils::read.csv(filename, header = TRUE, check.names = FALSE, stringsAsFactors = FALSE, na.strings = "-")
 
     return(compute_results_from_data(quiz, data, lang))
 }
