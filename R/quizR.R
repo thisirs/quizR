@@ -293,7 +293,7 @@ match_answers <- function(eval_answers, guess, dist, epsilon) {
             !is.na(guess) && abs(answer - guess) <= epsilon * abs(answer)
         } else if (is.character(answer)) {
             guess <- as.character(guess)
-            utils::adist(answer, guess) <= dist
+            !is.na(guess) && utils::adist(answer, guess) <= dist
         } else {
             stop("Unhandled answer type")
         }
