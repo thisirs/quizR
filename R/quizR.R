@@ -88,10 +88,10 @@ validate_quiz <- function(quiz, lang) {
 #' @param quiz Quiz
 #' @param filename CSV file of results
 #' @export
-compute_grades <- function(quiz, filename = NULL) {
+compute_grades <- function(quiz, filename = NULL, lang = NULL) {
     stopifnot(is.character(filename))
     data <- utils::read.csv(filename, header = TRUE, check.names = FALSE, stringsAsFactors = FALSE)
-    results <- compute_results_from_data(quiz, data)
+    results <- compute_results_from_data(quiz, data, lang)
     grades <- sapply(results, function(e) { e$grade })
     data.frame(Nom = data[,1], `Prénom` = data[,2], note = grades)
 }
@@ -101,13 +101,13 @@ compute_grades <- function(quiz, filename = NULL) {
 #' @param quiz Quiz
 #' @param filename CSV file of results
 #' @export
-compute_results <- function(quiz, filename = NULL) {
+compute_results <- function(quiz, filename = NULL, lang = NULL) {
     stopifnot(is.character(filename))
 
     ## Loading answers (there is a header, do not modify col names)
     data <- utils::read.csv(filename, header = TRUE, check.names = FALSE, stringsAsFactors = FALSE)
 
-    return(compute_results_from_data(quiz, data))
+    return(compute_results_from_data(quiz, data, lang))
 }
 
 #' Add group to quiz
@@ -511,8 +511,8 @@ get_mapping <- function(qs.text, questions) {
     return(map)
 }
 
-compute_results_from_data <- function(quiz, data) {
-    validate_quiz(quiz)
+compute_results_from_data <- function(quiz, data, lang) {
+    validate_quiz(quiz, lang)
 
     ## No factor, numeric or character vector
     i <- sapply(data, is.factor)
