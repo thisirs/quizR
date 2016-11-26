@@ -528,6 +528,8 @@ get_mapping <- function(res.text, questions) {
 }
 
 compute_results_from_data <- function(quiz, data, lang) {
+    unrandomize_data(quiz)
+
     validate_quiz(quiz, lang)
 
     ## No factor, numeric or character vector
