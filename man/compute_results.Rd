@@ -4,12 +4,14 @@
 \alias{compute_results}
 \title{Compute full results of given quiz}
 \usage{
-compute_results(quiz, filename = NULL)
+compute_results(quiz, filename = NULL, lang = NULL)
 }
 \arguments{
 \item{quiz}{Quiz}
 
 \item{filename}{CSV file of results}
+
+\item{lang}{Chunk of code to pass validation}
 }
 \description{
 Compute full results of given quiz

@@ -4,12 +4,14 @@
 \alias{compute_grades}
 \title{Compute grades for given quiz and results}
 \usage{
-compute_grades(quiz, filename = NULL)
+compute_grades(quiz, filename = NULL, lang = NULL)
 }
 \arguments{
 \item{quiz}{Quiz}
 
 \item{filename}{CSV file of results}
+
+\item{lang}{Chunk of code to pass validation}
 }
 \description{
 Compute grades for given quiz and results

@@ -87,6 +87,7 @@ validate_quiz <- function(quiz, lang) {
 #'
 #' @param quiz Quiz
 #' @param filename CSV file of results
+#' @param lang Chunk of code to pass validation
 #' @export
 compute_grades <- function(quiz, filename = NULL, lang = NULL) {
     stopifnot(is.character(filename))
@@ -100,6 +101,7 @@ compute_grades <- function(quiz, filename = NULL, lang = NULL) {
 #'
 #' @param quiz Quiz
 #' @param filename CSV file of results
+#' @param lang Chunk of code to pass validation
 #' @export
 compute_results <- function(quiz, filename = NULL, lang = NULL) {
     stopifnot(is.character(filename))
@@ -108,6 +110,21 @@ compute_results <- function(quiz, filename = NULL, lang = NULL) {
     data <- utils::read.csv(filename, header = TRUE, check.names = FALSE, stringsAsFactors = FALSE, na.strings = "-")
 
     return(compute_results_from_data(quiz, data, lang))
+}
+
+#' Write grades from answers in csv file
+#'
+#' @param quiz Quiz
+#' @param input CSV file of results
+#' @param output CSV file of grades
+#' @param lang Chunk of code to pass validation
+#' @export
+write_grades <- function(quiz, input = NULL, output = NULL, lang = NULL) {
+    grades <- compute_grades(quiz, filename = input, lang = lang)
+    if (missing(output)) {
+        output <- paste0(tools::file_path_sans_ext(input), "_grades.csv")
+    }
+    write.csv(grades, file = output, na = "-", row.names = FALSE)
 }
 
 #' Add group to quiz
