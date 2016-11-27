@@ -94,7 +94,10 @@ compute_grades <- function(quiz, filename = NULL, lang = NULL) {
     data <- utils::read.csv(filename, header = TRUE, check.names = FALSE, stringsAsFactors = FALSE, na.strings = "-")
     results <- compute_results_from_data(quiz, data, lang)
     grades <- sapply(results, function(e) { e$grade })
-    data.frame(Nom = data[,1], `Prénom` = data[,2], note = grades)
+    data.frame(Nom                   = data[, 1],
+               `Prénom`              = data[, 2],
+               `Adresse de courriel` = data[, 5],
+               note                  = grades)
 }
 
 #' Compute full results of given quiz
