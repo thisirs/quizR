@@ -16,15 +16,19 @@ cloze_coefficients <- function(question) {
 }
 
 split_cloze_guesses <- function(num, s_answers) {
-    prefix <- "partie (\\d+) :"
-    numbers <- as.integer(stringi::stri_match_all_regex(s_answers, prefix)[[1]][, 2])
-    stopifnot(identical(numbers, 1:num))
+    if (is.na(s_answers)) {
+        return(rep(NA, num))
+    } else {
+        prefix <- "partie (\\d+) :"
+        numbers <- as.integer(stringi::stri_match_all_regex(s_answers, prefix)[[1]][, 2])
+        stopifnot(identical(numbers, 1:num))
 
-    raw_answers <- strsplit(s_answers, "; ")[[1]]
-    raw_answers <- gsub(prefix, "", raw_answers)
+        raw_answers <- strsplit(s_answers, "; ")[[1]]
+        raw_answers <- gsub(prefix, "", raw_answers)
 
-    stopifnot(length(raw_answers) == num)
-    answers0 <- trimws(raw_answers)
+        stopifnot(length(raw_answers) == num)
+        return(trimws(raw_answers))
+    }
 }
 
 correct_question_cloze <- function(question, env, guess) {
