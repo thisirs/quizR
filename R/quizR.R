@@ -309,10 +309,10 @@ eval_answers <- function(answers, env) {
 match_answers <- function(eval_answers, guess, dist, epsilon) {
     sapply(eval_answers, function(answer) {
         if (is.numeric(answer)) {
-            guess <- as.numeric(guess)
+            guess <- suppressWarnings(as.numeric(guess))
             !is.na(guess) && abs(answer - guess) <= epsilon * abs(answer)
         } else if (is.character(answer)) {
-            guess <- as.character(guess)
+            guess <- suppressWarnings(as.character(guess))
             !is.na(guess) && utils::adist(answer, guess) <= dist
         } else {
             stop("Unhandled answer type")
