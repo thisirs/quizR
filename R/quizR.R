@@ -220,10 +220,20 @@ question_types <- c("shortanswer", "description", "cloze")
 #' @param dist Tolerance of answer for character string answer
 #' @param epsilon Relative error for numeric answer
 #' @export
-Question <- function(text, type = NULL, answer = NULL, hidden.data = quote({}), data = quote({}), feedback = automatic_feedback, points = 1, dist = 2, epsilon = 1e-4) {
+Question <- function(text,
+                     type = question_types,
+                     answer = NULL,
+                     hidden.data = quote({}),
+                     data = quote({}),
+                     feedback = automatic_feedback,
+                     points = if (type == "cloze")
+                                  sum(cloze_field_points_text(text))
+                              else
+                                  1,
+                     dist = 2,
+                     epsilon = 1e-4) {
     stopifnot(is.character(text))
-    type <- ifelse(is.null(type), "shortanswer", type)
-    match.arg(type, question_types)
+    type <- match.arg(type)
 
     .hdata <- NULL
     set_hdata <- function(hdata) {

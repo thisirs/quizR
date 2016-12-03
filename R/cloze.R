@@ -6,13 +6,16 @@ get_cloze_num <- function(text) {
     stringi::stri_count_regex(text, cloze_regex)
 }
 
-#' Return coefficients of cloze fields over their sum
+#' Return list of cloze fields points
 #'
 #' @param question A question
-cloze_coefficients <- function(question) {
+cloze_field_points <- function(question) {
     stopifnot(question$type == "cloze")
-    coeffs <- as.numeric(stringi::stri_match_all_regex(question$text, cloze_regex)[[1]][,2])
-    coeffs / sum(coeffs)
+    cloze_field_points_text(question$text)
+}
+
+cloze_field_points_text <- function(text) {
+    as.numeric(stringi::stri_match_all_regex(text, cloze_regex)[[1]][,2])
 }
 
 split_cloze_guesses <- function(num, s_answers) {
@@ -38,7 +41,7 @@ correct_question_cloze <- function(question, env, guess) {
     guesses <- split_cloze_guesses(num, guess)
     stopifnot(length(guesses) == num)
 
-    cloze_points <- rep(0, num)
+    cloze_good <- rep(FALSE, num)
     right_answers <- vector(mode = "list", length = num)
 
     for (i in 1:num) {
@@ -51,22 +54,25 @@ correct_question_cloze <- function(question, env, guess) {
         match <- match_answers(ea, guess, question$dist, question$epsilon)
 
         if (any(match)) {
-            cloze_points[i] <- 1
+            cloze_good[i] <- TRUE
             right_answers[[i]] <- answers[match][[1]]
         } else {
-            cloze_points[i] <- 0
+            cloze_good[i] <- FALSE
             right_answers[[i]] <- answers[[1]]
         }
     }
 
-    cloze_coefficients <- cloze_coefficients(question)
-    weighted_points <- cloze_points * cloze_coefficients
-    total_points <- question$points * sum(weighted_points)
+    cloze_total_points <- cloze_field_points(question)
+
+    cloze_points <- cloze_total_points
+    cloze_points[!cloze_good] <- 0
+
+    points <- sum(cloze_points) / sum(cloze_total_points) * question$points
 
     list(type = "cloze",
-         points = total_points,
+         points = points,
          cloze.points = cloze_points,
-         cloze.coeffs = cloze_coefficients,
+         cloze.total.points = cloze_total_points,
          guesses = guesses,
          right_answers = right_answers)
 }

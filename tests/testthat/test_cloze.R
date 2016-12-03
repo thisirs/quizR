@@ -14,12 +14,12 @@ test_that("split_cloze_guesses splits answer correctly", {
                      c("blah", "foo", "bar0"))
 })
 
-test_that("cloze_coefficients properly extracts the coefficients", {
+test_that("cloze_field_points properly extracts the points", {
     q1 <- Question("{2:SA:=*}", type = "cloze", answer = list(quote(a)))
-    expect_identical(cloze_coefficients(q1), 1)
+    expect_identical(cloze_field_points(q1), 2)
 
     q2 <- Question("{2:SA:=*} foo {1:SHORTANSWER:=*}", type = "cloze", answer = list(quote(a)))
-    expect_identical(cloze_coefficients(q2), c(2, 1)/3)
+    expect_identical(cloze_field_points(q2), c(2, 1))
 })
 
 test_that("get_cloze_num retrieves the right number of cloze questions", {
@@ -33,20 +33,20 @@ test_that("get_cloze_num retrieves the right number of cloze questions", {
 test_that("correct_question returns the right structure", {
     q1 <- Question("{2:SA:=*}", type = "cloze", answer = list("blah"))
     res <- correct_question(q1, new.env(), "partie 1 : blah")
-    expect_identical(res$points, 1)
+    expect_identical(res$points, 2)
 
     res <- correct_question(q1, new.env(), "partie 1 : blahfoo")
     expect_identical(res$points, 0)
 
     q1 <- Question("{2:SA:=*}, {1:SA:=*}", type = "cloze", answer = list("blah", "foo"))
     res <- correct_question(q1, new.env(), "partie 1 : blah; partie 2 : foo")
-    expect_identical(res$cloze.points, c(1, 1))
-    expect_identical(res$points, 1)
+    expect_identical(res$cloze.points, c(2, 1))
+    expect_identical(res$points, 3)
 
     q1 <- Question("{3:SA:=*}, {1:SA:=*}", type = "cloze", answer = list("blah", "foo"))
     res <- correct_question(q1, new.env(), "partie 1 : blah; partie 2 : foobar")
-    expect_identical(res$cloze.points, c(1, 0))
-    expect_identical(res$points, 3/4)
+    expect_identical(res$cloze.points, c(3, 0))
+    expect_identical(res$points, 3)
 })
 
 
@@ -64,8 +64,8 @@ test_that("compute_results_from_data returns Cloze question record", {
     data <- as.data.frame(r)
     results <- compute_results_from_data(quiz, data)
 
-    expect_identical(results[[1]]$groups[[1]]$points, 1)
-    expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 1)
+    expect_identical(results[[1]]$groups[[1]]$points, 4)
+    expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 4)
 
 })
 
@@ -96,8 +96,8 @@ test_that("environment is the same for all cloze fields", {
     data <- as.data.frame(r)
     results <- compute_results_from_data(quiz, data)
 
-    expect_identical(results[[1]]$groups[[1]]$points, 1)
-    expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 1)
+    expect_identical(results[[1]]$groups[[1]]$points, 4)
+    expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 4)
 })
 
 ## quiz <- Quiz("quiz1",
