@@ -278,6 +278,8 @@ validate_question <- function(question) {
 #'
 #' @param answers List of answers
 #' @param data Data to replace
+#'
+#' @return A list of answers where some data is replaced
 replace_answers <- function(answers, data) {
     env <- cleanenv()
     eval(data, env)
