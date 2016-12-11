@@ -11,6 +11,9 @@ replace_answers(answers, data)
 
 \item{data}{Data to replace}
 }
+\value{
+A list of answers where some data is replaced
+}
 \description{
 Replace data in list of answers
 }

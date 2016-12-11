@@ -35,6 +35,12 @@ cleanenv <- function() {
     new.env(parent = parent.env(.GlobalEnv))
 }
 
+#' Helper function to specify list of languages
+#'
+#' Helper function 
+#' @param Expressions
+#'
+#' @return A quoted expression or a list of quoted expression
 #' @export
 expr <- function(...) {
     l <- as.list(match.call(expand.dots = TRUE)[-1])

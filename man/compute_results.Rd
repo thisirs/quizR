@@ -13,6 +13,9 @@ compute_results(quiz, filename = NULL, lang = NULL)
 
 \item{lang}{Chunk of code to pass validation}
 }
+\value{
+Detailed results of quiz
+}
 \description{
 Compute full results of given quiz
 }

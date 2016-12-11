@@ -13,6 +13,9 @@ compute_grades(quiz, filename = NULL, lang = NULL)
 
 \item{lang}{Chunk of code to pass validation}
 }
+\value{
+A data frame of name, firstname, email and grade
+}
 \description{
 Compute grades for given quiz and results
 }

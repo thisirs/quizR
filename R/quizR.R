@@ -88,6 +88,8 @@ validate_quiz <- function(quiz, lang) {
 #' @param quiz Quiz
 #' @param filename CSV file of results
 #' @param lang Chunk of code to pass validation
+#'
+#' @return A data frame of name, firstname, email and grade
 #' @export
 compute_grades <- function(quiz, filename = NULL, lang = NULL) {
     stopifnot(is.character(filename))
@@ -105,6 +107,8 @@ compute_grades <- function(quiz, filename = NULL, lang = NULL) {
 #' @param quiz Quiz
 #' @param filename CSV file of results
 #' @param lang Chunk of code to pass validation
+#'
+#' @return Detailed results of quiz
 #' @export
 compute_results <- function(quiz, filename = NULL, lang = NULL) {
     stopifnot(is.character(filename))
