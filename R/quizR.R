@@ -206,6 +206,7 @@ get_num <- function(group) {
     }
 }
 
+#' @export
 question_types <- c("shortanswer", "description", "cloze")
 
 #' Create a question object
