@@ -1,3 +1,65 @@
+markdown_question <- function(q, qno, env, eval) {
+    if (q$type == "description") {
+        paste0(q$text, "\n")
+    } else {
+        if (is.function(q$feedback)) {
+            body <- q$feedback(qno, q, env, eval = eval)
+        } else if (is.character(q$feedback)) {
+            t_answers <- if (is.list(q$answer)) q$answer else list(q$answer)
+            r_answers <- replace_answers(t_answers, q$get_hdata())
+
+            hdata <- answerstr(q$get_hdata())
+            answer <- answerstr(r_answers[[1]])
+
+            body <- sprintf("```{r include=FALSE}\n%s\n```\n\n", hdata)
+            body <- c(body, sprintf("**Question %d.** %s\n\n", qno, q$text))
+            body <- c(body, sprintf("```{r include=FALSE}\nanswer <- {%s}\n```\n\n", answer))
+            body <- c(body, "**Réponse:**\n")
+            body <- c(body, q$feedback)
+        } else stop("Unhandled feedback")
+        paste0("\n", body, "\n")
+    }
+}
+
+markdown_title <- function(quiz) {
+    sprintf("---
+title: \"%s\"
+---\n\n", quiz$title)
+}
+
+markdown_group <- function(g, env, eval) {
+    ## Set title of group
+    if (g$type == "random")
+        title <- sprintf("\n## %s (aléatoire %d parmi %d)\n\n", g$title, g$num, length(g$questions))
+    else if (g$type == "sequential")
+        title <- sprintf("\n## %s \n\n", g$title)
+    else
+        stop("Unhandled group type")
+
+    soutput <- c(title)
+    qno <- 0
+    for (q in g$questions) {
+        if (q$type != "description") {
+            qno <- qno + 1
+            soutput <- c(soutput, markdown_question(q, qno, env, eval))
+        }
+    }
+    soutput
+}
+
+quiz_environment <- function(quiz, lang) {
+    data <- get_recursive_language(quiz)
+    data0 <- merge_languages(lang, data)
+
+    ## Setting seed to evaluate data0
+    set.seed(quiz$seed)
+
+    env <- cleanenv()
+    eval(data0, env)
+
+    list(env = env, data = data0)
+}
+
 #' @export
 generate_correction <- function(quiz, output, lang, eval = TRUE) {
     # Instantiate random data with quiz$hidden.seed
@@ -8,61 +70,23 @@ generate_correction <- function(quiz, output, lang, eval = TRUE) {
 
     validate_quiz(quiz, lang)
 
-    soutput <- sprintf("---
-title: \"%s\"
----\n\n", quiz$title)
+    title_chunk <- markdown_title(quiz)
 
-    data <- get_recursive_language(quiz)
-    data0 <- merge_languages(lang, data)
+    quiz_env <- quiz_environment(quiz, lang)
 
-    ## Setting seed to evaluate data0
-    set.seed(quiz$seed)
+    data_chunk <- sprintf("```{r include=FALSE}\n%s\n```\n\n", answerstr(quiz_env$data))
 
-    env <- cleanenv()
-    eval(data0, env)
-    data_chunk <- sprintf("```{r include=FALSE}\n%s\n```\n\n", answerstr(data0))
-
-    soutput <- c(soutput, data_chunk)
-
-    for (g in quiz$groups) {
-        if (g$type == "identifier") next
-        if (g$type == "random")
-            soutput <- c(soutput,
-                         sprintf("\n## %s (aléatoire %d parmi %d)\n\n", g$title, g$num, length(g$questions)))
-        else if (g$type == "sequential")
-            soutput <- c(soutput, sprintf("\n## %s \n\n", g$title))
+    groups_chunks <- unlist(sapply(quiz$groups, function(g) {
+        if (g$type == "identifier")
+            NULL
         else
-            stop("Unhandled group type")
+            markdown_group(g, env = quiz_env$env, eval = eval)
+    }))
 
-        qno <- 0
-        for (q in g$questions) {
-            if (q$type == "description") {
-                soutput <- c(soutput, paste0(q$text, "\n"))
-            } else {
-                qno <- qno + 1
-                if (is.function(q$feedback)) {
-                    body <- q$feedback(qno, q, env, eval = eval)
-                } else if (is.character(q$feedback)) {
-                    t_answers <- if (is.list(q$answer)) q$answer else list(q$answer)
-                    r_answers <- replace_answers(t_answers, q$get_hdata())
+    markdown <- paste(c(title_chunk, data_chunk, groups_chunks), collapse = "")
 
-                    hdata <- answerstr(q$get_hdata())
-                    answer <- answerstr(r_answers[[1]])
-
-                    body <- sprintf("```{r include=FALSE}\n%s\n```\n\n", hdata)
-                    body <- c(body, sprintf("**Question %d.** %s\n\n", qno, q$text))
-                    body <- c(body, sprintf("```{r include=FALSE}\nanswer <- {%s}\n```\n\n", answer))
-                    body <- c(body, "**Réponse:**\n")
-                    body <- c(body, q$feedback)
-                } else stop("Unhandled feedback")
-                soutput <- c(soutput, paste0("\n", body, "\n"))
-            }
-        }
-    }
-
-    soutput <- paste(soutput, collapse = "")
     tmpfile <- tempfile("quiz", fileext = ".Rmd")
-    write(soutput, tmpfile)
+    write(markdown, tmpfile)
 
     ## Setting seed to evaluate data0
     set.seed(quiz$seed)
