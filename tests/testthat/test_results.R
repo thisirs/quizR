@@ -23,9 +23,9 @@ test_that("body and result of quiz", {
                      Group("G1",
                            type = "sequential",
                            questions = list(
-                               Question("Q1", type = "shortanswer", answer = 42)))))
+                               Question("Q1", type = "shortanswer", answer = 4.2)))))
 
-    r <- get_record("Q_1", 42)
+    r <- get_record("Q_1", 4.2)
     data <- as.data.frame(r)
     results <- compute_results_from_data(quiz, data)
 
@@ -33,25 +33,39 @@ test_that("body and result of quiz", {
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$body, "Q_1")
 
 
-    r <- get_record("Q_1", 43)
+    r <- get_record("Q_1", 4.3)
     data <- as.data.frame(r)
     results <- compute_results_from_data(quiz, data)
 
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 0)
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$body, "Q_1")
 
-    r <- get_record(42)
+    r <- get_record(4.2)
     data <- as.data.frame(r)
     results <- compute_results_from_data(quiz, data)
 
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 1)
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$body, "Q1")
 
-    r <- get_record(43)
+    r <- get_record(4.3)
     data <- as.data.frame(r)
     results <- compute_results_from_data(quiz, data)
 
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 0)
+    expect_identical(results[[1]]$groups[[1]]$questions[[1]]$body, "Q1")
+
+    r <- get_record("4.3")
+    data <- as.data.frame(r)
+    results <- compute_results_from_data(quiz, data)
+
+    expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 0)
+    expect_identical(results[[1]]$groups[[1]]$questions[[1]]$body, "Q1")
+
+    r <- get_record("4,2")
+    data <- as.data.frame(r)
+    results <- compute_results_from_data(quiz, data)
+
+    expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 1)
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$body, "Q1")
 })
 
