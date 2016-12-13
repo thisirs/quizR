@@ -325,7 +325,7 @@ eval_answers <- function(answers, env) {
 #' @param epsilon Relative error for numeric answers
 match_answers <- function(eval_answers, guess, dist, epsilon) {
     sapply(eval_answers, function(answer) {
-        if (is.nan(answer)) return(FALSE)
+        if (is.na(guess)) return(FALSE)
 
         if (is.numeric(answer)) {
             # Fix if comma instead of dot
