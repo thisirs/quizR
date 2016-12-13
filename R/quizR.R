@@ -325,17 +325,17 @@ eval_answers <- function(answers, env) {
 #' @param epsilon Relative error for numeric answers
 match_answers <- function(eval_answers, guess, dist, epsilon) {
     sapply(eval_answers, function(answer) {
-        if (is.na(guess)) return(FALSE)
-
-        if (is.numeric(answer)) {
+        if (is.na(guess)){
+            FALSE
+        } else if (is.numeric(answer)) {
             # Fix if comma instead of dot
             if (is.character(guess))
                 guess <- chartr(",", ".", guess)
             guess <- suppressWarnings(as.numeric(guess))
-            abs(answer - guess) <= epsilon * abs(answer)
+            !is.na(guess) & abs(answer - guess) <= epsilon * abs(answer)
         } else if (is.character(answer)) {
             guess <- suppressWarnings(as.character(guess))
-            utils::adist(answer, guess) <= dist
+            !is.na(guess) & utils::adist(answer, guess) <= dist
         } else {
             stop("Unhandled answer type")
         }
