@@ -10,8 +10,14 @@ test_that("split_cloze_guesses splits answer correctly", {
     expect_identical(split_cloze_guesses(3, "partie 1 : blah; partie 2 : foo; partie 3 : bar"),
                      c("blah", "foo", "bar"))
 
-    expect_identical(split_cloze_guesses(3, "partie 1 : blah; partie 2 : foo; partie 3 : bar0"),
-                     c("blah", "foo", "bar0"))
+    expect_identical(split_cloze_guesses(3, "partie 1 : blah; partie 2 : foo; partie 3 : bar"),
+                     c("blah", "foo", "bar"))
+
+    expect_identical(split_cloze_guesses(3, "partie 1 : ; partie 2 : ; partie 3 :"),
+                     c("", "", ""))
+
+    expect_identical(split_cloze_guesses(3, "partie 1 : blah; boo; partie 2 : ; partie 3 :"),
+                     c("blah; boo", "", ""))
 })
 
 test_that("cloze_field_points properly extracts the points", {

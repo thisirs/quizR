@@ -26,8 +26,17 @@ split_cloze_guesses <- function(num, s_answers) {
         numbers <- as.integer(stringi::stri_match_all_regex(s_answers, prefix)[[1]][, 2])
         stopifnot(identical(numbers, 1:num))
 
-        raw_answers <- strsplit(s_answers, "; ")[[1]]
-        raw_answers <- gsub(prefix, "", raw_answers)
+        # Get locations prefix to take them out
+        locs <- stri_locate_all_regex(s_answers, prefix)[[1]]
+
+        # Starts and ends of answers
+        cuts <- c(as.vector(t(locs)) + c(-1, 1), nchar(s_answers))[-1]
+
+        # Extract answers
+        raw_answers <- substring(s_answers, cuts[c(T, F)], cuts[c(F, T)])
+
+        # Remove possible trailing "; "
+        raw_answers <- gsub("; $", "", raw_answers)
 
         stopifnot(length(raw_answers) == num)
         return(trimws(raw_answers))
