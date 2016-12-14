@@ -68,10 +68,10 @@ validate_quiz <- function(quiz, lang) {
         if (paste0(deparse(quiz$hidden.data), collapse = "") != "{}")
             stop("Hidden seed should be specified when using hidden data")
         for (g in quiz$groups) {
-            if (paste0(deparse(g$hidden.data), collapse = "") != "{}")
+            if ((paste0(deparse(g$hidden.data), collapse = "") != "{}") & (is.null(g$hidden.seed)))
                 stop("Hidden seed should be specified when using hidden data")
             for (q in g$questions) {
-                if (paste0(deparse(q$hidden.data), collapse = "") != "{}")
+                if ((paste0(deparse(q$hidden.data), collapse = "") != "{}") & (is.null(q$hidden.seed)))
                     stop("Hidden seed should be specified when using hidden data")
             }
         }
@@ -153,7 +153,7 @@ add_group <- function(quiz, group) {
 #' @param hidden.data Language object defining the hidden data
 #' @param questions List of questions
 #' @export
-Group <- function(title, type, num, data, hidden.data, questions) {
+Group <- function(title, type, num, data, hidden.data, hidden.seed = NULL, questions) {
     if (missing(hidden.data)) hidden.data <- quote({}) else stopifnot(is.language(hidden.data))
     if (missing(data)) data <- quote({}) else stopifnot(is.language(data))
     if (missing(num) && type == "random") stop("Missing `num' argument for random group")
@@ -175,6 +175,7 @@ Group <- function(title, type, num, data, hidden.data, questions) {
         questions = questions,
         data = data,
         hidden.data = hidden.data,
+        hidden.seed = hidden.seed,
         get_hdata = get_hdata,
         set_hdata = set_hdata
     )
@@ -229,6 +230,7 @@ Question <- function(text,
                      type = question_types,
                      answer = NULL,
                      hidden.data = quote({}),
+                     hidden.seed = NULL,
                      data = quote({}),
                      feedback = automatic_feedback,
                      points = if (type == "cloze")
@@ -250,6 +252,7 @@ Question <- function(text,
         text = text,
         type = type,
         hidden.data = hidden.data,
+        hidden.seed = hidden.seed,
         data = data,
         answer = answer,
         feedback = feedback,
@@ -415,12 +418,16 @@ unrandomize_data.Quiz <- function(obj) {
 
 #' @export
 unrandomize_data.Group <- function(obj) {
+    if (!is.null(obj$hidden.seed))
+        set.seed(obj$hidden.seed)
     obj$set_hdata(unrandomize(obj$hidden.data))
     lapply(obj$questions, unrandomize_data)
 }
 
 #' @export
 unrandomize_data.Question <- function(obj) {
+    if (!is.null(obj$hidden.seed))
+        set.seed(obj$hidden.seed)
     obj$set_hdata(unrandomize(obj$hidden.data))
 }
 
