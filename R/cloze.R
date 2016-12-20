@@ -27,7 +27,7 @@ split_cloze_guesses <- function(num, s_answers) {
         stopifnot(identical(numbers, 1:num))
 
         # Get locations prefix to take them out
-        locs <- stri_locate_all_regex(s_answers, prefix)[[1]]
+        locs <- stringi::stri_locate_all_regex(s_answers, prefix)[[1]]
 
         # Starts and ends of answers
         cuts <- c(as.vector(t(locs)) + c(-1, 1), nchar(s_answers))[-1]
