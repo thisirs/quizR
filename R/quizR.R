@@ -237,8 +237,8 @@ Question <- function(text,
                                   sum(cloze_field_points_text(text))
                               else
                                   1,
-                     dist = 2,
-                     epsilon = 1e-4) {
+                     dist = 0,
+                     epsilon = 1e-2) {
     stopifnot(is.character(text))
     type <- match.arg(type)
 
