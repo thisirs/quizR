@@ -59,7 +59,9 @@ correct_question_cloze <- function(question, env, guess) {
 
         # Possibly several right answers, listify them
         answers <- if (is.list(answer_raw)) answer_raw else list(answer_raw)
-        ea <- eval_answers(answers, env)
+
+        ra <- replace_answers(answers, question$get_hdata())
+        ea <- eval_answers(ra, env)
         match <- match_answers(ea, guess, question$dist, question$epsilon)
 
         if (any(match)) {
