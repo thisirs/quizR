@@ -52,6 +52,7 @@ correct_question_cloze <- function(question, env, guess) {
 
     cloze_good <- rep(FALSE, num)
     right_answers <- vector(mode = "list", length = num)
+    right_answers_eval <- vector(mode = "list", length = num)
 
     for (i in 1:num) {
         guess <- guesses[i]
@@ -66,10 +67,12 @@ correct_question_cloze <- function(question, env, guess) {
 
         if (any(match)) {
             cloze_good[i] <- TRUE
-            right_answers[[i]] <- answers[match][[1]]
+            right_answers[[i]] <- ra[match][[1]]
+            right_answers_eval <- ea[match][[1]]
         } else {
             cloze_good[i] <- FALSE
-            right_answers[[i]] <- answers[[1]]
+            right_answers[[i]] <- ra[[1]]
+            right_answers_eval[[i]] <- ra[[1]]
         }
     }
 

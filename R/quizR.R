@@ -361,14 +361,17 @@ correct_question <- function(question, env, guess) {
 
         if (any(match)) {
             points <- question$points
-            right_answer <- answers[match][[1]]
+            right_answer <- ra[match][[1]]
+            right_answer_eval <- ea[match][[1]]
         } else {
             points <- 0
-            right_answer <- answers[[1]]
+            right_answer <- ra[[1]]
+            right_answer_eval <- ea[[1]]
         }
         list(type = "shortanswer",
              points = points,
              guess = guess,
+             right_answer_eval = right_answer_eval,
              right_answer = right_answer)
     }
 }
