@@ -1,8 +1,8 @@
 context("Utils functions")
 
 test_that("fails is working", {
-    expect_true(fails(quote({stop("Error")})))
-    expect_false(fails(quote({a <- 1})))
+    expect_error(fails(quote({stop("Error")})))
+    expect_error(fails(quote({a <- 1})), NA)
 })
 
 test_that("merge_languages is working", {
