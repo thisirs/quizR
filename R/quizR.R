@@ -437,7 +437,7 @@ unrandomize_data.Question <- function(obj) {
 get_local_language <- function(obj) {
     hidden.data.env <- cleanenv()
     eval(obj$get_hdata(), hidden.data.env)
-    l <- pryr::substitute_q(obj$data, as.list(hidden.data.env))
+    l <- pryr::substitute_q(obj$data, as.list(hidden.data.env, all.names = TRUE))
     if (length(l) == 1 && l[[1]] == as.name("{"))
         return(NULL)
     else
