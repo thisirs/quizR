@@ -74,8 +74,8 @@ test_that("distinct_data see data that conflicts", {
 })
 
 test_that("replace_answers is correctly working", {
-    answers <- list(quote(a), quote(b), "blah", 42)
-    data <- quote({ a <- 1; b <- 2})
+    answers <- list(quote(a), quote(.b), "blah", 42)
+    data <- quote({ a <- 1; .b <- 2})
     expect_identical(replace_answers(answers, data), list(1, 2, "blah", 42))
 })
 
