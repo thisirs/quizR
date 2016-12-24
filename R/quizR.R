@@ -287,7 +287,8 @@ replace_answers <- function(answers, data) {
     env <- cleanenv()
     eval(data, env)
     lapply(answers, function(e) {
-        pryr::substitute_q(e, as.list(env, all.names = TRUE))
+        call <- substitute(substitute(e, as.list(env, all.names = TRUE)), list(e = e))
+        eval(call)
     })
 }
 
