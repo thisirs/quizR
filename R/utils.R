@@ -26,9 +26,8 @@ merge_languages <- function(...) {
 fails <- function(language) {
     tryCatch({
         eval(language, cleanenv())
-        FALSE
     },
-    error = function(e) TRUE)
+    error = function(e) stop("Some errors in data code chunks:\n", e))
 }
 
 cleanenv <- function() {

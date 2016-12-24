@@ -503,8 +503,7 @@ distinct_data <- function(quiz, lang) {
             languages <- c(merge_languages(lang, get_local_language(q)), languages)
         }
     }
-    errors <- sapply(languages, fails)
-    if (any(errors)) stop("Some errors in data code chunks:\n", languages[errors])
+    sapply(languages, fails)
     length(languages) < 2 || all(utils::combn(languages, 2, function(args) do.call(distinct_language, args, quote = TRUE)))
 }
 
