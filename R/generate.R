@@ -107,19 +107,27 @@ to_XML.Question <- function(obj, ...) {
     }
 
     # Get title of question
-    if (is.null(args$title))
-        title <- "-"
+    if (is.null(obj$title))
+        title <- if (nchar(obj$text) > 60)
+                     paste0(substr(obj$text, 0, 57), "...")
+                 else
+                     obj$text
     else
-        title <- args$title
+        title <- obj$title
 
     if (obj$type == "cloze") {
         body <- stringi::stri_replace_all_regex(obj$text, "=\\*\\}", "=********}")
     } else
         body <- obj$text
 
+    body <- trimws(body)
+
+    if (!is.null(args$id) && args$id)
+        body <- paste0("Q(", obj$id, ") ", body)
+
     # Get HTML of question body
     md_question <- paste0(md_qdata_blk, md_hdata_blk, body)
-    HTML_question <- paste0("<!-- Q(", obj$id, ") -->", render_HTML(md_question))
+    HTML_question <- render_HTML(md_question)
 
     # Get HTML of feedback
     if (obj$type == "description" | !args$feedback) {
