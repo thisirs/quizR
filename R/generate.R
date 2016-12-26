@@ -115,6 +115,7 @@ to_XML.Question <- function(obj, ...) {
     else
         title <- obj$title
 
+    # Setting body of question
     if (obj$type == "cloze") {
         body <- stringi::stri_replace_all_regex(obj$text, "=\\*\\}", "=********}")
     } else
