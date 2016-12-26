@@ -97,6 +97,47 @@ generate_correction <- function(quiz, output, lang, eval = TRUE) {
                       "pdf_document")
 }
 
+#' @export
+generate_corrections <- function(quiz, input, lang) {
+    unrandomize_data(quiz)
+
+    validate_quiz(quiz, lang)
+
+    data <- utils::read.csv(input, header = TRUE, check.names = FALSE, stringsAsFactors = FALSE, na.strings = "-")
+
+    ## No factor, numeric or character vector
+    i <- sapply(data, is.factor)
+    data[i] <- lapply(data[i], as.character)
+
+    ## Check that number of real questions in quiz and data match
+    num_questions <- get_number_of_questions(quiz)
+
+    ncolq <- ncol(data) - 10            # first 10 columns are info like name, email,...
+    stopifnot((ncolq == num_questions) | (ncolq == 2*num_questions))
+
+    ## Is data containing bodies of questions
+    is_with_question_body <- ncolq == 2*num_questions
+
+    ident_enabled <- quiz$groups[[1]]$type == "identifier"
+    stopifnot(ident_enabled)
+
+    if (is_with_question_body) {
+        identifier_list <- data[, 12]
+    } else {
+        identifier_list <- data[, 11]
+    }
+
+    identifier_list <- identifier_list[!is.na(identifier_list)]
+    identifier_list <- unique(identifier_list)
+    for (identifier in identifier_list) {
+        output <- paste0(quiz$title, "_correction_", identifier, ".pdf")
+        generate_correction(quiz,
+                            output = output,
+                            lang = bquote({ identifiant <- .(identifier)}),
+                            eval = TRUE)
+    }
+}
+
 cloze_regex <- "\\{(\\d+):(SHORTANSWER|SA|MW|SHORTANSWER_C|SAC|MWC|NUMERICAL|NM|MULTICHOICE|MC|MULTICHOICE_V|MCV|MULTICHOICE_H|MCH):=([^\\}]+)\\}"
 
 replace_cloze_fields <- function(text) {
