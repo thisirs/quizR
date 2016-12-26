@@ -68,7 +68,7 @@ test_that("compute_results_from_data returns Cloze question record", {
 
     r <- get_record("partie 1 : blah; partie 2 : foo; partie 3 : bar")
     data <- as.data.frame(r)
-    results <- compute_results_from_data(quiz, data)
+    results <- compute_results_from_data(quiz, data, NULL)
 
     expect_identical(results[[1]]$groups[[1]]$points, 4)
     expect_identical(results[[1]]$groups[[1]]$questions[[1]]$points, 4)
