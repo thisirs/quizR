@@ -387,19 +387,19 @@ answerstr <- function(answer) {
     type <- typeof(answer)
     switch(type,
            closure = {
-               d <- deparse(body(answer))
+               d <- deparse(body(answer), width.cutoff = 120)
                lines <- d[-c(1, length(d))]
                indent <- min(attr(regexpr("^ *", lines), "match.length"))
                paste(substring(lines, indent + 1), collapse = "\n")
            },
            language = {
-               d <- deparse(answer)
+               d <- deparse(answer, width.cutoff = 120)
                lines <- if (length(d) >=3) d[-c(1, length(d))] else d
                indent <- min(attr(regexpr("^ *", lines), "match.length"))
                paste(substring(lines, indent + 1), collapse = "\n")
            },
-           symbol = {deparse(answer)},
-           double = {deparse(answer)},
+           symbol = {deparse(answer, width.cutoff = 120)},
+           double = {deparse(answer, width.cutoff = 120)},
            character = {answer},
            stop("Unhandled type in ", sQuote("answerstr"), ": ", type))
 }
