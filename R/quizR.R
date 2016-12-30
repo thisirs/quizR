@@ -578,6 +578,10 @@ get_mapping <- function(res.text, questions) {
     }
 }
 
+get_number_of_questions <- function(quiz) {
+    sum(sapply(quiz$groups, get_num))
+}
+
 compute_results_from_data <- function(quiz, data, lang) {
     unrandomize_data(quiz)
 
@@ -588,9 +592,7 @@ compute_results_from_data <- function(quiz, data, lang) {
     data[i] <- lapply(data[i], as.character)
 
     ## Check that number of real questions in quiz and data match
-    num_questions <- 0
-    for (g in quiz$groups)
-        num_questions <- num_questions + get_num(g)
+    num_questions <- get_number_of_questions(quiz)
 
     ncolq <- ncol(data) - 10            # first 10 columns are info like name, email,...
     stopifnot((ncolq == num_questions) | (ncolq == 2*num_questions))
