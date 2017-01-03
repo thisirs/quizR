@@ -609,7 +609,10 @@ compute_results_from_data <- function(quiz, data, lang) {
 
     all_results <- list()
     for (i in 1:nrow(data)) {
+        full_record <- as.list(data[i, ])
         record <- as.list(data[i, 11:ncol(data)])
+
+        # Preparing an environment
         env <- cleanenv()
         if (ident_enabled) {
             if (is_with_question_body) {
@@ -622,7 +625,15 @@ compute_results_from_data <- function(quiz, data, lang) {
             assign('identifiant', identifier, env)
         }
         eval(get_recursive_language(quiz0), env)
+
+        # Correcting the student's quiz
         res <- correct_record(quiz0, record, env, is_with_question_body)
+
+        # Adding some metadata
+        res$name <- full_record$Name
+        res$email <- full_record$email
+
+        # Appending to other results
         all_results[[length(all_results) + 1]] <- res
     }
     return(all_results)
