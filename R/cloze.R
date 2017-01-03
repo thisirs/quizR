@@ -72,7 +72,7 @@ correct_question_cloze <- function(question, env, guess) {
         } else {
             cloze_good[i] <- FALSE
             right_answers[[i]] <- ra[[1]]
-            right_answers_eval[[i]] <- ra[[1]]
+            right_answers_eval[[i]] <- ea[[1]]
         }
     }
 
