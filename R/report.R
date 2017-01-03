@@ -21,10 +21,10 @@ markdown_question <- function(q, qno, env, eval) {
     }
 }
 
-markdown_title <- function(quiz) {
+markdown_title <- function(title) {
     sprintf("---
 title: \"%s\"
----\n\n", quiz$title)
+---\n\n", title)
 }
 
 markdown_group <- function(g, env, eval) {
@@ -70,7 +70,7 @@ generate_correction <- function(quiz, output, lang, eval = TRUE) {
 
     validate_quiz(quiz, lang)
 
-    title_chunk <- markdown_title(quiz)
+    title_chunk <- markdown_title(quiz$title)
 
     quiz_env <- quiz_environment(quiz, lang)
 
