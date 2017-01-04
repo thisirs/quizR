@@ -68,7 +68,7 @@ correct_question_cloze <- function(question, env, guess) {
         if (any(match)) {
             cloze_good[i] <- TRUE
             right_answers[[i]] <- ra[match][[1]]
-            right_answers_eval <- ea[match][[1]]
+            right_answers_eval[[i]] <- ea[match][[1]]
         } else {
             cloze_good[i] <- FALSE
             right_answers[[i]] <- ra[[1]]
