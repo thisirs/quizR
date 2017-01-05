@@ -630,8 +630,10 @@ compute_results_from_data <- function(quiz, data, lang) {
         res <- correct_record(quiz0, record, env, is_with_question_body)
 
         # Adding some metadata
-        res$name <- full_record$Name
-        res$email <- full_record$email
+        res$lastname <- full_record$Nom
+        res$firstname <- full_record$Prénom
+        res$email <- full_record$Adresse.de.courriel
+        res$identifier <- if (exists("identifier")) identifier else NULL
 
         # Appending to other results
         all_results[[length(all_results) + 1]] <- res
