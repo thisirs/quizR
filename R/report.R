@@ -21,7 +21,7 @@ markdown_question <- function(q, qno, env, eval, guess = NULL) {
     }
 }
 
-markdown_title <- function(title) {
+yaml_header <- function(title) {
     sprintf("---
 title: \"%s\"
 ---\n\n", title)
@@ -70,7 +70,7 @@ generate_correction <- function(quiz, output, lang, eval = TRUE) {
 
     validate_quiz(quiz, lang)
 
-    title_chunk <- markdown_title(quiz$title)
+    yaml_chunk <- yaml_header(quiz$title)
 
     quiz_env <- quiz_environment(quiz, lang)
 
@@ -83,7 +83,7 @@ generate_correction <- function(quiz, output, lang, eval = TRUE) {
             markdown_group(g, env = quiz_env$env, eval = eval)
     }))
 
-    markdown <- paste(c(title_chunk, data_chunk, groups_chunks), collapse = "")
+    markdown <- paste(c(yaml_chunk, data_chunk, groups_chunks), collapse = "")
 
     tmpfile <- tempfile("quiz", fileext = ".Rmd")
     write(markdown, tmpfile)
