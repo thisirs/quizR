@@ -724,3 +724,68 @@ correct_record_group <- function(group, record, env, is_with_question_body) {
     }
     return(resultg)
 }
+
+#' @export
+generate_student_correction <- function
+(
+    quiz,
+    quiz_result,
+    output = sprintf("%s_%s_%s.pdf", quiz$title, quiz_result$lastname, quiz_result$firstname),
+    lang) {
+
+    # Instantiate random data with quiz$hidden.seed
+    unrandomize_data(quiz)
+
+    if (missing(lang)) lang <- quote({})
+
+    validate_quiz(quiz, lang)
+
+    title <- paste(quiz_result$lastname, quiz_result$firstname)
+    yaml_chunk <- yaml_header(sprintf("%s %s", quiz$title, title))
+
+    identifier <- quiz_result$identifier
+    lang <- bquote({ identifiant <- .(identifier)})
+    quiz_env <- quiz_environment(quiz, lang)
+
+    data_chunk <- sprintf("```{r include=FALSE}\n%s\n```\n\n", answerstr(quiz_env$data))
+
+    groups_chunks <- paste0(sapply(quiz_result$groups, function(g) {
+        title <- sprintf("\n## %s\n\n", g$group$title)
+        qno <- 0
+        qs <- paste0(sapply(g$questions, function(q) {
+            qno <- qno + 1
+            markdown_question(q$question, qno, quiz_env$env, eval = TRUE, guess = q)
+        }), collapse = "\n")
+        paste0(title, qs)
+    }), collapse = "\n")
+
+    markdown <- paste(c(yaml_chunk, data_chunk, groups_chunks), collapse = "")
+
+    tmpfile <- tempfile("quiz", fileext = ".Rmd")
+    write(markdown, tmpfile)
+
+    ## Setting seed to evaluate data0
+    set.seed(quiz$seed)
+
+    rmarkdown::render(input = tmpfile,
+                      output_dir = dirname(output),
+                      output_file = basename(output),
+                      "pdf_document")
+}
+
+generate_student_corrections <- function
+(
+    quiz,
+    results,
+    output.dir = "corrections",
+    lang
+) {
+    for (student_result in results) {
+        output <- sprintf("%s/%s_%s_%s.pdf",
+                          output.dir,
+                          quiz$title,
+                          student_result$lastname,
+                          student_result$firstname)
+        generate_student_correction(quiz, student_result, output, lang)
+    }
+}
