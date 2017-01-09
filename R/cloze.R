@@ -83,10 +83,13 @@ correct_question_cloze <- function(question, env, guess) {
 
     points <- sum(cloze_points) / sum(cloze_total_points) * question$points
 
-    list(type = "cloze",
+    list(question = question,
+         type = "cloze",
+         is_correct = cloze_good,
+         cloze.total.points = cloze_total_points,
          points = points,
          cloze.points = cloze_points,
-         cloze.total.points = cloze_total_points,
-         guesses = guesses,
-         right_answers = right_answers)
+         guess = guesses,
+         right_answers = right_answers,
+         right_answers_eval = right_answers_eval)
 }

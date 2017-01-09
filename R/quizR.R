@@ -361,15 +361,19 @@ correct_question <- function(question, env, guess) {
         match <- match_answers(ea, guess, question$dist, question$epsilon)
 
         if (any(match)) {
+            is_correct <- TRUE
             points <- question$points
             right_answer <- ra[match][[1]]
             right_answer_eval <- ea[match][[1]]
         } else {
+            is_correct <- FALSE
             points <- 0
             right_answer <- ra[[1]]
             right_answer_eval <- ea[[1]]
         }
-        list(type = "shortanswer",
+        list(question = question,
+             type = "shortanswer",
+             is_correct = is_correct,
              points = points,
              guess = guess,
              right_answer_eval = right_answer_eval,
@@ -703,7 +707,8 @@ correct_record_group <- function(group, record, env, is_with_question_body) {
         map <- 1:get_num(group)
     }
 
-    resultg <- list(points = 0,
+    resultg <- list(group = group,
+                    points = 0,
                     questions = list())
 
     for (i in 1:length(qs.answer)) {

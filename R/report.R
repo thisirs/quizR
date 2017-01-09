@@ -1,9 +1,9 @@
-markdown_question <- function(q, qno, env, eval) {
+markdown_question <- function(q, qno, env, eval, guess = NULL) {
     if (q$type == "description") {
         paste0(q$text, "\n")
     } else {
         if (is.function(q$feedback)) {
-            body <- q$feedback(qno, q, env, eval = eval)
+            body <- q$feedback(qno, q, env, eval = eval, guess = guess)
         } else if (is.character(q$feedback)) {
             t_answers <- if (is.list(q$answer)) q$answer else list(q$answer)
             r_answers <- replace_answers(t_answers, q$get_hdata())
@@ -162,7 +162,7 @@ merge.list <- function (x, y)
     x
 }
 
-feedback_defaults <- list(numbered = TRUE, eval = TRUE, question.body = TRUE, alt.answer = NULL, header = NULL, eval_feedback = NULL, noeval_feedback = NULL)
+feedback_defaults <- list(numbered = TRUE, eval = TRUE, question.body = TRUE, alt.answer = NULL, header = NULL, eval_feedback = NULL, noeval_feedback = NULL, guess = NULL)
 
 feedback_args <- names(feedback_defaults)
 
@@ -287,6 +287,16 @@ automatic_cloze_feedback <- function(qno, question, env, ...) {
 
             c(md_answer_blk,
               sprintf("%d. ", i),
+              if (!is.null(args$guess)) {
+                  c("Réponse donnée: ",
+                    args$guess$guess[[i]],
+                    " ",
+                    if (args$guess$is_correct[[i]])
+                        sprintf("![](%s){height=16px}", system.file("etc", "tick.png", package="quizR"))
+                    else
+                        sprintf("![](%s){height=16px}", system.file("etc", "cross.png", package="quizR")),
+                    "\n\n")
+              },
               if (args$eval) {
                   if (is.character(answer_eval))
                       "La réponse est: ``r answer``"
@@ -369,7 +379,16 @@ automatic_normal_feedback <- function(qno, question, env, ...) {
         md_answer_blk,
         if (args$numbered) sprintf("**Question %d.** ", qno),
         if (args$question.body) trimws(question$text),
-        "\n\n**Réponse:**",
+        if (!is.null(args$guess)) {
+            c("\n\nRéponse donnée: ", args$guess$guess,
+              " ",
+              if (args$guess$is_correct)
+                  sprintf("![](%s){height=16px}", system.file("etc", "tick.png", package="quizR"))
+              else
+                  sprintf("![](%s){height=16px}", system.file("etc", "cross.png", package="quizR")))
+        },
+        "\n\n",
+        "**Réponse:**",
         if (args$eval) {
             if (is.character(answer_eval))
                 " ``r answer``"
