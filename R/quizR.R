@@ -238,7 +238,7 @@ Question <- function(text,
                               else
                                   1,
                      dist = 0,
-                     epsilon = 1e-2) {
+                     epsilon = 1e-3) {
     stopifnot(is.character(text))
     type <- match.arg(type)
 
