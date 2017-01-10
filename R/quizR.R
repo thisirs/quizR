@@ -749,6 +749,8 @@ generate_student_correction <- function
 
     data_chunk <- sprintf("```{r include=FALSE}\n%s\n```\n\n", answerstr(quiz_env$data))
 
+    identifier_chunk <- sprintf("\nIdentifiant: `%s`\n\n", identifier)
+
     groups_chunks <- paste0(sapply(quiz_result$groups, function(g) {
         title <- sprintf("\n## %s\n\n", g$group$title)
         qno <- 0
@@ -759,7 +761,7 @@ generate_student_correction <- function
         paste0(title, qs)
     }), collapse = "\n")
 
-    markdown <- paste(c(yaml_chunk, data_chunk, groups_chunks), collapse = "")
+    markdown <- paste(c(yaml_chunk, data_chunk, identifier_chunk, groups_chunks), collapse = "")
 
     tmpfile <- tempfile("quiz", fileext = ".Rmd")
     write(markdown, tmpfile)
