@@ -14,10 +14,14 @@ merge_languages <- function(...) {
         quote({})
     else {
         langs <- sapply(ls, function(l) {
-            if (length(l) > 1 && l[[1]] == as.name("{"))
-                return(as.list(l)[-1])
-            else
+            if (is.symbol(l))
                 return(list(l))
+            else if (l[[1]] == as.name("{"))
+                if (length(l) == 1)     # Empty {}
+                    return(NULL)
+                else                    # Remove {}
+                    return(as.list(l)[-1])
+            else return(list(l))
         })
         do.call(call, c(list("{"), unlist(langs)), quote = TRUE)
     }

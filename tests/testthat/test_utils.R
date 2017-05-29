@@ -18,6 +18,7 @@ test_that("merge_languages is working", {
     expect_deparse(merge_languages(quote({a <- 1}), quote({b <- 1})), "{\n    a <- 1\n    b <- 1\n}")
     expect_deparse(merge_languages(quote(a <- 1), quote(b <- 1)), "{\n    a <- 1\n    b <- 1\n}")
     expect_deparse(merge_languages(quote({a <- 1; b <- 1})), "{\n    a <- 1\n    b <- 1\n}")
-
+    expect_deparse(merge_languages(quote({}), quote(a <- 1)), "{\n    a <- 1\n}")
+    expect_deparse(merge_languages(quote({}), quote(a)), "{\n    a\n}")
 
 })
