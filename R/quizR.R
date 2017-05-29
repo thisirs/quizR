@@ -66,13 +66,15 @@ validate_quiz <- function(quiz, lang) {
     ## Check that hidden seed is specified if hidden data somewhere
     if (is.null(quiz$hidden.seed)) {
         if (paste0(deparse(quiz$hidden.data), collapse = "") != "{}")
-            stop("Hidden seed should be specified when using hidden data")
+            stop("Hidden data in quiz object but no hidden seed")
         for (g in quiz$groups) {
-            if ((paste0(deparse(g$hidden.data), collapse = "") != "{}") & (is.null(g$hidden.seed)))
-                stop("Hidden seed should be specified when using hidden data")
-            for (q in g$questions) {
-                if ((paste0(deparse(q$hidden.data), collapse = "") != "{}") & (is.null(q$hidden.seed)))
-                    stop("Hidden seed should be specified when using hidden data")
+            if (is.null(g$hidden.seed)) {
+                if ((paste0(deparse(g$hidden.data), collapse = "") != "{}"))
+                    stop("Hidden data in group object but no hidden seed")
+                for (q in g$questions) {
+                    if ((paste0(deparse(q$hidden.data), collapse = "") != "{}") & (is.null(q$hidden.seed)))
+                        stop("Hidden data in question but no hidden seed")
+                }
             }
         }
     }
