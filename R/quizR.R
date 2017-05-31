@@ -213,6 +213,10 @@ get_num <- function(group) {
     }
 }
 
+field_from_type <- list(
+    shortanswer = "{1:SA:=*}"
+)
+
 #' @export
 question_types <- c("shortanswer", "description", "cloze")
 
@@ -277,6 +281,30 @@ validate_question <- function(question) {
             stop("Number of answers and number of detected cloze fields are not the same")
         }
     }
+}
+
+#' Replace symbols of R chunks of code in text
+replace_text <- function(text, aliases) {
+    loc <- stringi::stri_locate_all_regex(text, "`r[ #]([^`]+)\\s*`",
+                                          omit_no_match = TRUE)[[1]]
+
+    if (nrow(loc) >= 1) {
+        for (i in rev(1:nrow(loc))) {
+            chunk <- stringi::stri_sub(text, loc[i, 1] + 2, loc[i, 2] - 1)
+            expr <- parse(text = chunk)
+            lang <- expression_to_lang(expr)
+            lang <- replace_language(lang, aliases)
+            new_chunk <- sprintf("`r %s`", paste(deparse(lang), collapse = "; "))
+            stringi::stri_sub(text, loc[i, 1], loc[i, 2]) <- new_chunk
+        }
+    }
+    return(text)
+}
+
+#' Replace some symbols in language object by aliases
+replace_language <- function(lang, aliases) {
+    call <- substitute(substitute(lang, aliases), list(lang = lang))
+    eval(call)
 }
 
 #' Replace data in list of answers
@@ -384,8 +412,12 @@ correct_question <- function(question, env, guess) {
 }
 
 expression_to_lang <- function(expr) {
-    ls <- as.list(expr)
-    do.call(call, c("{", ls), quote = TRUE)
+    if (length(expr) == 1)
+        expr[[1]]
+    else {
+        ls <- as.list(expr)
+        do.call(call, c("{", ls), quote = TRUE)
+    }
 }
 
 unrandomize <- function(lang) {

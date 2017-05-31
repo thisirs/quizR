@@ -22,3 +22,10 @@ test_that("merge_languages is working", {
     expect_deparse(merge_languages(quote({}), quote(a)), "{\n    a\n}")
 
 })
+
+test_that("expression_to_lang is working", {
+    expect_equal(expression_to_lang(expression(a)), quote(a))
+    expect_equal(expression_to_lang(expression(a <- 1)), quote(a <- 1))
+    expect_equal(expression_to_lang(expression(a <- 1, b <- 1)), quote({a <- 1; b <- 1}))
+})
+    

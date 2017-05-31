@@ -53,3 +53,63 @@ expr <- function(...) {
 to_string <- function(filename) {
     paste(readLines(filename), collapse = "\n")
 }
+
+aliases_from_question <- function(question) {
+    hdata <- question$hidden.data
+    env <- cleanenv()
+    eval(hdata, env)
+    if (length(ls(env)) >= 1) {
+        prefix <- sprintf("data%s", question$id)
+        varnames <- paste0(prefix, ls(env))
+        aliases <- lapply(as.list(varnames), as.name)
+        names(aliases) <- ls(env)
+        aliases
+    } else list()
+}
+
+clozify <- function(...) {
+    questions <- list(...)
+
+    aliases_list <- lapply(questions, aliases_from_question)
+
+    texts <- mapply(function(question, aliases) {
+        if (question$type == "cloze") {
+            replace_text(question$text, aliases)
+        } else if (question$type == "shortanswer") {
+            paste(replace_text(question$text, aliases), sprintf("{%d:SA:=*}", question$points))
+        } else stop("Unhandler question type")
+    }, questions, aliases_list)
+    text <- paste(texts, collapse = "\n\n")
+
+    hidden.data <- do.call(merge_languages, mapply(function(question, aliases) {
+        replace_language(question$hidden.data, aliases)
+    }, questions, aliases_list), quote = TRUE)
+
+    data <- do.call(merge_languages, mapply(function(question, aliases) {
+        replace_language(question$data, aliases)
+    }, questions, aliases_list), quote = TRUE)
+
+    answers <- mapply(function(question, aliases) {
+        if (question$type == "cloze") {
+            replace_language(question$answer, aliases)
+        } else {
+            list(replace_language(question$answer, aliases))
+        }
+    }, questions, aliases_list)
+
+    points <- sapply(questions, function(question) {
+        if (question$type == "cloze") {
+            sum(cloze_field_points_text(question$text))
+        } else {
+            question$points
+        }
+    })
+
+    Question(text,
+             type = "cloze",
+             answer = answers,
+             hidden.data = hidden.data,
+             data = data,
+             feedback = automatic_feedback,
+             points = sum(points))
+}
