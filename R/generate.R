@@ -25,14 +25,12 @@ quiz.xml <- "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 %s
 </quiz>"
 
-render_HTML <- function(text, data) {
-    if (missing(data)) data <- quote({})
-    data_chunk <- sprintf("```{r include=FALSE}\n%s\n```\n\n", answerstr(data))
+render_HTML <- function(text, env) {
+    if (missing(env)) env = parent.frame()
 
     tmpfile <- tempfile("question", fileext = ".Rmd")
-    write(data_chunk, tmpfile)
     write(text, tmpfile, append = TRUE)
-    output <- rmarkdown::render(tmpfile, rmarkdown::html_fragment())
+    output <- rmarkdown::render(tmpfile, rmarkdown::html_fragment(), envir = env)
     to_string(output)
 }
 
@@ -170,7 +168,7 @@ to_XML.Question <- function(obj, ...) {
 
     # Get HTML of question body
     md_question <- paste0(md_qdata_blk, md_hdata_blk, body)
-    HTML_question <- render_HTML(md_question)
+    HTML_question <- render_HTML(md_question, env)
 
     # Get HTML of feedback
     if (obj$type == "description" | !args$feedback) {
@@ -180,7 +178,7 @@ to_XML.Question <- function(obj, ...) {
     } else stop("Unhandled feedback type")
 
     md_feedback <- paste0(md_qdata_blk, md_feedback)
-    HTML_feedback <- render_HTML(md_feedback)
+    HTML_feedback <- render_HTML(md_feedback, env)
 
     # Return XML
     return(sprintf(question.xml, obj$type, title, "html", HTML_question, answer, HTML_feedback))
