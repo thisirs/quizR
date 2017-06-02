@@ -6,7 +6,7 @@ question.xml <- "<question type=\"%s\">
     <text><![CDATA[%s]]></text>
   </questiontext>
   <answer fraction=\"100\" format=\"plain_text\">
-    <text>*</text>
+    <text>%s</text>
   </answer>
   <generalfeedback format=\"html\">
     <text><![CDATA[%s]]></text>
@@ -115,9 +115,51 @@ to_XML.Question <- function(obj, ...) {
     else
         title <- obj$title
 
+    # Get numerical answer
+    if (args$answer) {
+        if (obj$type == "description" | obj$type == "cloze") {
+            answer <- "*"
+        } else if (obj$type == "shortanswer") {
+            ## Select first answer
+            if (is.list(question$answer))
+                q_answers <- question$answer[1]
+            else
+                q_answers <- list(question$answer)
+
+            ra <- replace_answers(q_answers, obj$get_hdata())
+            ea <- eval_answers(ra, env)
+            answer <- as.character(ea[[1]])
+        }
+    } else answer <- "*"
+
     # Setting body of question
     if (obj$type == "cloze") {
-        body <- stringi::stri_replace_all_regex(obj$text, "=\\*\\}", "=********}")
+        # Add answer in cloze fields
+        num <- get_cloze_num(obj$text)
+        stopifnot(length(obj$answer) == num)
+
+        right_answers_eval <- vector(mode = "list", length = num)
+        for (i in 1:num) {
+            answer_raw <- obj$answer[[i]]
+
+            # Possibly several right answers, listify them
+            answers <- if (is.list(answer_raw)) answer_raw[1] else list(answer_raw)
+
+            ra <- replace_answers(answers, obj$get_hdata())
+            ea <- eval_answers(ra, env)
+
+            right_answers_eval[[i]] <- as.character(ea[[1]])
+        }
+
+        fields <- paste0("=", right_answers_eval, "}")
+
+        body <- obj$text
+        loc <- stringi::stri_locate_all_regex(body, "=\\*\\}",
+                                              omit_no_match = TRUE)[[1]]
+        stopifnot(nrow(loc) == num)
+        for (i in rev(1:nrow(loc))) {
+            stringi::stri_sub(body, loc[i, 1], loc[i, 2]) <- fields[i]
+        }
     } else
         body <- obj$text
 
@@ -141,7 +183,7 @@ to_XML.Question <- function(obj, ...) {
     HTML_feedback <- render_HTML(md_feedback)
 
     # Return XML
-    return(sprintf(question.xml, obj$type, title, "html", HTML_question, HTML_feedback))
+    return(sprintf(question.xml, obj$type, title, "html", HTML_question, answer, HTML_feedback))
 }
 
 #' Generate XML Moodle quiz file and data file
@@ -190,7 +232,8 @@ generate_XML <- function(quiz,
                          quiz.name = paste0(quiz$title, "-quiz.xml"),
                          language = NULL,
                          feedback = TRUE,
-                         eval = feedback) {
+                         eval = feedback,
+                         answer = feedback) {
     # Instantiate random data with quiz$hidden.seed
     unrandomize_data(quiz)
 
@@ -200,7 +243,12 @@ generate_XML <- function(quiz,
     data0 <- merge_languages(language, data)
 
     # Write XML Moodle file
-    write(to_XML(quiz, data = data0, feedback = feedback, eval = eval), quiz.name)
+    xml <- to_XML(quiz,
+                  data = data0,
+                  feedback = feedback,
+                  eval = eval,
+                  answer = answer)
+    write(xml, quiz.name)
 }
 
 #' Generate data file
