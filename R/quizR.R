@@ -592,9 +592,9 @@ get_mapping <- function(res.text, questions) {
     id <- stringr::str_match(text, "\\(Q([A-Za-z0-9]+)\\)")[1, 2]
     if (is.na(id)) {
         # No id present, matching text directly
-        res.text0 <- gsub("[^a-zA-Z0-9]", "", res.text)
+        res.text0 <- gsub("[^a-zA-Z0-9+-_]", "", res.text)
 
-        qs.text <- gsub("[^a-zA-Z0-9]", "", sapply(questions, function(q) {
+        qs.text <- gsub("[^a-zA-Z0-9+-_]", "", sapply(questions, function(q) {
             q$text
         }))
         d <- adist(res.text0, qs.text)
