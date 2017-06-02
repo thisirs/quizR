@@ -20,13 +20,14 @@ Quiz <- function(title, groups, data, hidden.data, seed = NULL, hidden.seed = NU
     set_hdata <- function(hdata) {
         .hdata <<- hdata
     }
+    set_hdata(hidden.data)
     get_hdata <- function() .hdata
 
     me <- list(
         title = title,
         groups = groups,
         data = data,
-        hidden.data = hidden.data,
+        ## hidden.data = hidden.data,
         seed = seed,
         hidden.seed = hidden.seed,
         get_hdata = get_hdata,
@@ -65,14 +66,14 @@ validate_quiz <- function(quiz, lang) {
 
     ## Check that hidden seed is specified if hidden data somewhere
     if (is.null(quiz$hidden.seed)) {
-        if (paste0(deparse(quiz$hidden.data), collapse = "") != "{}")
+        if (paste0(deparse(quiz$get_hdata()), collapse = "") != "{}")
             stop("Hidden data in quiz object but no hidden seed")
         for (g in quiz$groups) {
             if (is.null(g$hidden.seed)) {
-                if ((paste0(deparse(g$hidden.data), collapse = "") != "{}"))
+                if ((paste0(deparse(g$get_hdata()), collapse = "") != "{}"))
                     stop("Hidden data in group object but no hidden seed")
                 for (q in g$questions) {
-                    if ((paste0(deparse(q$hidden.data), collapse = "") != "{}") & (is.null(q$hidden.seed)))
+                    if ((paste0(deparse(q$get_hdata()), collapse = "") != "{}") & (is.null(q$hidden.seed)))
                         stop("Hidden data in question but no hidden seed")
                 }
             }
@@ -168,6 +169,7 @@ Group <- function(title, type, num, data, hidden.data, hidden.seed = NULL, quest
     set_hdata <- function(hdata) {
         .hdata <<- hdata
     }
+    set_hdata(hidden.data)
     get_hdata <- function() .hdata
 
     me <- list(
@@ -176,7 +178,7 @@ Group <- function(title, type, num, data, hidden.data, hidden.seed = NULL, quest
         num = num,
         questions = questions,
         data = data,
-        hidden.data = hidden.data,
+        ## hidden.data = hidden.data,
         hidden.seed = hidden.seed,
         get_hdata = get_hdata,
         set_hdata = set_hdata
@@ -252,12 +254,13 @@ Question <- function(text,
     set_hdata <- function(hdata) {
         .hdata <<- hdata
     }
+    set_hdata(hidden.data)
     get_hdata <- function() .hdata
 
     me <- list(
         text = text,
         type = type,
-        hidden.data = hidden.data,
+        ## hidden.data = hidden.data,
         hidden.seed = hidden.seed,
         data = data,
         answer = answer,
@@ -453,7 +456,7 @@ unrandomize_data <- function(obj)
 unrandomize_data.Quiz <- function(obj) {
     if (!is.null(obj$hidden.seed))
         set.seed(obj$hidden.seed)
-    obj$set_hdata(unrandomize(obj$hidden.data))
+    obj$set_hdata(unrandomize(obj$get_hdata()))
     lapply(obj$groups, unrandomize_data)
 }
 
@@ -461,7 +464,7 @@ unrandomize_data.Quiz <- function(obj) {
 unrandomize_data.Group <- function(obj) {
     if (!is.null(obj$hidden.seed))
         set.seed(obj$hidden.seed)
-    obj$set_hdata(unrandomize(obj$hidden.data))
+    obj$set_hdata(unrandomize(obj$get_hdata()))
     lapply(obj$questions, unrandomize_data)
 }
 
@@ -469,7 +472,7 @@ unrandomize_data.Group <- function(obj) {
 unrandomize_data.Question <- function(obj) {
     if (!is.null(obj$hidden.seed))
         set.seed(obj$hidden.seed)
-    obj$set_hdata(unrandomize(obj$hidden.data))
+    obj$set_hdata(unrandomize(obj$get_hdata()))
 }
 
 get_local_language <- function(obj) {

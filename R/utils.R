@@ -55,7 +55,7 @@ to_string <- function(filename) {
 }
 
 aliases_from_question <- function(question) {
-    hdata <- question$hidden.data
+    hdata <- question$get_hdata()
     env <- cleanenv()
     eval(hdata, env)
     if (length(ls(env)) >= 1) {
@@ -82,7 +82,7 @@ clozify <- function(...) {
     text <- paste(texts, collapse = "\n\n")
 
     hidden.data <- do.call(merge_languages, mapply(function(question, aliases) {
-        replace_language(question$hidden.data, aliases)
+        replace_language(question$get_hdata(), aliases)
     }, questions, aliases_list), quote = TRUE)
 
     data <- do.call(merge_languages, mapply(function(question, aliases) {
