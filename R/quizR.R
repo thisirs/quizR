@@ -537,6 +537,10 @@ distinct_language <- function (lang1, lang2) {
 distinct_data <- function(quiz, lang) {
     if (missing(lang)) lang <- quote({})
 
+    # Check if quiz data fails
+    fails(merge_languages(lang, get_local_language(quiz)))
+
+    # Check if other data are commuting
     languages <- list()
     for (g in quiz$groups) {
         languages <- c(merge_languages(lang, get_local_language(g)), languages)
