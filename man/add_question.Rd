@@ -14,4 +14,3 @@ add_question(group, question)
 \description{
 Add question to group
 }
-

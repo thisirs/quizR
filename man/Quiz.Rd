@@ -25,4 +25,3 @@ A quiz object
 \description{
 Create a quiz object
 }
-

@@ -12,4 +12,3 @@ get_num(group)
 \description{
 Number of real questions (except description questions)
 }
-

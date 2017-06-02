@@ -17,4 +17,3 @@ Return TRUE if the two chunks of code are commutative
 \description{
 Check if languages are commutative chunks of code
 }
-

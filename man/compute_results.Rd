@@ -19,4 +19,3 @@ Detailed results of quiz
 \description{
 Compute full results of given quiz
 }
-

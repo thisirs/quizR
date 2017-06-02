@@ -18,4 +18,3 @@ match_answers(eval_answers, guess, dist, epsilon)
 \description{
 Match guess with list of evaluated answers
 }
-

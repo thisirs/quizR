@@ -4,7 +4,7 @@
 \alias{Group}
 \title{Create a group object}
 \usage{
-Group(title, type, num, data, hidden.data, questions)
+Group(title, type, num, data, hidden.data, hidden.seed = NULL, questions)
 }
 \arguments{
 \item{title}{Title of group}
@@ -22,4 +22,3 @@ Group(title, type, num, data, hidden.data, questions)
 \description{
 Create a group object
 }
-

@@ -12,4 +12,3 @@ cloze_field_points(question)
 \description{
 Return list of cloze fields points
 }
-

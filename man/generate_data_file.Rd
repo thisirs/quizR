@@ -17,4 +17,3 @@ generate_data_file(quiz, data.name = paste0(quiz$title, "-data.R"),
 \description{
 Generate data file
 }
-

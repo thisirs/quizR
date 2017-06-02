@@ -5,7 +5,7 @@
 \title{Generate XML Moodle quiz file}
 \usage{
 generate_XML(quiz, quiz.name = paste0(quiz$title, "-quiz.xml"),
-  language = NULL, feedback = TRUE, eval = feedback)
+  language = NULL, feedback = TRUE, eval = feedback, answer = feedback)
 }
 \arguments{
 \item{quiz}{Quiz}
@@ -21,4 +21,3 @@ generate_XML(quiz, quiz.name = paste0(quiz$title, "-quiz.xml"),
 \description{
 Generate XML Moodle quiz file
 }
-

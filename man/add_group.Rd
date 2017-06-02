@@ -14,4 +14,3 @@ add_group(quiz, group)
 \description{
 Add group to quiz
 }
-

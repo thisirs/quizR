@@ -19,4 +19,3 @@ A data frame of name, firstname, email and grade
 \description{
 Compute grades for given quiz and results
 }
-

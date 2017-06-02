@@ -12,4 +12,3 @@ get_cloze_num(text)
 \description{
 Number of fields in cloze question
 }
-

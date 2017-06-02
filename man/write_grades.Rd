@@ -18,4 +18,3 @@ write_grades(quiz, input = NULL, output = NULL, lang = NULL)
 \description{
 Write grades from answers in csv file
 }
-

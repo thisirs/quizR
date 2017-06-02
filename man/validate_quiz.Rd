@@ -17,4 +17,3 @@ Return TRUE if quiz is a valid one
 \description{
 Validate a quiz object
 }
-

@@ -5,9 +5,9 @@
 \title{Create a question object}
 \usage{
 Question(text, type = question_types, answer = NULL, hidden.data = quote({
-  }), data = quote({ }), feedback = automatic_feedback, points = if (type
-  == "cloze") sum(cloze_field_points_text(text)) else 1, dist = 2,
-  epsilon = 1e-04)
+  }), hidden.seed = NULL, data = quote({ }),
+  feedback = automatic_feedback, points = if (type == "cloze")
+  sum(cloze_field_points_text(text)) else 1, dist = 0, epsilon = 0.001)
 }
 \arguments{
 \item{text}{Body of question}
@@ -31,4 +31,3 @@ Question(text, type = question_types, answer = NULL, hidden.data = quote({
 \description{
 Create a question object
 }
-

@@ -12,4 +12,3 @@ unique_IDs(quiz)
 \description{
 Return TRUE if all questions' ID are unique
 }
-

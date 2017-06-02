@@ -19,4 +19,3 @@ generate_files(quiz, data.name = paste0(quiz$title, "-data.R"),
 \description{
 Generate XML Moodle quiz file and data file
 }
-

@@ -9,4 +9,3 @@ noerror_in_answers(quiz, env)
 \description{
 Check that all given answers are consistent
 }
-

@@ -17,4 +17,3 @@ Return TRUE if data do not overlap
 \description{
 Check that data do not overlap
 }
-

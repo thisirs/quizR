@@ -16,4 +16,3 @@ correct_question(question, env, guess)
 \description{
 Correct question
 }
-

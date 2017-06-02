@@ -14,4 +14,3 @@ eval_answers(answers, env)
 \description{
 Evaluate list of answers in environment
 }
-
