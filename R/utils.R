@@ -89,13 +89,27 @@ clozify <- function(...) {
         replace_language(question$data, aliases)
     }, questions, aliases_list), quote = TRUE)
 
-    answers <- mapply(function(question, aliases) {
+    answers <- unlist(mapply(function(question, aliases) {
         if (question$type == "cloze") {
-            replace_language(question$answer, aliases)
+            if (is.list(question$answer)) {
+                lapply(question$answer, function(ans) {
+                    if (is.list(ans)) {
+                        lapply(ans, replace_language, aliases)
+                    } else {
+                        replace_language(ans, aliases)
+                    }
+                })
+            } else {
+                stop("Answer field in cloze question should be a list")
+            }
         } else {
-            list(replace_language(question$answer, aliases))
+            if (is.list(question$answer)) {
+                list(lapply(question$answer, replace_language, aliases))
+            } else {
+                list(replace_language(question$answer, aliases))
+            }
         }
-    }, questions, aliases_list)
+    }, questions, aliases_list, SIMPLIFY = FALSE), recursive = FALSE)
 
     points <- sapply(questions, function(question) {
         if (question$type == "cloze") {
