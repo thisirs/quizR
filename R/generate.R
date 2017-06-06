@@ -106,10 +106,10 @@ to_XML.Question <- function(obj, ...) {
 
     # Get title of question
     if (is.null(obj$title))
-        title <- if (nchar(obj$text) > 60)
-                     paste0(substr(obj$text, 0, 57), "...")
+        title <- if (nchar(obj$get_text()) > 60)
+                     paste0(substr(obj$get_text(), 0, 57), "...")
                  else
-                     obj$text
+                     obj$get_text()
     else
         title <- obj$title
 
@@ -119,13 +119,12 @@ to_XML.Question <- function(obj, ...) {
             answer <- "*"
         } else if (obj$type == "shortanswer") {
             ## Select first answer
-            if (is.list(question$answer))
-                q_answers <- question$answer[1]
+            if (is.list(question$get_answer()))
+                q_answers <- question$get_answer()[1]
             else
-                q_answers <- list(question$answer)
+                q_answers <- list(question$get_answer())
 
-            ra <- replace_answers(q_answers, obj$get_hdata())
-            ea <- eval_answers(ra, env)
+            ea <- eval_answers(q_answers, env)
             answer <- as.character(ea[[1]])
         }
     } else answer <- "*"
@@ -133,25 +132,24 @@ to_XML.Question <- function(obj, ...) {
     # Setting body of question
     if (obj$type == "cloze") {
         # Add answer in cloze fields
-        num <- get_cloze_num(obj$text)
-        stopifnot(length(obj$answer) == num)
+        num <- get_cloze_num(obj$get_text())
+        stopifnot(length(obj$get_answer()) == num)
 
         right_answers_eval <- vector(mode = "list", length = num)
         for (i in 1:num) {
-            answer_raw <- obj$answer[[i]]
+            answer_raw <- obj$get_answer()[[i]]
 
             # Possibly several right answers, listify them
             answers <- if (is.list(answer_raw)) answer_raw[1] else list(answer_raw)
 
-            ra <- replace_answers(answers, obj$get_hdata())
-            ea <- eval_answers(ra, env)
+            ea <- eval_answers(answers, env)
 
             right_answers_eval[[i]] <- as.character(ea[[1]])
         }
 
         fields <- paste0("=", right_answers_eval, "}")
 
-        body <- obj$text
+        body <- obj$get_text()
         loc <- stringi::stri_locate_all_regex(body, "=\\*\\}",
                                               omit_no_match = TRUE)[[1]]
         stopifnot(nrow(loc) == num)
@@ -159,7 +157,7 @@ to_XML.Question <- function(obj, ...) {
             stringi::stri_sub(body, loc[i, 1], loc[i, 2]) <- fields[i]
         }
     } else
-        body <- obj$text
+        body <- obj$get_text()
 
     body <- trimws(body)
 
@@ -203,6 +201,10 @@ generate_files <- function(quiz,
 
     validate_quiz(quiz, language)
 
+    ## Replace data, answer and text with hidden data
+    replace_data(quiz, language)
+    replace_text(quiz, language)
+
     data <- get_recursive_language(quiz)
     data0 <- merge_languages(language, data)
 
@@ -237,6 +239,10 @@ generate_XML <- function(quiz,
 
     validate_quiz(quiz, language)
 
+    ## Replace data, answer and text with hidden data
+    replace_data(quiz, language)
+    replace_text(quiz, language)
+
     data <- get_recursive_language(quiz)
     data0 <- merge_languages(language, data)
 
@@ -263,6 +269,10 @@ generate_data_file <- function(quiz,
     unrandomize_data(quiz)
 
     validate_quiz(quiz, language)
+
+    ## Replace data, answer and text with hidden data
+    replace_data(quiz, language)
+    replace_text(quiz, language)
 
     data <- get_recursive_language(quiz)
 

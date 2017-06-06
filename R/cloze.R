@@ -11,7 +11,7 @@ get_cloze_num <- function(text) {
 #' @param question A question
 cloze_field_points <- function(question) {
     stopifnot(question$type == "cloze")
-    cloze_field_points_text(question$text)
+    cloze_field_points_text(question$get_text())
 }
 
 cloze_field_points_text <- function(text) {
@@ -44,9 +44,9 @@ split_cloze_guesses <- function(num, s_answers) {
 }
 
 correct_question_cloze <- function(question, env, guess) {
-    stopifnot(is.list(question$answer))
-    num <- get_cloze_num(question$text)
-    stopifnot(length(question$answer) == num)
+    stopifnot(is.list(question$get_answer()))
+    num <- get_cloze_num(question$get_text())
+    stopifnot(length(question$get_answer()) == num)
     guesses <- split_cloze_guesses(num, guess)
     stopifnot(length(guesses) == num)
 
@@ -56,22 +56,21 @@ correct_question_cloze <- function(question, env, guess) {
 
     for (i in 1:num) {
         guess <- guesses[i]
-        answer_raw <- question$answer[[i]]
+        answer_raw <- question$get_answer()[[i]]
 
         # Possibly several right answers, listify them
         answers <- if (is.list(answer_raw)) answer_raw else list(answer_raw)
 
-        ra <- replace_answers(answers, question$get_hdata())
-        ea <- eval_answers(ra, env)
+        ea <- eval_answers(answers, env)
         match <- match_answers(ea, guess, question$dist, question$epsilon)
 
         if (any(match)) {
             cloze_good[i] <- TRUE
-            right_answers[[i]] <- ra[match][[1]]
+            right_answers[[i]] <- answers[match][[1]]
             right_answers_eval[[i]] <- ea[match][[1]]
         } else {
             cloze_good[i] <- FALSE
-            right_answers[[i]] <- ra[[1]]
+            right_answers[[i]] <- answers[[1]]
             right_answers_eval[[i]] <- ea[[1]]
         }
     }

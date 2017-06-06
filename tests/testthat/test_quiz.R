@@ -35,9 +35,13 @@ test_that("identifiers are unique", {
 test_that("distinct_data see data that conflicts", {
     quiz <- Quiz("quiz1",
                  seed = 1,
-                 data = quote({a <- 1}),
                  groups = list(
                      Group("G1",
+                           type = "sequential",
+                           data = quote({a <- 1}),
+                           questions = list(
+                               Question("Q1", type = "shortanswer", answer = quote(a)))),
+                     Group("G2",
                            type = "sequential",
                            data = quote({a <- 2}),
                            questions = list(
@@ -73,10 +77,10 @@ test_that("distinct_data see data that conflicts", {
     expect_identical(distinct_data(quiz, quote({blah <- 1})), TRUE)
 })
 
-test_that("replace_answers is correctly working", {
+test_that("replace_languages_data is correctly working", {
     answers <- list(quote(a), quote(.b), "blah", 42)
     data <- quote({ a <- 1; .b <- 2})
-    expect_identical(replace_answers(answers, data), list(1, 2, "blah", 42))
+    expect_identical(replace_languages_data(answers, data), list(1, 2, "blah", 42))
 })
 
 

@@ -16,6 +16,13 @@ Quiz <- function(title, groups, data, hidden.data, seed = NULL, hidden.seed = NU
     if (missing(data)) data <- quote({})
     if (missing(hidden.data)) hidden.data <- quote({})
 
+    .data <- NULL
+    set_data <- function(data) {
+        .data <<- data
+    }
+    set_data(data)
+    get_data <- function() .data
+
     .hdata <- NULL
     set_hdata <- function(hdata) {
         .hdata <<- hdata
@@ -26,10 +33,10 @@ Quiz <- function(title, groups, data, hidden.data, seed = NULL, hidden.seed = NU
     me <- list(
         title = title,
         groups = groups,
-        data = data,
-        ## hidden.data = hidden.data,
         seed = seed,
         hidden.seed = hidden.seed,
+        get_data = get_data,
+        set_data = set_data,
         get_hdata = get_hdata,
         set_hdata = set_hdata
     )
@@ -165,6 +172,13 @@ Group <- function(title, type, num, data, hidden.data, hidden.seed = NULL, quest
     num <- if (missing(num)) NA else num
     if (missing(questions)) questions <- list()
 
+    .data <- NULL
+    set_data <- function(data) {
+        .data <<- data
+    }
+    set_data(data)
+    get_data <- function() .data
+
     .hdata <- NULL
     set_hdata <- function(hdata) {
         .hdata <<- hdata
@@ -177,9 +191,9 @@ Group <- function(title, type, num, data, hidden.data, hidden.seed = NULL, quest
         type = type,
         num = num,
         questions = questions,
-        data = data,
-        ## hidden.data = hidden.data,
         hidden.seed = hidden.seed,
+        get_data = get_data,
+        set_data = set_data,
         get_hdata = get_hdata,
         set_hdata = set_hdata
     )
@@ -250,6 +264,13 @@ Question <- function(text,
     stopifnot(is.character(text))
     type <- match.arg(type)
 
+    .data <- NULL
+    set_data <- function(data) {
+        .data <<- data
+    }
+    set_data(data)
+    get_data <- function() .data
+
     .hdata <- NULL
     set_hdata <- function(hdata) {
         .hdata <<- hdata
@@ -257,22 +278,52 @@ Question <- function(text,
     set_hdata(hidden.data)
     get_hdata <- function() .hdata
 
-    me <- list(
+    .text <- NULL
+    set_text <- function(text) {
+        .text <<- text
+    }
+    set_text(text)
+    get_text <- function() .text
+
+    .answer <- NULL
+    set_answer <- function(answer) {
+        .answer <<- answer
+    }
+    set_answer(answer)
+    get_answer <- function() .answer
+
+    ## Object to generate hash
+    obj <- list(
         text = text,
         type = type,
-        ## hidden.data = hidden.data,
         hidden.seed = hidden.seed,
-        data = data,
-        answer = answer,
         feedback = feedback,
         points = points,
         dist = dist,
         epsilon = epsilon)
+    id <- hexa_hash(obj)
 
-    me$id <- hexa_hash(me)
+    me <- list(
+        type = type,
+        id = id,
+        hidden.seed = hidden.seed,
+        feedback = feedback,
+        points = points,
+        extra = extra,
+        dist = dist,
+        epsilon = epsilon)
+
+    me$get_text <- get_text
+    me$set_text <- set_text
+
+    me$get_data <- get_data
+    me$set_data <- set_data
 
     me$get_hdata <- get_hdata
     me$set_hdata <- set_hdata
+
+    me$get_answer <- get_answer
+    me$set_answer <- set_answer
 
     class(me) <- append(class(me), "Question")
     return(me)
@@ -280,14 +331,96 @@ Question <- function(text,
 
 validate_question <- function(question) {
     if (question$type == "cloze") {
-        if (get_cloze_num(question$text) != length(question$answer)) {
+        if (get_cloze_num(question$get_text()) != length(question$get_answer())) {
             stop("Number of answers and number of detected cloze fields are not the same")
         }
     }
 }
 
+## #' @export
+## replace_data <- function(obj, ...)
+## {
+##     UseMethod("replace_data")
+## }
+
+## replace_data.default <- function(obj, ...)
+## {
+##     print("You screwed up. I do not know how to handle this object.")
+##     return(obj)
+## }
+
+#' @export
+replace_data <- function(obj, lang = NULL) {
+    recursive_hidden_data <- merge_languages(lang, obj$get_hdata())
+    obj$set_data(replace_language_data(obj$get_data(), recursive_hidden_data))
+    lapply(obj$groups, replace_data_group, recursive_hidden_data)
+}
+
+#' @export
+replace_data_group <- function(obj, lang = NULL) {
+    recursive_hidden_data <- merge_languages(lang, obj$get_hdata())
+    obj$set_data(replace_language_data(obj$get_data(), recursive_hidden_data))
+    lapply(obj$questions, replace_data_question, recursive_hidden_data)
+}
+
+#' @export
+replace_data_question <- function(obj, lang = NULL) {
+    recursive_hidden_data <- merge_languages(lang, obj$get_hdata())
+
+    ## Replace data
+    obj$set_data(replace_language_data(obj$get_data(), recursive_hidden_data))
+
+    ## Replace in answer
+    if (obj$type == "cloze") {
+        answer_replace <- lapply(obj$get_answer(), function(ans) {
+            if (is.list(ans))
+                replace_languages_data(ans, recursive_hidden_data)
+            else
+                replace_language_data(ans, recursive_hidden_data)
+        })
+    } else {
+        ans <- obj$get_answer()
+        if (is.list(ans))
+            answer_replace <- replace_languages_data(ans, recursive_hidden_data)
+        else
+            answer_replace <- replace_language_data(ans, recursive_hidden_data)
+    }
+    obj$set_answer(answer_replace)
+}
+
+## #' @export
+## replace_text <- function(obj)
+## {
+##     UseMethod("replace_text", obj)
+## }
+
+#' @export
+replace_text <- function(obj, lang = NULL) {
+    recursive_hidden_data <- merge_languages(lang, obj$get_hdata())
+    lapply(obj$groups, replace_text_group, recursive_hidden_data)
+}
+
+#' @export
+replace_text_group <- function(obj, lang = NULL) {
+    recursive_hidden_data <- merge_languages(lang, obj$get_hdata())
+    lapply(obj$questions, replace_text_question, recursive_hidden_data)
+}
+
+#' @export
+replace_text_question <- function(obj, lang = NULL) {
+    recursive_hidden_data <- merge_languages(lang, obj$get_hdata())
+    obj$set_text(replace_text_data(obj$get_text(), recursive_hidden_data))
+}
+
 #' Replace symbols of R chunks of code in text
-replace_text <- function(text, aliases) {
+replace_text_data <- function(text, data) {
+    env <- cleanenv()
+    eval(data, env)
+
+    replace_text_env(text, env)
+}
+
+replace_text_env <- function(text, env) {
     loc <- stringi::stri_locate_all_regex(text, "`r[ #]([^`]+)\\s*`",
                                           omit_no_match = TRUE)[[1]]
 
@@ -296,7 +429,7 @@ replace_text <- function(text, aliases) {
             chunk <- stringi::stri_sub(text, loc[i, 1] + 2, loc[i, 2] - 1)
             expr <- parse(text = chunk)
             lang <- expression_to_lang(expr)
-            lang <- replace_language(lang, aliases)
+            lang <- replace_language_env(lang, env)
             new_chunk <- sprintf("`r %s`", paste(deparse(lang), collapse = "; "))
             stringi::stri_sub(text, loc[i, 1], loc[i, 2]) <- new_chunk
         }
@@ -304,25 +437,25 @@ replace_text <- function(text, aliases) {
     return(text)
 }
 
-#' Replace some symbols in language object by aliases
-replace_language <- function(lang, aliases) {
-    call <- substitute(substitute(lang, aliases), list(lang = lang))
+replace_languages_data <- function(langs, data) {
+    env <- cleanenv()
+    eval(data, env)
+    lapply(langs, replace_language_env, env)
+}
+
+replace_languages_env <- function(langs, env) {
+    lapply(langs, replace_language_env, env)
+}
+
+replace_language_env <- function(lang, env) {
+    call <- substitute(substitute(lang, as.list(env, all.names = TRUE)), list(lang = lang))
     eval(call)
 }
 
-#' Replace data in list of answers
-#'
-#' @param answers List of answers
-#' @param data Data to replace
-#'
-#' @return A list of answers where some data is replaced
-replace_answers <- function(answers, data) {
+replace_language_data <- function(lang, data) {
     env <- cleanenv()
     eval(data, env)
-    lapply(answers, function(e) {
-        call <- substitute(substitute(e, as.list(env, all.names = TRUE)), list(e = e))
-        eval(call)
-    })
+    replace_language_env(lang, env)
 }
 
 #' Evaluate list of answers in environment
@@ -388,20 +521,19 @@ correct_question <- function(question, env, guess) {
         correct_question_cloze(question, env, guess)
     } else {
         # Possibly several right answers, listify them
-        answers <- if (is.list(question$answer)) question$answer else list(question$answer)
-        ra <- replace_answers(answers, question$get_hdata())
-        ea <- eval_answers(ra, env)
+        answers <- if (is.list(question$get_answer())) question$get_answer() else list(question$get_answer())
+        ea <- eval_answers(answers, env)
         match <- match_answers(ea, guess, question$dist, question$epsilon)
 
         if (any(match)) {
             is_correct <- TRUE
             points <- question$points
-            right_answer <- ra[match][[1]]
+            right_answer <- answers[match][[1]]
             right_answer_eval <- ea[match][[1]]
         } else {
             is_correct <- FALSE
             points <- 0
-            right_answer <- ra[[1]]
+            right_answer <- answers[[1]]
             right_answer_eval <- ea[[1]]
         }
         list(question = question,
@@ -478,7 +610,7 @@ unrandomize_data.Question <- function(obj) {
 get_local_language <- function(obj) {
     hidden.data.env <- cleanenv()
     eval(obj$get_hdata(), hidden.data.env)
-    l <- pryr::substitute_q(obj$data, as.list(hidden.data.env, all.names = TRUE))
+    l <- pryr::substitute_q(obj$get_data(), as.list(hidden.data.env, all.names = TRUE))
     if (length(l) == 1 && l[[1]] == as.name("{"))
         return(NULL)
     else
@@ -578,14 +710,14 @@ noerror_in_answers <- function(quiz, env) {
             env_global <- new.env(parent = env)
             eval(l_global, env_global)
 
-            tryCatch(eval(q$answer, env_branch),
+            tryCatch(eval(q$get_answer(), env_branch),
                      error = function(e) {
-                         stop(paste("Error in question \"", substring(q$text, 1, 16), "...\": ", e))
+                         stop(paste("Error in question \"", substring(q$get_text(), 1, 16), "...\": ", e))
                      })
 
-            tryCatch(eval(q$answer, env_global),
+            tryCatch(eval(q$get_answer(), env_global),
                      error = function(e) {
-                         stop(paste("Error in question \"", substring(q$text, 1, 16), "...\": ", e))
+                         stop(paste("Error in question \"", substring(q$get_text(), 1, 16), "...\": ", e))
                      })
         }
     }
@@ -599,7 +731,7 @@ get_mapping <- function(res.text, questions) {
         res.text0 <- gsub("[^a-zA-Z0-9+-_]", "", res.text)
 
         qs.text <- gsub("[^a-zA-Z0-9+-_]", "", sapply(questions, function(q) {
-            q$text
+            q$get_text()
         }))
         d <- adist(res.text0, qs.text)
         map <- apply(d, 1, which.min)
@@ -616,11 +748,15 @@ get_mapping <- function(res.text, questions) {
 
             # Look for corresponding id in list of questions
             index <- Position(function(q){ id == q$id}, questions)
-            if (is.na(index)) stop("No corresponding `id' found for ", q$text)
+            if (is.na(index)) stop("No corresponding `id' found for ", q$get_text())
             map[i] <- index
         }
         return(map)
     }
+}
+
+extract_answers_from_data <- function(data) {
+    data[, 11:ncol(data)]
 }
 
 get_number_of_questions <- function(quiz) {
@@ -630,7 +766,13 @@ get_number_of_questions <- function(quiz) {
 compute_results_from_data <- function(quiz, data, lang) {
     unrandomize_data(quiz)
 
+    if (missing(lang)) lang <- quote({})
+
     validate_quiz(quiz, lang)
+
+    ## Replace data, answer and text with hidden data
+    replace_data(quiz, lang)
+    replace_text(quiz, lang)
 
     ## No factor, numeric or character vector
     i <- sapply(data, is.factor)
@@ -780,6 +922,10 @@ generate_student_correction <- function
     if (missing(lang)) lang <- quote({})
 
     validate_quiz(quiz, lang)
+
+    ## Replace data, answer and text with hidden data
+    replace_data(quiz, lang)
+    replace_text(quiz, lang)
 
     title <- paste(quiz_result$lastname, quiz_result$firstname)
     yaml_chunk <- yaml_header(sprintf("%s %s", quiz$title, title))

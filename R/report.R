@@ -1,18 +1,17 @@
 markdown_question <- function(q, qno, env, eval, guess = NULL) {
     if (q$type == "description") {
-        paste0(q$text, "\n")
+        paste0(q$get_text(), "\n")
     } else {
         if (is.function(q$feedback)) {
             body <- q$feedback(qno, q, env, eval = eval, guess = guess)
         } else if (is.character(q$feedback)) {
-            t_answers <- if (is.list(q$answer)) q$answer else list(q$answer)
-            r_answers <- replace_answers(t_answers, q$get_hdata())
+            t_answers <- if (is.list(q$get_answer())) q$get_answer() else list(q$get_answer())
 
             hdata <- answerstr(q$get_hdata())
-            answer <- answerstr(r_answers[[1]])
+            answer <- answerstr(t_answers[[1]])
 
             body <- sprintf("```{r include=FALSE}\n%s\n```\n\n", hdata)
-            body <- c(body, sprintf("**Question %d.** %s\n\n", qno, q$text))
+            body <- c(body, sprintf("**Question %d.** %s\n\n", qno, q$get_text()))
             body <- c(body, sprintf("```{r include=FALSE}\nanswer <- {%s}\n```\n\n", answer))
             body <- c(body, "**Réponse:**\n")
             body <- c(body, q$feedback)
@@ -70,6 +69,10 @@ generate_correction <- function(quiz, output, lang, eval = TRUE) {
 
     validate_quiz(quiz, lang)
 
+    ## Replace data, answer and text with hidden data
+    replace_data(quiz, lang)
+    replace_text(quiz, lang)
+
     yaml_chunk <- yaml_header(quiz$title)
 
     quiz_env <- quiz_environment(quiz, lang)
@@ -102,6 +105,10 @@ generate_corrections <- function(quiz, input, lang) {
     unrandomize_data(quiz)
 
     validate_quiz(quiz, lang)
+
+    ## Replace data, answer and text with hidden data
+    replace_data(quiz, lang)
+    replace_text(quiz, lang)
 
     data <- utils::read.csv(input, header = TRUE, check.names = FALSE, stringsAsFactors = FALSE, na.strings = "-")
 
@@ -216,7 +223,7 @@ automatic_cloze_feedback <- function(qno, question, env, ...) {
     args <- list(...)
 
     ## Replace cloze fields by numbers enclosed in parens
-    body <- replace_cloze_fields(question$text)
+    body <- replace_cloze_fields(question$get_text())
 
     ## Block defining hidden data
     hdata <- question$get_hdata()
@@ -233,13 +240,12 @@ automatic_cloze_feedback <- function(qno, question, env, ...) {
         if (args$question.body) trimws(body),
         "\n\n**Réponse:**\n\n",
         if (!is.null(args$header)) args$header,
-        sapply(1:get_cloze_num(question$text), function(i) {
-            answers <- if (is.list(question$answer[[i]])) question$answer[[i]] else list(question$answer[[i]])
-            answers_rep <- replace_answers(answers, question$get_hdata())
-            answers_eval <- eval_answers(answers_rep, env)
+        sapply(1:get_cloze_num(question$get_text()), function(i) {
+            answers <- if (is.list(question$get_answer()[[i]])) question$get_answer()[[i]] else list(question$get_answer()[[i]])
+            answers_eval <- eval_answers(answers, env)
 
             # First answer in raw form, as a string and evaluated
-            answer_lang <- answers_rep[[1]]
+            answer_lang <- answers[[1]]
             answer_str <- answerstr(answer_lang)
             answer_eval <- answers_eval[[1]]
 
@@ -259,9 +265,8 @@ automatic_cloze_feedback <- function(qno, question, env, ...) {
                     feedback <- args$noeval_feedback[[i]]
                 else feedback <- sprintf("```{r}\n%s\n```\n", answer_str)
 
-                ## Listify, replace with hdata and extract first
+                ## Listify and extract first
                 feedback <- if (is.list(feedback)) feedback else list(feedback)
-                feedback <- replace_answers(feedback, question$get_hdata())
                 feedback <- feedback[[1]]
 
                 if (is.character(feedback))
@@ -276,7 +281,6 @@ automatic_cloze_feedback <- function(qno, question, env, ...) {
                 else feedback <- sprintf("```r\n%s\n```\n", answer_str)
 
                 feedback <- if (is.list(feedback)) feedback else list(feedback)
-                feedback <- replace_answers(feedback, question$get_hdata())
                 feedback <- feedback[[1]]
 
                 if (is.character(feedback))
@@ -321,13 +325,12 @@ automatic_normal_feedback <- function(qno, question, env, ...) {
         md_hdata_blk <- sprintf("```{r include=FALSE}\n%s\n```\n", hdata_s)
     }
 
-    ## Listify answer, replace by hidden data and eval in env
-    answers <- if (is.list(question$answer)) question$answer else list(question$answer)
-    answers_rep <- replace_answers(answers, question$get_hdata())
-    answers_eval <- eval_answers(answers_rep, env)
+    ## Listify answer and eval in env
+    answers <- if (is.list(question$get_answer())) question$get_answer() else list(question$get_answer())
+    answers_eval <- eval_answers(answers, env)
 
     # First answer in raw form, as a string and evaluated
-    answer_lang <- answers_rep[[1]]
+    answer_lang <- answers[[1]]
     answer_str <- answerstr(answer_lang)
     answer_eval <- answers_eval[[1]]
 
@@ -347,9 +350,8 @@ automatic_normal_feedback <- function(qno, question, env, ...) {
             feedback <- args$noeval_feedback
         else feedback <- sprintf("```{r}\n%s\n```\n", answer_str)
 
-        ## Listify, replace with hdata and extract first
+        ## Listify and extract first
         feedback <- if (is.list(feedback)) feedback else list(feedback)
-        feedback <- replace_answers(feedback, question$get_hdata())
         feedback <- feedback[[1]]
 
         if (is.character(feedback))
@@ -364,7 +366,6 @@ automatic_normal_feedback <- function(qno, question, env, ...) {
         else feedback <- sprintf("```r\n%s\n```\n", answer_str)
 
         feedback <- if (is.list(feedback)) feedback else list(feedback)
-        feedback <- replace_answers(feedback, question$get_hdata())
         feedback <- feedback[[1]]
 
         if (is.character(feedback))
@@ -378,7 +379,7 @@ automatic_normal_feedback <- function(qno, question, env, ...) {
         md_hdata_blk,
         md_answer_blk,
         if (args$numbered) sprintf("**Question %d.** ", qno),
-        if (args$question.body) trimws(question$text),
+        if (args$question.body) trimws(question$get_text()),
         if (!is.null(args$guess)) {
             c("\n\nRéponse donnée: ", args$guess$guess,
               " ",

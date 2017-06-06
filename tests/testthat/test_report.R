@@ -3,6 +3,7 @@ context("Reporting features")
 test_that("automatic_feedback return correct markdown", {
     question <- Question("Q1", type = "shortanswer", answer = quote(1))
     unrandomize_data(question)
+    replace_data_question(question)
     env <- new.env(parent = .GlobalEnv)
     expect_identical(automatic_feedback(3, question, env), "```{r include=FALSE}
 answer <- {1}
