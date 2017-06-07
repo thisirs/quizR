@@ -117,7 +117,7 @@ to_XML.Question <- function(obj, ...) {
     if (args$answer) {
         if (obj$type == "description" | obj$type == "cloze") {
             answer <- "*"
-        } else if (obj$type == "shortanswer") {
+        } else if (obj$type == "shortanswer" | obj$type == "numerical") {
             ## Select first answer
             if (is.list(question$get_answer()))
                 q_answers <- question$get_answer()[1]
@@ -126,7 +126,7 @@ to_XML.Question <- function(obj, ...) {
 
             ea <- eval_answers(q_answers, env)
             answer <- as.character(ea[[1]])
-        }
+        } else stop("Unhandled question type")
     } else answer <- "*"
 
     # Setting body of question
