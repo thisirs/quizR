@@ -245,6 +245,7 @@ question_types <- c("shortanswer", "description", "cloze")
 #' @param data Language object defining the data
 #' @param feedback Feedback of question
 #' @param points Number of points of question
+#' @param extra Extra information
 #' @param dist Tolerance of answer for character string answer
 #' @param epsilon Relative error for numeric answer
 #' @export
@@ -259,6 +260,7 @@ Question <- function(text,
                                   sum(cloze_field_points_text(text))
                               else
                                   1,
+                     extra = NULL,
                      dist = 0,
                      epsilon = 1e-3) {
     stopifnot(is.character(text))
@@ -299,6 +301,7 @@ Question <- function(text,
         hidden.seed = hidden.seed,
         feedback = feedback,
         points = points,
+        extra = extra,
         dist = dist,
         epsilon = epsilon)
     id <- hexa_hash(obj)
