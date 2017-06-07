@@ -144,17 +144,31 @@ to_XML.Question <- function(obj, ...) {
 
             ea <- eval_answers(answers, env)
 
-            right_answers_eval[[i]] <- as.character(ea[[1]])
+            right_answers_eval[[i]] <- ea[[1]]
         }
 
-        fields <- paste0("=", right_answers_eval, "}")
-
         body <- obj$get_text()
-        loc <- stringi::stri_locate_all_regex(body, "=\\*\\}",
-                                              omit_no_match = TRUE)[[1]]
+
+        loc <- stringi::stri_locate_all_regex(body, cloze_regex, omit_no_match = TRUE)[[1]]
+
+        matches <- stringi::stri_match_all_regex(body, cloze_regex, omit_no_match = TRUE)[[1]]
+
         stopifnot(nrow(loc) == num)
+        stopifnot(nrow(matches) == num)
+
         for (i in rev(1:nrow(loc))) {
-            stringi::stri_sub(body, loc[i, 1], loc[i, 2]) <- fields[i]
+            points <- matches[i, 2]
+            type <- matches[i, 3]
+            rest <- matches[i, 4]
+            if (type == "NM" | type == "NUMERICAL") {
+                answer <- right_answers_eval[[i]]
+                tolerance <- abs(answer / 1000)
+                replace <- sprintf("{%s:%s:=%s:%s}", points, type, answer, tolerance)
+            } else if (type == "SA" | type == "SHORTANSWER") {
+                replace <- sprintf("{%s:%s:=%s}", points, type, answer)
+            } else stop("Unhandled question type")
+
+            stringi::stri_sub(body, loc[i, 1], loc[i, 2]) <- replace
         }
     } else
         body <- obj$get_text()

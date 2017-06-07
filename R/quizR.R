@@ -230,11 +230,12 @@ get_num <- function(group) {
 }
 
 field_from_type <- list(
-    shortanswer = "{1:SA:=*}"
+    shortanswer = "{1:SA:=*}",
+    numerical = "{1:NM:=*}"
 )
 
 #' @export
-question_types <- c("shortanswer", "description", "cloze")
+question_types <- c("shortanswer", "numerical", "description", "cloze")
 
 #' Create a question object
 #'
