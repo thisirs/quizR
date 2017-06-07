@@ -428,9 +428,11 @@ replace_text_env <- function(text, env) {
         for (i in rev(1:nrow(loc))) {
             chunk <- stringi::stri_sub(text, loc[i, 1] + 2, loc[i, 2] - 1)
             expr <- parse(text = chunk)
-            lang <- expression_to_lang(expr)
-            lang <- replace_language_env(lang, env)
-            new_chunk <- sprintf("`r %s`", paste(deparse(lang), collapse = "; "))
+            chunks <- lapply(as.list(expr), function(lang) {
+                lang_rep <- replace_language_env(lang, env)
+                paste(deparse(lang_rep), collapse = " ")
+            })
+            new_chunk <- sprintf("`r %s`", paste(chunks, collapse = "; "))
             stringi::stri_sub(text, loc[i, 1], loc[i, 2]) <- new_chunk
         }
     }
