@@ -54,7 +54,7 @@ to_string <- function(filename) {
     paste(readLines(filename), collapse = "\n")
 }
 
-aliases_from_question <- function(question) {
+translate_hidden_data <- function(question) {
     hdata <- question$get_hdata()
     env <- cleanenv()
     eval(hdata, env)
@@ -63,57 +63,60 @@ aliases_from_question <- function(question) {
         varnames <- paste0(prefix, ls(env))
         aliases <- lapply(as.list(varnames), as.name)
         names(aliases) <- ls(env)
-        aliases
-    } else list()
+        as.environment(aliases)
+    } else cleanenv()
 }
 
 clozify <- function(...) {
     questions <- list(...)
 
-    aliases_list <- lapply(questions, aliases_from_question)
+    ## Prefix all defined variables in hidden.data
+    env_list <- lapply(questions, translate_hidden_data)
 
-    texts <- mapply(function(question, aliases) {
+    texts <- mapply(function(question, env) {
         if (question$type == "cloze") {
-            replace_text(question$text, aliases)
+            replace_text_env(question$get_text(), env)
         } else if (question$type == "shortanswer") {
-            paste(replace_text(question$text, aliases), sprintf("{%d:SA:=*}", question$points))
+            paste(replace_text_env(question$get_text(), env), sprintf("{%d:SA:=*}", question$points))
+        } else if (question$type == "numerical") {
+            paste(replace_text_env(question$get_text(), env), sprintf("{%d:NM:=*}", question$points))
         } else stop("Unhandler question type")
-    }, questions, aliases_list)
+    }, questions, env_list)
     text <- paste(texts, collapse = "\n\n")
 
-    hidden.data <- do.call(merge_languages, mapply(function(question, aliases) {
-        replace_language(question$get_hdata(), aliases)
-    }, questions, aliases_list), quote = TRUE)
+    hidden.data <- do.call(merge_languages, mapply(function(question, env) {
+        replace_language_env(question$get_hdata(), env)
+    }, questions, env_list), quote = TRUE)
 
-    data <- do.call(merge_languages, mapply(function(question, aliases) {
-        replace_language(question$data, aliases)
-    }, questions, aliases_list), quote = TRUE)
+    data <- do.call(merge_languages, mapply(function(question, env) {
+        replace_language_env(question$get_data(), env)
+    }, questions, env_list), quote = TRUE)
 
-    answers <- unlist(mapply(function(question, aliases) {
+    answers <- unlist(mapply(function(question, env) {
         if (question$type == "cloze") {
-            if (is.list(question$answer)) {
-                lapply(question$answer, function(ans) {
+            if (is.list(question$get_answer())) {
+                lapply(question$get_answer(), function(ans) {
                     if (is.list(ans)) {
-                        lapply(ans, replace_language, aliases)
+                        lapply(ans, replace_language_env, env)
                     } else {
-                        replace_language(ans, aliases)
+                        replace_language_env(ans, env)
                     }
                 })
             } else {
                 stop("Answer field in cloze question should be a list")
             }
         } else {
-            if (is.list(question$answer)) {
-                list(lapply(question$answer, replace_language, aliases))
+            if (is.list(question$get_answer())) {
+                list(lapply(question$get_answer(), replace_language_env, env))
             } else {
-                list(replace_language(question$answer, aliases))
+                list(replace_language_env(question$get_answer(), env))
             }
         }
-    }, questions, aliases_list, SIMPLIFY = FALSE), recursive = FALSE)
+    }, questions, env_list, SIMPLIFY = FALSE), recursive = FALSE)
 
     points <- sapply(questions, function(question) {
         if (question$type == "cloze") {
-            sum(cloze_field_points_text(question$text))
+            sum(cloze_field_points_text(question$get_text()))
         } else {
             question$points
         }
