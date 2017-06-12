@@ -1,6 +1,6 @@
 question.xml <- "<question type=\"%s\">
   <name>
-    <text>%s</text>
+    <text><![CDATA[%s]]></text>
   </name>
   <questiontext format=\"%s\">
     <text><![CDATA[%s]]></text>
