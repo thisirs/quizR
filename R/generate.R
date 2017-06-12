@@ -194,6 +194,7 @@ to_XML.Question <- function(obj, ...) {
 
     md_feedback <- paste0(md_qdata_blk, md_feedback)
     HTML_feedback <- render_HTML(md_feedback, env)
+    HTML_feedback0 <- trimws(HTML_feedback) # pandoc seems to add some leading newlines
 
     # Return properly indented XML
     question.xml.indent <- add_spaces_left(question.xml, args$indent)
