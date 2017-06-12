@@ -184,6 +184,7 @@ to_XML.Question <- function(obj, ...) {
     # Get HTML of question body
     md_question <- paste0(md_qdata_blk, md_hdata_blk, body)
     HTML_question <- render_HTML(md_question, env)
+    HTML_question0 <- trimws(HTML_question) # pandoc seems to add some leading newlines
 
     # Get HTML of feedback
     if (obj$type == "description" | !args$feedback) {
@@ -198,7 +199,7 @@ to_XML.Question <- function(obj, ...) {
 
     # Return properly indented XML
     question.xml.indent <- add_spaces_left(question.xml, args$indent)
-    return(sprintf(question.xml.indent, obj$type, title, "html", HTML_question, answer, HTML_feedback))
+    return(sprintf(question.xml.indent, obj$type, title, "html", HTML_question0, answer, HTML_feedback0))
 }
 
 #' Generate XML Moodle quiz file and data file
