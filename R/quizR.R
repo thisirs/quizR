@@ -235,6 +235,7 @@ field_from_type <- list(
     numerical = "{1:NM:=*}"
 )
 
+#' Character vector of all handled question types
 #' @export
 question_types <- c("shortanswer", "numerical", "description", "cloze")
 
@@ -343,17 +344,6 @@ validate_question <- function(question) {
     }
 }
 
-## #' @export
-## replace_data <- function(obj, ...)
-## {
-##     UseMethod("replace_data")
-## }
-
-## replace_data.default <- function(obj, ...)
-## {
-##     print("You screwed up. I do not know how to handle this object.")
-##     return(obj)
-## }
 
 #' @export
 replace_data <- function(obj, lang = NULL) {
@@ -394,13 +384,13 @@ replace_data_question <- function(obj, lang = NULL) {
     obj$set_answer(answer_replace)
 }
 
-## #' @export
-## replace_text <- function(obj)
-## {
-##     UseMethod("replace_text", obj)
-## }
-
+#' Replace hidden data in text of all questions
 #' @export
+#'
+#' @param obj A quiz object
+#' @param lang An optional language object
+#'
+#' @return A character string with some of the variables replaced
 replace_text <- function(obj, lang = NULL) {
     recursive_hidden_data <- merge_languages(lang, obj$get_hdata())
     lapply(obj$groups, replace_text_group, recursive_hidden_data)
@@ -419,6 +409,11 @@ replace_text_question <- function(obj, lang = NULL) {
 }
 
 #' Replace symbols of R chunks of code in text
+#'
+#' @param text A character string written in R markdown
+#' @param data A language object defining variables to be replaced
+#'
+#' @return A character string with some of the variables replaced
 replace_text_data <- function(text, data) {
     env <- cleanenv()
     eval(data, env)
@@ -426,6 +421,12 @@ replace_text_data <- function(text, data) {
     replace_text_env(text, env)
 }
 
+#' Replace symbols of R chunks of code in text
+#'
+#' @param text A character string written in R markdown
+#' @param env An environment containing variables to be replaced
+#'
+#' @return A character string with some of the variables replaced
 replace_text_env <- function(text, env) {
     loc <- stringi::stri_locate_all_regex(text, "`r[ #]([^`]+)\\s*`",
                                           omit_no_match = TRUE)[[1]]
@@ -586,6 +587,7 @@ unrandomize <- function(lang) {
     expression_to_lang(parse(tmpfile))
 }
 
+#' Eval hidden data with the corresponding hidden seed.
 #' @export
 unrandomize_data <- function(obj)
 {
@@ -693,6 +695,11 @@ distinct_data <- function(quiz, lang) {
 }
 
 #' Check that all given answers are consistent
+#'
+#' @param quiz A quiz object
+#' @param env An environment or language object
+#'
+#' @return A boolean
 noerror_in_answers <- function(quiz, env) {
     if (missing(env)) env <- new.env(parent = baseenv())
     if (is.language(env)) {

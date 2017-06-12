@@ -240,6 +240,7 @@ generate_files <- function(quiz,
 #' @param language Additionnal language for validation
 #' @param feedback Whether to add feedback in XML
 #' @param eval Whether to evaluate answers in feedback
+#' @param answer Whether to add answer to questions in XML file
 #'
 #' @export
 generate_XML <- function(quiz,
