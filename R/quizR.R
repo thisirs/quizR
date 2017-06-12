@@ -575,7 +575,7 @@ unrandomize <- function(lang) {
 
     # dump appears to obey to deparse.max.lines
     dml <- options(deparse.max.lines = NULL)
-    on.exit(options(deparse.max.lines = dml))
+    on.exit(options(dml))
 
     # Remove keepInteger from default dump option
     dump(vars, tmpfile, envir = env, control = c("quoteExpressions",
