@@ -83,6 +83,9 @@ to_XML.Group <- function(obj, ...)
 to_XML.Question <- function(obj, ...) {
     args <- list(...)
     if (is.null(args$quiz)) stop("Missing quiz when calling to_XML.Group")
+    if (is.null(args$answer)) args$answer <- FALSE
+    if (is.null(args$feedback)) args$feedback <- FALSE
+    if (is.null(args$eval)) args$eval <- FALSE
     if (is.null(args$indent)) args$indent <- 0
 
     set.seed(obj$quiz$seed)
