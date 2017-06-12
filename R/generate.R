@@ -122,10 +122,10 @@ to_XML.Question <- function(obj, ...) {
             answer <- "*"
         } else if (obj$type == "shortanswer" | obj$type == "numerical") {
             ## Select first answer
-            if (is.list(question$get_answer()))
-                q_answers <- question$get_answer()[1]
+            if (is.list(obj$get_answer()))
+                q_answers <- obj$get_answer()[1]
             else
-                q_answers <- list(question$get_answer())
+                q_answers <- list(obj$get_answer())
 
             ea <- eval_answers(q_answers, env)
             answer <- as.character(ea[[1]])
