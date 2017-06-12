@@ -161,6 +161,7 @@ add_group <- function(quiz, group) {
 #' @param num Number of questions of group if of random type
 #' @param data Language object defining the data
 #' @param hidden.data Language object defining the hidden data
+#' @param hidden.seed The seed used to generate hidden data
 #' @param questions List of questions
 #' @export
 Group <- function(title, type, num, data, hidden.data, hidden.seed = NULL, questions) {
@@ -243,6 +244,7 @@ question_types <- c("shortanswer", "numerical", "description", "cloze")
 #' @param type Type of question
 #' @param answer Answer of question
 #' @param hidden.data Language object defining the hidden data
+#' @param hidden.seed The seed used to generate hidden data
 #' @param data Language object defining the data
 #' @param feedback Feedback of question
 #' @param points Number of points of question
