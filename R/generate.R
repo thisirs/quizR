@@ -52,11 +52,11 @@ to_XML.Quiz <- function(obj, ...)
 
     ## Call to_XML on each group with args
     gs <- lapply(obj$groups, function(g) {
-        args0 <- c(list(g, quiz = obj), args)
+        args0 <- c(list(g, quiz = obj, indent = 2), args)
         do.call(to_XML, args0, quote = TRUE)
     })
     gs <- paste(gs, collapse = "\n")
-    output <- sprintf(quiz.xml, add_spaces_left(gs, 2))
+    output <- sprintf(quiz.xml, gs)
     return(output)
 }
 
@@ -65,6 +65,7 @@ to_XML.Group <- function(obj, ...)
 {
     args <- list(...)
     if (is.null(args$quiz)) stop("Missing quiz when calling to_XML.Group")
+    if (is.null(args$indent)) args$indent <- 0
 
     if (obj$type == "identifier")
         args$feedback <- FALSE
@@ -74,13 +75,15 @@ to_XML.Group <- function(obj, ...)
         args0 <- c(list(q), args)
         do.call(to_XML, args0, quote = TRUE) })
     qs <- paste(qs, collapse = "\n")
-    return(paste(sprintf(group.xml, title), qs, sep = "\n"))
+
+    return(paste(add_spaces_left(sprintf(group.xml, title), args$indent), qs, sep = "\n"))
 }
 
 #' @export
 to_XML.Question <- function(obj, ...) {
     args <- list(...)
     if (is.null(args$quiz)) stop("Missing quiz when calling to_XML.Group")
+    if (is.null(args$indent)) args$indent <- 0
 
     set.seed(obj$quiz$seed)
 
@@ -189,8 +192,9 @@ to_XML.Question <- function(obj, ...) {
     md_feedback <- paste0(md_qdata_blk, md_feedback)
     HTML_feedback <- render_HTML(md_feedback, env)
 
-    # Return XML
-    return(sprintf(question.xml, obj$type, title, "html", HTML_question, answer, HTML_feedback))
+    # Return properly indented XML
+    question.xml.indent <- add_spaces_left(question.xml, args$indent)
+    return(sprintf(question.xml.indent, obj$type, title, "html", HTML_question, answer, HTML_feedback))
 }
 
 #' Generate XML Moodle quiz file and data file
