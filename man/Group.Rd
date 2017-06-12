@@ -17,6 +17,8 @@ Group(title, type, num, data, hidden.data, hidden.seed = NULL, questions)
 
 \item{hidden.data}{Language object defining the hidden data}
 
+\item{hidden.seed}{The seed used to generate hidden data}
+
 \item{questions}{List of questions}
 }
 \description{

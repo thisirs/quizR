@@ -7,7 +7,8 @@
 Question(text, type = question_types, answer = NULL, hidden.data = quote({
   }), hidden.seed = NULL, data = quote({ }),
   feedback = automatic_feedback, points = if (type == "cloze")
-  sum(cloze_field_points_text(text)) else 1, dist = 0, epsilon = 0.001)
+  sum(cloze_field_points_text(text)) else 1, extra = NULL, dist = 0,
+  epsilon = 0.001)
 }
 \arguments{
 \item{text}{Body of question}
@@ -18,11 +19,15 @@ Question(text, type = question_types, answer = NULL, hidden.data = quote({
 
 \item{hidden.data}{Language object defining the hidden data}
 
+\item{hidden.seed}{The seed used to generate hidden data}
+
 \item{data}{Language object defining the data}
 
 \item{feedback}{Feedback of question}
 
 \item{points}{Number of points of question}
+
+\item{extra}{Extra information}
 
 \item{dist}{Tolerance of answer for character string answer}
 

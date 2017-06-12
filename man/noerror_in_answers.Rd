@@ -6,6 +6,14 @@
 \usage{
 noerror_in_answers(quiz, env)
 }
+\arguments{
+\item{quiz}{A quiz object}
+
+\item{env}{An environment or language object}
+}
+\value{
+A boolean
+}
 \description{
 Check that all given answers are consistent
 }

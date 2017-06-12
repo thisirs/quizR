@@ -2,10 +2,18 @@
 % Please edit documentation in R/quizR.R
 \name{replace_text}
 \alias{replace_text}
-\title{Replace symbols of R chunks of code in text}
+\title{Replace hidden data in text of all questions}
 \usage{
-replace_text(text, aliases)
+replace_text(obj, lang = NULL)
+}
+\arguments{
+\item{obj}{A quiz object}
+
+\item{lang}{An optional language object}
+}
+\value{
+A character string with some of the variables replaced
 }
 \description{
-Replace symbols of R chunks of code in text
+Replace hidden data in text of all questions
 }

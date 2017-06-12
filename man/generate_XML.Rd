@@ -17,6 +17,8 @@ generate_XML(quiz, quiz.name = paste0(quiz$title, "-quiz.xml"),
 \item{feedback}{Whether to add feedback in XML}
 
 \item{eval}{Whether to evaluate answers in feedback}
+
+\item{answer}{Whether to add answer to questions in XML file}
 }
 \description{
 Generate XML Moodle quiz file
