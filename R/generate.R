@@ -49,7 +49,6 @@ to_XML.default <- function(obj, ...)
 to_XML.Quiz <- function(obj, ...)
 {
     args <- list(...)
-    if (is.null(args$data)) stop("Missing data when calling to_XML.Group")
 
     ## Call to_XML on each group with args
     gs <- lapply(obj$groups, function(g) {
@@ -66,7 +65,6 @@ to_XML.Group <- function(obj, ...)
 {
     args <- list(...)
     if (is.null(args$quiz)) stop("Missing quiz when calling to_XML.Group")
-    if (is.null(args$data)) stop("Missing data when calling to_XML.Group")
 
     if (obj$type == "identifier")
         args$feedback <- FALSE
@@ -83,7 +81,6 @@ to_XML.Group <- function(obj, ...)
 to_XML.Question <- function(obj, ...) {
     args <- list(...)
     if (is.null(args$quiz)) stop("Missing quiz when calling to_XML.Group")
-    if (is.null(args$data)) stop("Missing data when calling to_XML.Group")
 
     set.seed(obj$quiz$seed)
 
