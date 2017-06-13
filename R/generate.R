@@ -191,6 +191,8 @@ to_XML.Question <- function(obj, ...) {
         md_feedback <- ""
     } else if (is.function(obj$feedback)) {
         md_feedback <- obj$feedback(NULL, obj, env, numbered = FALSE, eval = args$eval, question.body = FALSE)
+    } else if (is.character(obj$feedback)) {
+        md_feedback <- replace_text_env(obj$feedback, env)
     } else stop("Unhandled feedback type")
 
     md_feedback <- paste0(md_qdata_blk, md_feedback)

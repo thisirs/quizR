@@ -269,9 +269,10 @@ automatic_cloze_feedback <- function(qno, question, env, ...) {
                 feedback <- if (is.list(feedback)) feedback else list(feedback)
                 feedback <- feedback[[1]]
 
-                if (is.character(feedback))
-                    md_answer <- paste0(trimws(feedback), "\n")
-                else
+                if (is.character(feedback)) {
+                    feedback_rep <- replace_text_env(feedback, env)
+                    md_answer <- paste0(trimws(feedback_rep), "\n")
+                } else
                     md_answer <- sprintf("```{r}\n%s\n```\n", answerstr(feedback))
             } else {
                 if (!is.null(args$noeval_feedback))
@@ -283,9 +284,10 @@ automatic_cloze_feedback <- function(qno, question, env, ...) {
                 feedback <- if (is.list(feedback)) feedback else list(feedback)
                 feedback <- feedback[[1]]
 
-                if (is.character(feedback))
-                    md_answer <- paste0(trimws(feedback), "\n")
-                else
+                if (is.character(feedback)) {
+                    feedback_rep <- replace_text_env(feedback, env)
+                    md_answer <- paste0(trimws(feedback_rep), "\n")
+                } else
                     md_answer <- sprintf("```r\n%s\n```\n", answerstr(feedback))
             }
 
@@ -354,9 +356,10 @@ automatic_normal_feedback <- function(qno, question, env, ...) {
         feedback <- if (is.list(feedback)) feedback else list(feedback)
         feedback <- feedback[[1]]
 
-        if (is.character(feedback))
-            md_answer <- paste0(trimws(feedback), "\n")
-        else
+        if (is.character(feedback)) {
+            feedback_rep <- replace_text_env(feedback, env)
+            md_answer <- paste0(trimws(feedback_rep), "\n")
+        } else
             md_answer <- sprintf("```{r}\n%s\n```\n", answerstr(feedback))
     } else {
         if (!is.null(args$noeval_feedback))
@@ -368,9 +371,10 @@ automatic_normal_feedback <- function(qno, question, env, ...) {
         feedback <- if (is.list(feedback)) feedback else list(feedback)
         feedback <- feedback[[1]]
 
-        if (is.character(feedback))
+        if (is.character(feedback)) {
+            feedback_rep <- replace_text_env(feedback, env)
             md_answer <- paste0(trimws(feedback), "\n")
-        else
+        } else
             md_answer <- sprintf("```r\n%s\n```\n", answerstr(feedback))
     }
 
