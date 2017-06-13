@@ -428,6 +428,11 @@ replace_text_data <- function(text, data) {
 #'
 #' @return A character string with some of the variables replaced
 replace_text_env <- function(text, env) {
+    text <- replace_chunk_env(text, env)
+    replace_inline_env(text, env)
+}
+
+replace_inline_env <- function(text, env) {
     loc <- stringi::stri_locate_all_regex(text, "`r[ #]([^`]+)\\s*`",
                                           omit_no_match = TRUE)[[1]]
 
@@ -441,6 +446,36 @@ replace_text_env <- function(text, env) {
             })
             new_chunk <- sprintf("`r %s`", paste(chunks, collapse = "; "))
             stringi::stri_sub(text, loc[i, 1], loc[i, 2]) <- new_chunk
+        }
+    }
+    return(text)
+}
+
+replace_chunk_env <- function(text, env) {
+    begin <- stringi::stri_locate_all_regex(text, "^[\t >]*```+\\s*\\{([a-zA-Z0-9]+.*)\\}\\s*$",
+                                            omit_no_match = TRUE,
+                                            multiline = TRUE)[[1]]
+
+    if (nrow(begin) >= 1) {
+        end <- stringi::stri_locate_all_regex(text, "^[\t >]*```+\\s*$",
+                                              omit_no_match = TRUE,
+                                              multiline = TRUE)[[1]]
+
+        stopifnot(nrow(begin) == nrow(end))
+        N <- nrow(begin)
+        stopifnot(all(diff(c(begin[, 1], end[, 2])[rep(1:N, each = 2) + c(0, N)]) > 0))
+
+        if (nrow(begin) >= 1) {
+            for (i in rev(1:nrow(begin))) {
+                chunk <- stringi::stri_sub(text, begin[i, 2] + 2, end[i, 1] - 1)
+                expr <- parse(text = chunk)
+                chunks <- lapply(as.list(expr), function(lang) {
+                    lang_rep <- replace_language_env(lang, env)
+                    paste(deparse(lang_rep), collapse = "\n")
+                })
+                new_chunk <- paste(chunks, collapse = "\n")
+                stringi::stri_sub(text, begin[i, 2] + 2, end[i, 1] - 2) <- new_chunk
+            }
         }
     }
     return(text)
