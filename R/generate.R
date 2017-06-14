@@ -25,12 +25,12 @@ quiz.xml <- "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 %s
 </quiz>"
 
-render_HTML <- function(text, env) {
+render_HTML <- function(text, env, quiet = FALSE) {
     if (missing(env)) env = parent.frame()
 
     tmpfile <- tempfile("question", fileext = ".Rmd")
     write(text, tmpfile, append = TRUE)
-    output <- rmarkdown::render(tmpfile, rmarkdown::html_fragment(), envir = env)
+    output <- rmarkdown::render(tmpfile, rmarkdown::html_fragment(), envir = env, quiet = quiet)
     to_string(output)
 }
 
@@ -86,6 +86,7 @@ to_XML.Question <- function(obj, ...) {
     if (is.null(args$answer)) args$answer <- FALSE
     if (is.null(args$feedback)) args$feedback <- FALSE
     if (is.null(args$eval)) args$eval <- FALSE
+    if (is.null(args$quiet)) args$quiet <- FALSE
     if (is.null(args$indent)) args$indent <- 0
 
     set.seed(obj$quiz$seed)
@@ -183,7 +184,7 @@ to_XML.Question <- function(obj, ...) {
 
     # Get HTML of question body
     md_question <- paste0(md_qdata_blk, md_hdata_blk, body)
-    HTML_question <- render_HTML(md_question, env)
+    HTML_question <- render_HTML(md_question, env, quiet = args$quiet)
     HTML_question0 <- trimws(HTML_question) # pandoc seems to add some leading newlines
 
     # Get HTML of feedback
@@ -196,7 +197,7 @@ to_XML.Question <- function(obj, ...) {
     } else stop("Unhandled feedback type")
 
     md_feedback <- paste0(md_qdata_blk, md_feedback)
-    HTML_feedback <- render_HTML(md_feedback, env)
+    HTML_feedback <- render_HTML(md_feedback, env, quiet = args$quiet)
     HTML_feedback0 <- trimws(HTML_feedback) # pandoc seems to add some leading newlines
 
     # Return properly indented XML
@@ -215,7 +216,8 @@ to_XML.Question <- function(obj, ...) {
 generate_files <- function(quiz,
                            data.name = paste0(quiz$title, "-data.R"),
                            quiz.name = paste0(quiz$title, "-quiz.xml"),
-                           language) {
+                           language,
+                           quiet = FALSE) {
     if (missing(language)) language <- NULL
 
     # Instantiate random data with quiz$hidden.seed
@@ -232,7 +234,7 @@ generate_files <- function(quiz,
 
     # Write XML Moodle file
     if (!is.null(quiz.name))
-        write(to_XML(quiz, data = data0), quiz.name)
+        write(to_XML(quiz, data = data0, quiet = quiet), quiz.name)
 
     ## Write data file if any
     if (!is.null(data.name) & length(data0) > 1) {
@@ -256,7 +258,8 @@ generate_XML <- function(quiz,
                          language = NULL,
                          feedback = TRUE,
                          eval = feedback,
-                         answer = feedback) {
+                         answer = feedback,
+                         quiet = FALSE) {
     # Instantiate random data with quiz$hidden.seed
     unrandomize_data(quiz)
 
@@ -274,7 +277,8 @@ generate_XML <- function(quiz,
                   data = data0,
                   feedback = feedback,
                   eval = eval,
-                  answer = answer)
+                  answer = answer,
+                  quiet = quiet)
     write(xml, quiz.name)
 }
 

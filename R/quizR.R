@@ -964,7 +964,8 @@ generate_student_correction <- function
     quiz,
     quiz_result,
     output = sprintf("%s_%s_%s.pdf", quiz$title, quiz_result$lastname, quiz_result$firstname),
-    lang) {
+    lang,
+    quiet = FALSE) {
 
     # Instantiate random data with quiz$hidden.seed
     unrandomize_data(quiz)
@@ -1009,6 +1010,7 @@ generate_student_correction <- function
     rmarkdown::render(input = tmpfile,
                       output_dir = dirname(output),
                       output_file = basename(output),
+                      quiet = quiet,
                       "pdf_document")
 }
 

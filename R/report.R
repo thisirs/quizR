@@ -60,7 +60,7 @@ quiz_environment <- function(quiz, lang) {
 }
 
 #' @export
-generate_correction <- function(quiz, output, lang, eval = TRUE) {
+generate_correction <- function(quiz, output, lang, eval = TRUE, quiet = FALSE) {
     # Instantiate random data with quiz$hidden.seed
     unrandomize_data(quiz)
 
@@ -97,6 +97,7 @@ generate_correction <- function(quiz, output, lang, eval = TRUE) {
     rmarkdown::render(input = tmpfile,
                       output_dir = dirname(output),
                       output_file = basename(output),
+                      quiet = quiet,
                       "pdf_document")
 }
 
