@@ -80,7 +80,7 @@ clozify <- function(...) {
             paste(replace_text_env(question$get_text(), env), sprintf("{%d:SA:=*}", question$points))
         } else if (question$type == "numerical") {
             paste(replace_text_env(question$get_text(), env), sprintf("{%d:NM:=*}", question$points))
-        } else stop("Unhandler question type")
+        } else stop("Unhandled question type")
     }, questions, env_list)
     text <- paste(texts, collapse = "\n\n")
 
