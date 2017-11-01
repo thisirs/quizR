@@ -1,82 +1,149 @@
-context("Clozify")
+context("Testing clozify functions")
 
-q1 <- Question("Q1", type = "shortanswer", answer = quote(a))
-q2 <- Question("Q2", type = "shortanswer", answer = quote(a))
-q3 <- Question("Q3", type = "shortanswer", answer = list(quote(a), quote(b)),
-               data = quote({a <- 1}))
-q4 <- Question("blah `r a` and `r fun(3)`", type = "shortanswer", answer = quote(a),
-               hidden.data = quote({ a <- 42; fun <- function(a) a + 1}))
+test_that(paste(sQuote("versionize_questions"), " is working correctly"), {
+    qs <- list(
+        Question("q1", answer = 1),
+        Question("q2", answer = 2),
+        Question("q3", answer = 3),
+        Question("q4", answer = 4),
+        Question("q5", answer = 5),
+        Question("q6", answer = 6),
+        Question("q7", answer = 7))
 
-test_that("replace_language_data is working correctly", {
-    expect_equal(replace_language_data(quote({ a <- 1}), quote({a = as.name("b")})),
-                 quote({ b <- 1}))
-    expect_equal(replace_language_data(quote({ a <- 1 }), list()),
-                 quote({ a <- 1 }))
-    expect_equal(replace_language_data(quote({ a <- 1 }), NULL),
-                 quote({ a <- 1 }))
+    nver <- c(1:7)
+    q_list <- versionize_questions(qs, "SEED", nver)
+
+    expect_equal(sapply(q_list, length), nver)
 })
 
-test_that("replace_text_data is working correctly", {
-    text <- "blah foo"
-    lang <- quote({blah = as.name("foo")})
-    expect_equal(replace_text_data(text, lang), "blah foo")
-    expect_equal(replace_text_data(text, NULL), "blah foo")
-    expect_equal(replace_text_data(text, list()), "blah foo")
+test_that(paste(sQuote("clozify_group"), " is working correctly"), {
 
-    text <- "`r blah`"
-    data <- quote({blah = as.name("foo")})
-    expect_equal(replace_text_data(text, data), "`r foo`")
+    group <-
+        Group$new("group",
+                  children = list(
+                      Question("q1", answer = 1),
+                      Question("q2", answer = 2),
+                      Question("q3", answer = 3),
+                      Question("q4", answer = 4),
+                      Question("q5", answer = 5),
+                      Question("q6", answer = 6),
+                      Question("q7", answer = 7)))
 
-    text <- "`r blah <- 1`"
-    data <- quote({blah = as.name("foo")})
-    expect_equal(replace_text_data(text, data), "`r foo <- 1`")
+    n <- 3
+    N <- 10
+    cl_group <- clozify_group(group, N, n)
 
-    text <- "blah `r func(args)` foo"
-    data <- quote({func = as.name("myfunc"); args = as.name("myargs")})
-    expect_equal(replace_text_data(text, data), "blah `r myfunc(myargs)` foo")
+    expect_equal(length(cl_group$children), N)
+
+    expect_true(all(sapply(cl_group$children, function(q) q$type) == "cloze"))
+    expect_true(all(sapply(cl_group$children, function(q) q$num) == n))
 })
 
-## test_that("aliases_from_question is working correctly", {
-##     expect_equal(aliases_from_question(q1), list())
 
-##     sym_a <- as.name(sprintf("a%s", q1$id))
-##     sym_fun <- as.name(sprintf("fun%s", q1$id))
-##     blah <- list(a = sym_a, fun = sym_fun)
-##     expect_identical(aliases_from_question(q4), blah)
-## })
+test_that(paste(sQuote("clozify_independant_questions"), " is working correctly"), {
 
+    questions <- list(
+        Question("q1", answer = 1),
+        Question("q2", answer = 2),
+        Question("q3", answer = 3),
+        Question("q4", answer = 4),
+        Question("q5", answer = 5),
+        Question("q6", answer = 6),
+        Question("q7", answer = 7))
 
+    N <- 10
+    nver <- 10
+    k <- 3
 
-test_that("clozify works with one question", {
+    q_list <- clozify_independant_questions(questions, "SEED", N, k, nver)
 
-    merge <- clozify(q4)
-    ## expect_equal(merge$text, "blah `r data3d352a` and `r data7d3d352fun(3)` {1:SA:=*}")
-    expect_equal(merge$points, 1)
+    expect_equal(length(q_list), N)
+    expect_true(all(sapply(q_list, function(q) q$type) == "cloze"))
+    expect_true(all(sapply(q_list, function(q) q$num) == k))
+
+    questions <- list(
+        Question("q1", type = "SA", hidden_seed = 1, answer = quote(ds_name)),
+        Question("q2", type = "SA", hidden_seed = 1, answer = quote(ds_name)),
+        Question("q3", type = "SA", hidden_seed = 1, answer = quote(ds_name)),
+        Question("q4", type = "SA", hidden_seed = 1, answer = quote(ds_name)),
+        Question("q5", type = "SA", hidden_seed = 1, answer = quote(ds_name)),
+        Question("q6", type = "SA", hidden_seed = 1, answer = quote(ds_name)),
+        Question("q7", type = "SA", hidden_seed = 1, answer = quote(ds_name)))
+
+    q_list <- clozify_independant_questions(questions, "SEED", N, k, nver)
+
+    expect_true(all(sapply(q_list, function(q) grepl("SEED[0-9]{3}", q$instantiated_answer))))
 })
 
-test_that("Merge 2 shortanswer questions", {
-    merge <- clozify(q1, q2)
-    expect_equal(merge$get_text(), "Q1 {1:SA:=*}\n\nQ2 {1:SA:=*}")
-    expect_equal(merge$get_answer(), list(quote(a), quote(a)))
 
-    merge <- clozify(q1, q3)
-    expect_equal(merge$get_text(), "Q1 {1:SA:=*}\n\nQ3 {1:SA:=*}")
-    expect_equal(merge$get_answer(), list(quote(a), list(quote(a), quote(b))))
-    expect_equal(merge$get_data(), quote({a <- 1}))
+test_that(paste(sQuote("versionize_group"), " is working correctly"), {
+    seed <- "TEST"
+    N <- 10
+    group <- Group$new("gp1",
+                       hidden_data = quote({
+                           ds_sym <- rnorm(1)
+                       }),
+                       children = list(
+                           Question("q1", type = "SA"),
+                           Question("q2", type = "SA"),
+                           Question("q3", type = "SA"),
+                           Question("q4", type = "SA"),
+                           Question("q5", type = "SA"),
+                           Question("q6", type = "SA"),
+                           Question("q7", type = "SA")))
+
+    v_group <- versionize_group(group, seed, N)
+
+    expect_true(all(sapply(v_group, function(g) grepl("v[0-9]{3}$", g$title))))
 
 })
 
-## test_that("Merge text with hidden data", {
-##     q1 <- Question("Q1 `r lambda`", type = "shortanswer", answer = quote(a),
-##                    hidden.data = quote(lambda <- 3))
 
-##     merge <- clozify(q1)
-##     expect_equal(q1$text, "Q1 `r data111lambda` {1:SA:=*}")
+test_that(paste(sQuote("merge_groups"), " is working correctly"), {
+    g1 <- Group$new("g1",
+                    hidden_seed = 1,
+                    hidden_data = quote({a <- 1}),
+                    seed = 2,
+                    data = quote({b <- a}),
+                    children = list(
+                        Question("q1", type = "SA")))
 
+    g2 <- Group$new("g2",
+                    hidden_seed = 3,
+                    hidden_data = quote({a <- 1}),
+                    seed = 4,
+                    data = quote({b <- a}),
+                    children = list(
+                        Question("q2", type = "SA")))
 
-##     ## q2 <- Question("Q2", type = "shortanswer", answer = quote(a),
-##     ##                hidden.data = quote(lambda <- 4))
+    g <- merge_groups(list(g1, g2), "blah")
 
-##     ## merge <- clozify(q1, q2)
-##     ## expect_equal(merge$get_hdata()),
-## })
+    expect_equal(g$hidden_data, quote({
+        g1_a <- 1
+        g2_a <- 1
+    }))
+
+    g1 <- Group$new("g1",
+                    header = "foo",
+                    hidden_seed = 1,
+                    hidden_data = quote({a <- 1}),
+                    seed = 2,
+                    data = quote({b <- a}),
+                    children = list(
+                        Question("q1", type = "SA")))
+
+    g2 <- Group$new("g2",
+                    header = "bar",
+                    hidden_seed = 3,
+                    hidden_data = quote({a <- 1}),
+                    seed = 4,
+                    data = quote({b <- a}),
+                    children = list(
+                        Question("q2", type = "SA")))
+
+    g <- merge_groups(list(g1, g2), "blah")
+
+    expect_equal(length(g$children), 2)
+    expect_equal(g$children[[1]]$text, "foo\n\nq1")
+    expect_equal(g$children[[2]]$text, "bar\n\nq2")
+})

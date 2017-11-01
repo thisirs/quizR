@@ -1,138 +1,92 @@
 context("Quiz")
 
-test_that("groups are correctly added", {
-    quiz <- Quiz("test", seed = 1)
-    expect_identical(quiz$groups, list())
+test_that("quiz properties are working correctly", {
+    quiz <- Quiz$new("test")
 
-    g1 <- Group("group1", type = "sequential")
-    g2 <- Group("group2", type = "sequential")
-    quiz <- add_group(quiz, g1)
-    quiz <- add_group(quiz, g2)
-    expect_identical(quiz$groups, list(g1, g2))
-
-    quiz <- Quiz("test", seed = 1, groups = list(g1, g2))
-    expect_identical(quiz$groups, list(g1, g2))
+    expect_identical(quiz$quiz, quiz)
+    expect_identical(quiz$title, "test")
+    expect_null(quiz$ancestor)
+    expect_identical(quiz$children, list())
 })
 
-test_that("identifiers are unique", {
-    gen_quiz <- function(id1, id2, id3) {
-        Quiz("test",
-             seed = 1,
-             groups = list(
-                 Group("g1", type = "sequential",
-                       questions = list(
-                           Question(id1),
-                           Question(id2))),
-                 Group("g2", type = "sequential",
-                       questions = list(
-                           Question(id3)))))
-    }
-    expect_identical(unique_IDs(gen_quiz("a", "b", "c")), TRUE)
-    expect_identical(unique_IDs(gen_quiz("a", "a", "b")), FALSE)
-    expect_identical(unique_IDs(gen_quiz("a", "b", "b")), FALSE)
+test_that("group properties are working correctly", {
+    quiz <- Quiz$new("quiz")
+    group1 <- Group$new("group1")
+
+    expect_identical(group1$title, "group1")
+    expect_identical(group1$children, list())
+    expect_identical(group1$type, "sequential")
+    expect_null(group1$ancestor)
+    expect_null(group1$quiz)
+
+    quiz$add_child(group1)
+
+    expect_identical(quiz$children, list(group1))
+    expect_identical(group1$quiz, quiz)
+    expect_identical(group1$ancestor, quiz)
+    expect_identical(group1$children, list())
+
+    group2 <- Group$new("group2")
+    quiz$add_child(group2)
+    expect_identical(quiz$children, list(group1, group2))
+    expect_identical(group2$quiz, quiz)
+    expect_identical(group1$children, list())
 })
 
-test_that("distinct_data see data that conflicts", {
-    quiz <- Quiz("quiz1",
-                 seed = 1,
-                 groups = list(
-                     Group("G1",
-                           type = "sequential",
-                           data = quote({a <- 1}),
-                           questions = list(
-                               Question("Q1", type = "shortanswer", answer = quote(a)))),
-                     Group("G2",
-                           type = "sequential",
-                           data = quote({a <- 2}),
-                           questions = list(
-                               Question("Q1", type = "shortanswer", answer = quote(a))))))
+test_that("question properties are working correctly", {
+    q1 <- SimpleQuestion$new("q1")
+    expect_identical(q1$type, "abstract")
+    expect_identical(q1$title, "q1")
 
-    expect_identical(distinct_data(quiz), FALSE)
+    quiz <- Quiz$new("quiz")
+    group1 <- Group$new("group1")
+    q1 <- SimpleQuestion$new("q1")
+    group1$add_child(q1)
 
-    quiz <- Quiz("quiz1",
-                 seed = 1,
-                 data = quote({a <- 1}),
-                 groups = list(
-                     Group("G1",
-                           type = "sequential",
-                           data = quote({a <- 1}),
-                           questions = list(
-                               Question("Q1", type = "shortanswer", answer = quote(a))))))
+    quiz$add_child(group1)
+    expect_identical(q1$ancestor, group1)
+    expect_identical(q1$quiz, quiz)
 
-    expect_identical(distinct_data(quiz), TRUE)
-
-    quiz <- Quiz("quiz1",
-                 seed = 1,
-                 data = quote({a <- 1; blah}),
-                 groups = list(
-                     Group("G1",
-                           type = "sequential",
-                           questions = list(
-                               Question("Q1", type = "shortanswer", answer = quote(a))))))
-
-    ## blah is undefined
-    expect_error(distinct_data(quiz))
-
-    # Add blah, so no error
-    expect_identical(distinct_data(quiz, quote({blah <- 1})), TRUE)
+    group2 <- Group$new("group2")
+    q2 <- SimpleQuestion$new("q2")
+    group2$add_child(q2)
+    quiz$add_child(group2)
+    expect_identical(q2$ancestor, group2)
+    expect_identical(q2$quiz, quiz)
 })
 
-test_that("replace_languages_data is correctly working", {
-    answers <- list(quote(a), quote(.b), "blah", 42)
-    data <- quote({ a <- 1; .b <- 2})
-    expect_identical(replace_languages_data(answers, data), list(1, 2, "blah", 42))
-})
+test_that(paste(sQuote("validate_data"), "is working correctly"), {
+    quiz <- Quiz$new("quiz", seed = 1,
+                     children = list(Group$new("group1", data = quote({n <- 1})),
+                                     Group$new("group2", data = quote({n <- 1}))))
+    expect_error(quiz$validate_data(), NA)
 
+    quiz <- Quiz$new("quiz", seed = 1,
+                     children = list(Group$new("group1", data = quote({n <- 1})),
+                                     Group$new("group2", data = quote({n <- 2}))))
+    expect_error(quiz$validate_data())
 
-test_that("eval_answers is properly evaluating", {
-    expect_identical(eval_answers(list("a"), new.env()), list("a"))
+    quiz <- Quiz$new("quiz", seed = 1,
+                     children = list(Group$new("group1", data = quote({m <- 1})),
+                                     Group$new("group2", data = quote({n <- 2}))))
+    expect_error(quiz$validate_data(), NA)
 
-    expect_identical(eval_answers(list(42), new.env()), list(42))
+    quiz <- Quiz$new("quiz", seed = 1, data = quote({m <- 1}),
+                     children = list(Group$new("group1", data = quote({m <- 2}))))
+    expect_error(quiz$validate_data(), NA)
 
-    expect_identical(eval_answers(list(quote({42})), new.env()), list(42))
-    expect_identical(eval_answers(list(quote({a <- 1; b <- 3; a + b})), new.env()), list(4))
+    quiz <- Quiz$new("quiz", seed = 1, data = quote({a <- 1}),
+                     children = list(Group$new("group1", data = quote({a <- 2}),
+                                               children = list(
+                                                   Question("q1", data = quote({a <- 3}))))))
+    expect_error(quiz$validate_data(), NA)
 
-    expect_identical(eval_answers(list(function() 42), new.env()), list(42))
-
-    expect_identical(eval_answers(list(function() 42, "a"), new.env()), list(42, "a"))
-
-    env <- new.env(parent = baseenv())
-    env$a <- 2
-    expect_identical(eval_answers(list(function() a), env), list(2))
-})
-
-test_that("validate_quiz is working", {
-    quiz <- Quiz("Quiz1", seed = 1)
-    expect_error(validate_quiz(quiz))
-
-    quiz <- Quiz("Quiz1",
-                 seed = 1,
-                 groups = list(Group("G1",
-                                     type = "sequential")))
-    expect_error(validate_quiz(quiz))
-
-    quiz <- Quiz("Quiz1",
-                 seed = 1,
-                 hidden.data = quote({a}),
-                 groups = list(Group("G1",
-                                     type = "sequential",
-                                     questions = list(Question("Q1")))))
-    expect_error(validate_quiz(quiz))
-
-    quiz <- Quiz("Quiz1",
-                 seed = 1,
-                 groups = list(Group("G1",
-                                     hidden.data = quote({a}),
-                                     type = "sequential",
-                                     questions = list(Question("Q1")))))
-    expect_error(validate_quiz(quiz))
-
-    quiz <- Quiz("Quiz1",
-                 seed = 1,
-                 groups = list(Group("G1",
-                                     type = "sequential",
-                                     questions = list(Question("Q1",
-                                                               hidden.data = quote({a}))))))
-    expect_error(validate_quiz(quiz))
-
+    quiz <- Quiz$new("quiz", seed = 1,
+                     children = list(Group$new("group1",
+                                               children = list(
+                                                   Question("q1", data = quote({a <- 1})))),
+                                     Group$new("group2",
+                                               children = list(
+                                                   Question("q1", data = quote({a <- 2}))))))
+    expect_error(quiz$validate_data())
 })

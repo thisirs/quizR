@@ -1,6 +1,6 @@
 # QuizR
 
-Creating, correcting and exporting quizzes in R for Moodle.
+Create randomized quizzes in R for Moodle.
 
 ## Installation
 

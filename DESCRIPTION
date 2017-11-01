@@ -5,7 +5,7 @@ Version: 1.0
 Date: 2016-09-24
 Author: Sylvain Rousseau
 Maintainer: Sylvain Rousseau <sylvain.rousseau@hds.utc.fr>
-Description: The main feature of this package is to be able to create XML files designed to be imported as quizzes in the LMS Moodle. There are additional features for R quizzes like automatic grades based on the CSV file of results provided by Moodle, PDF file of quizzes, R file of datasets used in the quiz.
+Description: This library lets you create quizzes in R that can be exported to a XML Moodle file or a PDF file along with a R file of datasets used in the quiz.
 License: GPL (>= 3)
 Imports:
     pryr,
@@ -14,7 +14,19 @@ Imports:
     stringr,
     stringi,
     utils,
+    R6,
     tools,
     logging
 RoxygenNote: 6.0.1
 Suggests: testthat
+Collate: 
+    'simple_question.R'
+    'multiple_choice.R'
+    'shortanswer_question.R'
+    'numerical_question.R'
+    'cloze_question.R'
+    'gapselect_question.R'
+    'group.R'
+    'question.R'
+    'quiz.R'
+    'utils.R'

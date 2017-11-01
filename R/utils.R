@@ -1,7 +1,3 @@
-hexa_hash <- function(s) {
-    substr(digest::digest(s), 0, 7)
-}
-
 add_spaces_left <- function(s, spaces) {
     indent <- paste(rep(" ", spaces), collapse = "")
     gsub("(?m)^", indent, s, perl = TRUE)
@@ -27,6 +23,10 @@ merge_languages <- function(...) {
     }
 }
 
+empty_env <- function() {
+    new.env(parent = parent.env(.GlobalEnv))
+}
+
 fails <- function(language) {
     tryCatch({
         eval(language, cleanenv())
@@ -40,7 +40,7 @@ cleanenv <- function() {
 
 #' Helper function to specify list of languages
 #'
-#' Helper function 
+#' Helper function
 #' @param Expressions
 #'
 #' @return A quoted expression or a list of quoted expression
@@ -67,66 +67,351 @@ translate_hidden_data <- function(question) {
     } else cleanenv()
 }
 
-clozify <- function(...) {
-    questions <- list(...)
+instantiate_data_list <- function(data, var_list) {
+    call <- substitute(substitute(data, var_list), list(data = data))
+    eval(call)
+}
 
-    ## Prefix all defined variables in hidden.data
-    env_list <- lapply(questions, translate_hidden_data)
+instantiate_text_list <- function(text, var_list) {
+    if (is.null(text))
+        return(NULL)
 
-    texts <- mapply(function(question, env) {
-        if (question$type == "cloze") {
-            replace_text_env(question$get_text(), env)
-        } else if (question$type == "shortanswer") {
-            paste(replace_text_env(question$get_text(), env), sprintf("{%d:SA:=*}", question$points))
-        } else if (question$type == "numerical") {
-            paste(replace_text_env(question$get_text(), env), sprintf("{%d:NM:=*}", question$points))
-        } else stop("Unhandled question type")
-    }, questions, env_list)
-    text <- paste(texts, collapse = "\n\n")
+    text <- instantiate_chunk_list(text, var_list)
+    instantiate_inline_list(text, var_list)
+}
 
-    hidden.data <- do.call(merge_languages, mapply(function(question, env) {
-        replace_language_env(question$get_hdata(), env)
-    }, questions, env_list), quote = TRUE)
+instantiate_inline_list <- function(text, var_list) {
+    loc <- stringi::stri_locate_all_regex(text, "`r[ #]([^`]+)\\s*`",
+                                          omit_no_match = TRUE)[[1]]
 
-    data <- do.call(merge_languages, mapply(function(question, env) {
-        replace_language_env(question$get_data(), env)
-    }, questions, env_list), quote = TRUE)
-
-    answers <- unlist(mapply(function(question, env) {
-        if (question$type == "cloze") {
-            if (is.list(question$get_answer())) {
-                lapply(question$get_answer(), function(ans) {
-                    if (is.list(ans)) {
-                        lapply(ans, replace_language_env, env)
-                    } else {
-                        replace_language_env(ans, env)
-                    }
-                })
-            } else {
-                stop("Answer field in cloze question should be a list")
-            }
-        } else {
-            if (is.list(question$get_answer())) {
-                list(lapply(question$get_answer(), replace_language_env, env))
-            } else {
-                list(replace_language_env(question$get_answer(), env))
-            }
+    if (nrow(loc) >= 1) {
+        for (i in rev(1:nrow(loc))) {
+            chunk <- stringi::stri_sub(text, loc[i, 1] + 2, loc[i, 2] - 1)
+            expr <- parse(text = chunk)
+            chunks <- lapply(as.list(expr), function(lang) {
+                lang_rep <- instantiate_data_list(lang, var_list)
+                paste(deparse(lang_rep), collapse = " ")
+            })
+            new_chunk <- sprintf("`r %s`", paste(chunks, collapse = "; "))
+            stringi::stri_sub(text, loc[i, 1], loc[i, 2]) <- new_chunk
         }
-    }, questions, env_list, SIMPLIFY = FALSE), recursive = FALSE)
+    }
+    return(text)
+}
 
-    points <- sapply(questions, function(question) {
-        if (question$type == "cloze") {
-            sum(cloze_field_points_text(question$get_text()))
-        } else {
-            question$points
+instantiate_chunk_list <- function(text, var_list) {
+    begin <- stringi::stri_locate_all_regex(text, "^[\t >]*```+ *\\{([a-zA-Z0-9]+.*)\\}\\s*$",
+                                            omit_no_match = TRUE,
+                                            multiline = TRUE)[[1]]
+
+    if (nrow(begin) >= 1) {
+        end <- stringi::stri_locate_all_regex(text, "^[\t >]*```+\\s*$",
+                                              omit_no_match = TRUE,
+                                              multiline = TRUE)[[1]]
+
+        stopifnot(nrow(begin) == nrow(end))
+        N <- nrow(begin)
+        stopifnot(all(diff(c(begin[, 1], end[, 2])[rep(1:N, each = 2) + c(0, N)]) > 0))
+
+        for (i in rev(1:nrow(begin))) {
+            chunk <- stringi::stri_sub(text, begin[i, 2] + 2, end[i, 1] - 1)
+            expr <- parse(text = chunk)
+            chunks <- lapply(as.list(expr), function(lang) {
+                lang_rep <- instantiate_data_list(lang, var_list)
+                paste(deparse(lang_rep, control = c("keepInteger")), collapse = "\n")
+            })
+            new_chunk <- paste(chunks, collapse = "\n")
+            stringi::stri_sub(text, begin[i, 2] + 2, end[i, 1] - 2) <- new_chunk
         }
+    }
+    return(text)
+}
+
+render_HTML <- function(text, args, info) {
+    if (is.null(info$env))
+        env <- parent.frame()
+    else
+        env <- info$env
+
+    tmpfile <- tempfile("question", fileext = ".Rmd")
+    write(text, tmpfile, append = TRUE)
+    output <- rmarkdown::render(tmpfile, rmarkdown::html_fragment(), envir = env, quiet = args$quiet)
+    to_string(output)
+}
+
+## Taken from RCurl
+update_list <- function (y, x)
+{
+    if (length(x) == 0)
+        return(y)
+    if (length(y) == 0)
+        return(x)
+    i = match(names(y), names(x))
+    i = is.na(i)
+    if (any(i))
+        x[names(y)[which(i)]] = y[which(i)]
+    x
+}
+
+is_empty_language <- function(lang) {
+    if (is.null(lang))
+        return(TRUE)
+    else if (is.symbol(lang))
+        return(FALSE)
+    else if (lang[[1]] == as.name("{"))
+        if (length(lang) == 1)     # Empty {}
+            return(TRUE)
+    return(FALSE)
+}
+
+instantiate_object <- function(object, lang) {
+    rename_object(lang, object)
+}
+
+rename_object <- function(aliases, object) {
+    if (is.null(object))
+        return(NULL)
+
+    # Convert integer to numeric ; no "L" in expressions
+    aliases <- lapply(aliases, function(alias) {
+        if (is.integer(alias))
+            as.numeric(alias)
+        else
+            alias
     })
 
-    Question(text,
-             type = "cloze",
-             answer = answers,
-             hidden.data = hidden.data,
-             data = data,
-             feedback = automatic_feedback,
-             points = sum(points))
+    if (is.list(object))
+        lapply(object, instantiate_object, aliases)
+    else if (is.language(object))
+        instantiate_data_list(object, aliases)
+    else if (is.numeric(object))
+        object
+    else if (is.logical(object))
+        object
+    else if (is.character(object))
+        instantiate_text_list(object, aliases)
+    else stop("Failed to rename object ", sQuote(object))
+}
+
+prefix_object <- function(prefix, names, object) {
+    if (is.null(object))
+        return(NULL)
+
+    prefix_names <- paste0(prefix, names)
+    aliases <- lapply(as.list(prefix_names), as.name)
+    names(aliases) <- names
+
+    rename_object(aliases, object)
+}
+
+sanitize_language <- function(lang) {
+    if (is.null(lang))
+        return(NULL)
+    else if (is.symbol(lang))
+        return(lang)
+    else if (lang[[1]] == as.name("{"))
+        if (length(lang) == 1)     # Empty {}
+            return(NULL)
+        else                    # Remove {}
+            return(lang)
+    else return(lang)
+
+}
+
+answerstr <- function(answer) {
+    if (is.null(answer)) return("")
+    type <- typeof(answer)
+    switch(type,
+           closure = {
+               d <- deparse(body(answer), width.cutoff = 120)
+               lines <- d[-c(1, length(d))]
+               indent <- min(attr(regexpr("^ *", lines), "match.length"))
+               paste(substring(lines, indent + 1), collapse = "\n")
+           },
+           language = {
+               d <- deparse(answer, width.cutoff = 120)
+               lines <-
+                   if (class(answer) == "{" & length(d) >=3)
+                       d[-c(1, length(d))]
+                   else
+                       d
+               indent <- min(attr(regexpr("^ *", lines), "match.length"))
+               paste(substring(lines, indent + 1), collapse = "\n")
+           },
+           symbol = {deparse(answer, width.cutoff = 120)},
+           double = {deparse(answer, width.cutoff = 120)},
+           character = paste0("\"", answer, "\""),
+           stop("Unhandled type in ", sQuote("answerstr"), ": ", type))
+}
+
+## questions, et on vérifie l'unicité. Les questions du groupe ne
+## doivent pas avoir de données.
+clozify_questions <- function(questions, N, n) {
+    nq <- length(questions)
+    choices <- matrix(sample(1:nq, n*N^2, replace = TRUE), ncol = n)
+    choices0 <- choices[!duplicated(choices), ]
+    choices1 <- choices0[apply(choices0, 1, function(row) all(!duplicated(row))), ]
+    stopifnot(nrow(choices1) >= N)
+
+    lapply(seq_len(N), function(i) {
+        subquestions <- questions[choices1[i, ]]
+        Question(type = "cloze", hidden_seed = i, questions = subquestions)
+    })
+}
+
+clozify_group <- function(group, N, k, sampler = NULL) {
+    questions <- group$children
+    n <- length(questions)
+    stopifnot(k <= n)
+    if (is.null(sampler))
+        sample_questions <- function() questions[sample(1:n, k)]
+    else
+        sample_questions <- sampler(questions)
+
+    cl_list <- lapply(seq_len(N), function(i) {
+        ql <- sample_questions()
+        ClozeQuestion$new(questions = ql)
+    })
+
+    Group$new(group$title,
+              header = group$header,
+              seed = group$seed,
+              data = group$data,
+              hidden_seed = group$hidden_seed,
+              hidden_data = group$hidden_data,
+              children = cl_list)
+}
+
+merge_groups <- function(groups, title) {
+    for (group in groups)
+        group$include_header()
+
+    renamed_groups <- lapply(seq_along(groups), function(i) {
+        group <- groups[[i]]
+        prefix <- sprintf("g%d_", i)
+        group$rename(prefix)
+    })
+
+    children <- unlist(lapply(renamed_groups, function(group) {
+        group$children
+    }), recursive = FALSE)
+    hidden_datas <- lapply(renamed_groups, function(g) {
+        g$hidden_data
+    })
+    hidden_data <- merge_languages(hidden_datas)
+
+    datas <- lapply(renamed_groups, function(g) {
+        g$data
+    })
+    data <- merge_languages(datas)
+
+    Group$new(title,
+              hidden_data = hidden_data,
+              data = data,
+              children = children)
+}
+
+versionize_group <- function(group, seed, N) {
+    original_hidden_data <- group$hidden_data
+    title <- group$title
+
+    lapply(seq_len(N), function(i) {
+        ident <- sprintf("%s%03d", seed, i)
+        group_name <- sprintf("%s v%03d", title, i)
+
+        ## Prepend custom ds_name and ds_sym to be used in question
+        new_hdata <- merge_languages(bquote({
+            ds_name <- .(ident)
+            ds_sym <- as.symbol(ds_name)
+        }), original_hidden_data)
+
+        new_group <- group$clone()
+        new_group$hidden_data <- new_hdata
+        new_group$title <- group_name
+
+        new_group
+    })
+}
+
+versionize_questions <- function(questions, seed, nver) {
+    n <- length(questions)
+
+    if (length(nver) == 1) nver <- rep(nver, n)
+    stopifnot(length(nver) == n, all(nver > 0))
+
+    lapply(seq_len(n), function(i) {
+        question <- questions[[i]]
+        if (question$type == "cloze")
+            original_hidden_data <- question$cloze_hidden_data
+        else
+            original_hidden_data <- question$hidden_data
+
+        lapply(seq_len(nver[i]), function(j) {
+            ident <- paste0(seed, as.character(100*i + j))
+
+            ## Prepend custom ds_name and ds_sym to be used in question
+            new_hdata <- merge_languages(bquote({
+                ds_name <- .(ident)
+                ds_sym <- as.symbol(ds_name)
+            }), original_hidden_data)
+
+            qc <- question$copy()
+
+            if (question$type == "cloze")
+                qc$cloze_hidden_data <- new_hdata
+            else
+                qc$hidden_data <- new_hdata
+
+            qc
+        })
+    })
+}
+
+# Build NVER versions of QUESTIONS with SEED identifier. Then
+# construct N cloze questions from K different questions with random
+# version.
+clozify_independant_questions <- function(questions, seed, N, k, nver) {
+    n <- length(questions)
+    if (length(nver) == 1) nver <- rep(nver, n)
+
+    stopifnot(floor(sum(nver)/k) >= N)
+    stopifnot(length(questions) >= k)
+    stopifnot(rev(sort(nver))[k] >= N)
+
+    versions_list <- versionize_questions(questions, seed, nver)
+
+    ## Sample from VERSIONS_LIST
+    questions_list <- list()
+    for (i in seq_len(N)) {
+        # Current number of versions
+        nver <- sapply(versions_list, length)
+
+        # Choose k questions that are present the most
+        qchoice <- sample(which(nver >= rev(sort(nver))[k]), k)
+
+        # Choose versions
+        ver_choice <- ceiling(runif(k) * nver[qchoice])
+
+        # Extracting these questions
+        questions_set <- list()
+        for (j in seq_len(k)) {
+            question <- versions_list[[qchoice[j]]][[ver_choice[j]]]
+            versions_list[[qchoice[j]]][[ver_choice[j]]] <- NULL
+            questions_set <- c(questions_set, list(question))
+        }
+
+        qq <- Question(type = "cloze", questions = questions_set)
+
+        questions_list <- c(questions_list, list(qq))
+    }
+
+    questions_list
+}
+
+distinct_language <- function (lang1, lang2) {
+    env1 <- cleanenv()
+    env2 <- cleanenv()
+    eval(lang1, env1)
+    eval(lang2, env2)
+    all(sapply(intersect(ls(env1), ls(env2)), function(e) identical(get(e, envir = env1), get(e, envir = env2))))
 }
