@@ -134,7 +134,7 @@ Group <- R6::R6Class(
 
         get_title = function(opts, info) {
             if (self$type == "random")
-                sprintf("## %s (aléatoire %d parmi %d)", self$title, self$num, length(self$children))
+                sprintf("## %s (al\u00E9atoire %d parmi %d)", self$title, self$num, length(self$children))
             else if (self$type == "sequential")
                 sprintf("## %s", self$title)
             else

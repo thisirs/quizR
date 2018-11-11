@@ -150,7 +150,7 @@ SimpleQuestion <- R6::R6Class(
 
         get_answer_string = function(opts, info) {
             if(is.null(info$answer_string))
-                "**Réponse :** "
+                "**R\u00E9ponse :** "
             else
                 info$answer_string
         },
@@ -205,6 +205,7 @@ SimpleQuestion <- R6::R6Class(
             trimws(HTML_question) # pandoc seems to add some leading newlines
         },
 
+        # Return XML "generalfeedback" node with feedback in HTML as CDATA
         get_XML_generalfeedback = function(opts, info) {
             if(!opts$feedback) return(NULL)
 
@@ -245,6 +246,8 @@ SimpleQuestion <- R6::R6Class(
 
             template <- add_spaces_left(private$xml_question_template, opts$indent)
             placeholders <- update_list(private$placeholders, private$xml_placeholders)
+            # Answers might modify datasets stored in info$env
+
             self$instantiate_placeholders(template, placeholders, opts, info)
         },
 
@@ -659,13 +662,18 @@ SimpleQuestion <- R6::R6Class(
                 if (private$is_hidden_data_list_available)
                     private$.hidden_data_list
                 else {
-                    if (!is.null(self$quiz)) {
-                        self$quiz$instantiate_hidden_data_list()
-                        private$is_hidden_data_list_available <- TRUE
-                    } else {
-                        self$instantiate_hidden_data_list()
-                        private$is_hidden_data_list_available <- TRUE
-                    }
+                    root <- self
+                    while (!is.null(root$ancestor))
+                        root <- root$ancestor
+                    root$instantiate_hidden_data_list()
+                    private$is_hidden_data_list_available <- TRUE
+                    # if (!is.null(self$quiz)) {
+                    #     self$quiz$instantiate_hidden_data_list()
+                    #     private$is_hidden_data_list_available <- TRUE
+                    # } else {
+                    #     self$instantiate_hidden_data_list()
+                    #     private$is_hidden_data_list_available <- TRUE
+                    # }
                     private$.hidden_data_list
                 }
             } else {

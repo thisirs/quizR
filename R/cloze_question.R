@@ -275,7 +275,7 @@ ClozeQuestion <- R6::R6Class(
                     info$starting_index <- current_index
                     opts$inner_cloze <- TRUE
                 } else {
-                    info$answer_string <- sprintf("%d. La réponse est : ", current_index)
+                    info$answer_string <- sprintf("%d. La r\u00E9ponse est : ", current_index)
                 }
 
                 # We are in an itemized env, add indentation
@@ -325,7 +325,7 @@ ClozeQuestion <- R6::R6Class(
             if (!is.null(opts$inner_cloze) && opts$inner_cloze)
                 tmpl <- "@FEEDBACKS@"
             else
-                tmpl <- "**Réponses :**\n\n@FEEDBACKS@"
+                tmpl <- "**R\u00E9ponses :**\n\n@FEEDBACKS@"
             self$instantiate_placeholders(tmpl, private$placeholders, opts, info)
         },
 

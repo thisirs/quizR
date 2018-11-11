@@ -244,17 +244,31 @@ answerstr <- function(answer) {
            stop("Unhandled type in ", sQuote("answerstr"), ": ", type))
 }
 
-## questions, et on vérifie l'unicité. Les questions du groupe ne
-## doivent pas avoir de données.
-clozify_questions <- function(questions, N, n) {
+# Génération de N questions résultants de la clozification de n
+# questions prises au hasard dans questions.
+clozify_questions <- function(questions, N, n, make_sampler = NULL, ...) {
     nq <- length(questions)
-    choices <- matrix(sample(1:nq, n*N^2, replace = TRUE), ncol = n)
-    choices0 <- choices[!duplicated(choices), ]
-    choices1 <- choices0[apply(choices0, 1, function(row) all(!duplicated(row))), ]
-    stopifnot(nrow(choices1) >= N)
+
+    if (is.null(make_sampler))
+        sampler <- function() sample(1:nq, n)
+    else
+        sampler <- make_sampler(questions, ...)
+
+    max_iter <- n*N^2
+    choices <- matrix(ncol = n, nrow = 0)
+    iter <- 0
+    while (nrow(choices) < N & iter < max_iter) {
+        spl <- sampler()
+        choices <- rbind(choices, spl)
+        choices <- choices[!duplicated(choices), , drop = FALSE]
+        iter <- iter + 1
+    }
+
+    # Make sure we have N rows
+    stopifnot(nrow(choices) == N)
 
     lapply(seq_len(N), function(i) {
-        subquestions <- questions[choices1[i, ]]
+        subquestions <- questions[choices[i, ]]
         Question(type = "cloze", hidden_seed = i, questions = subquestions)
     })
 }
@@ -376,7 +390,7 @@ clozify_independant_questions <- function(questions, seed, N, k, nver) {
 
     stopifnot(floor(sum(nver)/k) >= N)
     stopifnot(length(questions) >= k)
-    stopifnot(rev(sort(nver))[k] >= N)
+    # stopifnot(rev(sort(nver))[k] >= N)
 
     versions_list <- versionize_questions(questions, seed, nver)
 
@@ -414,4 +428,160 @@ distinct_language <- function (lang1, lang2) {
     eval(lang1, env1)
     eval(lang2, env2)
     all(sapply(intersect(ls(env1), ls(env2)), function(e) identical(get(e, envir = env1), get(e, envir = env2))))
+}
+
+Sampler <- R6::R6Class(
+                   "Sampler",
+                   public = list(
+                       initialize = function(question,
+                                             policy = "copy",
+                                             batch_size = NULL,
+                                             seed = NULL) {
+                           private$.question = question
+                           private$.policy = policy
+                           private$.batch_size = batch_size
+                           private$.seed = seed
+                           private$.counter = 0
+                       },
+                       sample = function() {
+                           if(!is.null(private$.batch_size))
+                               stopifnot(private$.counter < private$.batch_size)
+
+                           private$.counter = private$.counter + 1
+                           ident <- sprintf(private$.seed, private$.counter)
+
+                           if (private$.question$type == "cloze")
+                               original_hidden_data <- private$.question$cloze_hidden_data
+                           else
+                               original_hidden_data <- private$.question$hidden_data
+
+                           ## Prepend custom ds_name and ds_sym to be used in question
+                           new_hdata <- merge_languages(bquote({
+                               ds_name <- .(ident)
+                               ds_sym <- as.symbol(ds_name)
+                           }), original_hidden_data)
+
+                           qc <- private$.question$copy()
+
+                           if (private$.question$type == "cloze")
+                               qc$cloze_hidden_data <- new_hdata
+                           else
+                               qc$hidden_data <- new_hdata
+
+                           qc
+                       },
+                       count = function() {
+                           if(private$.policy != "batch")
+                               -1
+                           else
+                               private$.batch_size - private$.counter
+                       }),
+                   active = list(
+                       seed = function() private$.seed
+                   ),
+                   private = list(
+                       .policy = NULL,
+                       .question = NULL,
+                       .seed = NULL,
+                       .questions = NULL,
+                       .batch_size = NULL,
+                       .counter = NULL
+                   ))
+
+
+sample_questions <- function(questions,
+                             group = "tag",
+                             policy = "batch",
+                             batch_size = 5,
+                             seed = "DATA",
+                             sample_size = 10,
+                             # group_sampler = NULL,
+                             group_sizes = 2,
+                             clozify = TRUE
+                             ) {
+
+    # Set group as c(1, 1, 2, 3, 3)
+    if (group == "tag") {
+        tags <- sapply(questions, function(q) if(is.null(q$tag)) runif(1) else q$tag)
+        hashes <- sapply(tags, function(tag) digest::digest(tag, "md5"))
+        group <- as.numeric(factor(hashes))
+    }
+
+    # Number of groups
+    n_groups <- length(unique(group))
+
+    if (length(group_sizes) > 1)
+        stopifnot(n_groups == length(group_sizes))
+    else
+        stopifnot(n_groups >= group_sizes)
+
+    # Set a unique seed for each question
+    if (length(seed) == 1) {
+        ident <- sprintf("%s%%0%dd", seed, floor(log10(group)) + 1)
+        seeds <- paste0(sprintf(ident, 1:length(group)), "%02d")
+        seeds = as.list(seeds)
+    } else if (length(seed) == n_groups) {
+        seeds = seed[group]
+        for (gp in 1:n_groups) {
+            ng <- sum(group == gp)
+            seeds[group == gp] <- paste0(seeds[group == gp], sprintf("%d", 1:ng))
+        }
+        seeds = as.list(seeds)
+    } else {
+        stopifnot(length(seed) == length(questions))
+        seeds = as.list(paste0(seed, "%02d"))
+    }
+
+    if (length(policy) == 1)
+        policies = as.list(rep(policy, length(questions)))
+    else {
+        stopifnot(length(policy) == length(questions))
+        policies = policy
+    }
+
+    if (length(batch_size) == 1)
+        batch_sizes = as.list(rep(batch_size, length(questions)))
+    else {
+        stopifnot(length(batch_size) == length(questions))
+        batch_sizes = as.list(batch_size)
+    }
+
+    make_sampler <- function(question, policy, batch_size, seed) {
+        if (policy == "batch")
+            Sampler$new(question, policy = "batch", batch_size = batch_size, seed = seed)
+        else
+            Sampler$new(question, policy = policy, seed = seed)
+    }
+
+    samplers <- mapply(make_sampler, questions, policies, batch_sizes, seeds)
+
+    # Set how we sample from group information
+    if (length(group_sizes) == 1) {
+        group_sampler <- function(counts) {
+            groups <- sample(1:n_groups, group_sizes)
+            sapply(groups, function(g) sample(which(group == g), 1))
+        }
+    } else {
+        group_sampler <- function(counts) {
+            sapply(seq_len(n_groups), function(i) {
+                idxs <- which(group == i)
+                sample(idxs, group_sizes[i])
+            })
+        }
+    }
+
+    lapply(seq_len(sample_size), function(i) {
+        counts <- sapply(samplers, function(s) s$count())
+        stopifnot(length(group) == length(counts))
+        group_indexes <- group_sampler(counts)
+        questions <- lapply(group_indexes, function(index) {
+            sampler <- samplers[[index]]
+            sampler$sample()
+        })
+
+        if (clozify)
+            Question(type = "cloze", questions = questions)
+        else
+            questions
+    })
 }
