@@ -662,18 +662,21 @@ SimpleQuestion <- R6::R6Class(
                 if (private$is_hidden_data_list_available)
                     private$.hidden_data_list
                 else {
-                    root <- self
-                    while (!is.null(root$ancestor))
-                        root <- root$ancestor
-                    root$instantiate_hidden_data_list()
-                    private$is_hidden_data_list_available <- TRUE
-                    # if (!is.null(self$quiz)) {
-                    #     self$quiz$instantiate_hidden_data_list()
-                    #     private$is_hidden_data_list_available <- TRUE
-                    # } else {
-                    #     self$instantiate_hidden_data_list()
-                    #     private$is_hidden_data_list_available <- TRUE
-                    # }
+                    # root <- self
+                    # while (!is.null(root$ancestor))
+                    #     root <- root$ancestor
+                    # root$instantiate_hidden_data_list()
+                    # print(root$text)
+                    # private$is_hidden_data_list_available <- TRUE
+
+                    if (!is.null(self$quiz)) {
+                        self$quiz$instantiate_hidden_data_list()
+                        private$is_hidden_data_list_available <- TRUE
+                    } else {
+                        self$instantiate_hidden_data_list()
+                        private$is_hidden_data_list_available <- TRUE
+                    }
+
                     private$.hidden_data_list
                 }
             } else {
