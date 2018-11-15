@@ -1,5 +1,25 @@
 context("Testing clozify functions")
 
+test_that(paste(sQuote("sample_questions"), " is working correctly"), {
+    qs <- list(
+        Question("q1", answer = 1),
+        Question("q2", answer = 2),
+        Question("q3", answer = 3),
+        Question("q4", answer = 4),
+        Question("q5", answer = 5),
+        Question("q6", answer = 6),
+        Question("q7", answer = 7))
+
+    q_list <- sample_questions(qs, sample_size = 4)
+    expect_equal(length(q_list), 4)
+    expect_true(all(sapply(q_list, function(q) q$type) == "cloze"))
+
+    q_list <- sample_questions(qs, sample_size = 4, clozify = FALSE)
+    expect_true(all(sapply(q_list, length) == 2))
+    expect_equal(length(q_list), 4)
+})
+
+
 test_that(paste(sQuote("versionize_questions"), " is working correctly"), {
     qs <- list(
         Question("q1", answer = 1),
@@ -31,7 +51,9 @@ test_that(paste(sQuote("clozify_group"), " is working correctly"), {
 
     n <- 3
     N <- 10
-    cl_group <- clozify_group(group, N, n)
+    cl_group <- clozify_group(group,
+                              sample_size = N,
+                              group_sizes = n)
 
     expect_equal(length(cl_group$children), N)
 
@@ -147,3 +169,5 @@ test_that(paste(sQuote("merge_groups"), " is working correctly"), {
     expect_equal(g$children[[1]]$text, "foo\n\nq1")
     expect_equal(g$children[[2]]$text, "bar\n\nq2")
 })
+
+
