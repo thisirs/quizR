@@ -1,6 +1,24 @@
 context("Testing clozify functions")
 
 test_that(paste(sQuote("sample_questions"), " is working correctly"), {
+
+    # Only one question
+    qs <- sample_questions(Question("q1", answer = 1),
+                           sample_size = 3)
+    expect_true(length(qs) == 3)
+    expect_true(all(sapply(qs, function(q) q$type) != "cloze"))
+
+    qs <- sample_questions(list(Question("q1", answer = 1)),
+                           sample_size = 3)
+    expect_true(length(qs) == 3)
+
+    qs <- sample_questions(list(Question("q1", answer = 1)),
+                           clozify = TRUE,
+                           sample_size = 3)
+    expect_true(length(qs) == 3)
+    expect_true(all(sapply(qs, function(q) q$type) != "cloze"))
+
+
     qs <- list(
         Question("q1", answer = 1),
         Question("q2", answer = 2),
@@ -10,11 +28,14 @@ test_that(paste(sQuote("sample_questions"), " is working correctly"), {
         Question("q6", answer = 6),
         Question("q7", answer = 7))
 
-    q_list <- sample_questions(qs, sample_size = 4)
+    q_list <- sample_questions(qs, sample_size = 4, group_sizes = 2)
     expect_equal(length(q_list), 4)
     expect_true(all(sapply(q_list, function(q) q$type) == "cloze"))
 
-    q_list <- sample_questions(qs, sample_size = 4, clozify = FALSE)
+
+    q_list <- sample_questions(qs, sample_size = 4,
+                               group_sizes = 2,
+                               clozify = FALSE)
     expect_true(all(sapply(q_list, length) == 2))
     expect_equal(length(q_list), 4)
 })

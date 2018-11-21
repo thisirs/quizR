@@ -610,12 +610,15 @@ Sampler <- R6::R6Class(
 ##' @return A list of questions or a list of list of questions
 ##' @author 
 sample_questions <- function(questions,
+                             sample_size = 10,
                              group_by = "tag",
                              batch_size = Inf,
                              seed = "DATA",
-                             sample_size = 10,
-                             group_sizes = 2,
+                             group_sizes = 1,
                              clozify = TRUE) {
+
+    if (inherits(questions, "SimpleQuestion"))
+        questions <- list(questions)
 
     n_questions  <- length(questions)
 
@@ -731,9 +734,12 @@ sample_questions <- function(questions,
 
         # Clozify these questions to have only one or return a list of
         # questions.
-        if (clozify)
-            Question(type = "cloze", questions = questions)
-        else
+        if (clozify) {
+            if (length(questions) == 1)
+                questions[[1]]
+            else
+                Question(type = "cloze", questions = questions)
+        } else
             questions
     })
 }
