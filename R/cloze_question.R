@@ -90,6 +90,7 @@ ClozeQuestion <- R6::R6Class(
 
                 ## Connect subquestions with cloze question
                 for (i in seq_along(questions)) {
+                    questions[[i]]$ancestor <- self
                     if (is.null(self$quiz))
                         questions[[i]]$update_quiz(self)
                     else
@@ -643,6 +644,9 @@ ClozeQuestion <- R6::R6Class(
                                                         answer = answer[[i]],
                                                         feedback = feedback$feedbacks[[i]]),
                                                    subquestions_opts[[i]]), quote = TRUE)
+
+                question$ancestor  <- self
+
                 if (is.null(self$quiz))
                     question$update_quiz(self)
                 else
