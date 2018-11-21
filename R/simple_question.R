@@ -6,7 +6,6 @@ SimpleQuestion <- R6::R6Class(
     public = list(
         type = "abstract",
         quiz = NULL,
-        ancestor = NULL,
 
         initialize = function(text,
                               data = quote({}),
@@ -258,6 +257,13 @@ SimpleQuestion <- R6::R6Class(
             self$invalidate_hidden_data()
             self$invalidate_data()
             self$invalidate_hidden_data_list()
+        },
+
+        invalidate_ancestor = function() {
+            if (is.null(self$ancestor))
+                self$invalidate_hidden_data()
+            else
+                self$ancestor$invalidate_hidden_data()
         },
 
         invalidate_data = function() {
@@ -565,6 +571,16 @@ SimpleQuestion <- R6::R6Class(
             }
         },
 
+        ancestor = function(ancestor) {
+            if (missing(ancestor)) {
+                private$.ancestor
+            } else {
+                private$.ancestor <- ancestor
+                self$invalidate_ancestor()
+                private$.ancestor
+            }
+        },
+
         text = function(text) {
             if (missing(text)) {
                 paste(c(trimws(self$header), trimws(private$.text)), collapse = "\n\n")
@@ -638,10 +654,7 @@ SimpleQuestion <- R6::R6Class(
                 private$.hidden_seed
             else {
                 private$.hidden_seed <- seed
-                if (is.null(self$ancestor))
-                    self$invalidate_hidden_data()
-                else
-                    self$ancestor$invalidate_hidden_data()
+                self$invalidate_ancestor()
             }
         },
 
@@ -650,10 +663,7 @@ SimpleQuestion <- R6::R6Class(
                 private$.hidden_data
             } else {
                 private$.hidden_data <- hidden_data
-                if (is.null(self$ancestor))
-                    self$invalidate_hidden_data()
-                else
-                    self$ancestor$invalidate_hidden_data()
+                self$invalidate_ancestor()
             }
         },
 
@@ -662,21 +672,11 @@ SimpleQuestion <- R6::R6Class(
                 if (private$is_hidden_data_list_available)
                     private$.hidden_data_list
                 else {
-                    # root <- self
-                    # while (!is.null(root$ancestor))
-                    #     root <- root$ancestor
-                    # root$instantiate_hidden_data_list()
-                    # print(root$text)
-                    # private$is_hidden_data_list_available <- TRUE
-
-                    if (!is.null(self$quiz)) {
-                        self$quiz$instantiate_hidden_data_list()
-                        private$is_hidden_data_list_available <- TRUE
-                    } else {
-                        self$instantiate_hidden_data_list()
-                        private$is_hidden_data_list_available <- TRUE
-                    }
-
+                    root <- self
+                    while (!is.null(root$ancestor))
+                        root <- root$ancestor
+                    root$instantiate_hidden_data_list()
+                    private$is_hidden_data_list_available <- TRUE
                     private$.hidden_data_list
                 }
             } else {
@@ -743,6 +743,8 @@ SimpleQuestion <- R6::R6Class(
         .title = NULL,
 
         .header = NULL,
+
+        .ancestor = NULL,
 
         .text = NULL,
         is_text_available = FALSE,
