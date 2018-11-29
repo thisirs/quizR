@@ -638,7 +638,7 @@ sample_questions <- function(questions,
     } else if (is.vector(group_by)) {
         stopifnot(length(group_by) == length(questions))
         # Respect order c("B", "A", "A") gives c(1, 2, 2)
-        group <- factor(group, levels = unique(group_by))
+        group <- factor(group_by, levels = unique(group_by))
     } else stop('Unsupported group_by')
 
     n_groups <- length(unique(group))
