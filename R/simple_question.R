@@ -14,7 +14,7 @@ SimpleQuestion <- R6::R6Class(
                               hidden_seed = NULL,
                               feedback = NULL,
                               answer = NULL,
-                              tag = NULL,
+                              tags = NULL,
                               header = NULL) {
             private$.text <- text
             private$.data <- data
@@ -23,7 +23,7 @@ SimpleQuestion <- R6::R6Class(
             private$.hidden_seed <- hidden_seed
             private$.answer <- answer
             private$.feedback <- feedback
-            private$.tag <- tag
+            private$.tags <- tags
             private$.header <- header
 
             # Default placeholders
@@ -731,11 +731,11 @@ SimpleQuestion <- R6::R6Class(
                     self$instantiated_data)
         },
 
-        tag = function(tag) {
-            if (missing(tag)) {
-                private$.tag
+        tags = function(tags) {
+            if (missing(tags)) {
+                private$.tags
             } else {
-                private$.tag <- tag
+                private$.tags <- tags
             }
         }
     ),
@@ -780,7 +780,7 @@ SimpleQuestion <- R6::R6Class(
         .instantiated_data = NULL,
         is_data_instantiated = FALSE,
 
-        .tag = NULL,
+        .tags = NULL,
 
         default_feedback_options = list(text = "", noeval_text = NULL, eval = TRUE, indent = 2),
         default_options = list(numbered = TRUE,

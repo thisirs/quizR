@@ -30,7 +30,7 @@ MultipleChoice <- R6::R6Class(
                              hidden_seed = hidden_seed,
                              feedback = feedback,
                              answer = answer,
-                             tag = tags,
+                             tags = tags,
                              )
 
             self$type <- "multichoice"

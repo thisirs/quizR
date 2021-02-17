@@ -17,7 +17,7 @@ ShortanswerQuestion <- R6::R6Class(
                               feedback = NULL,
                               answer = NULL,
                               dist = 0,
-                              tag = NULL) {
+                              tags = NULL) {
             super$initialize(text,
                              data = data,
                              hidden_data = hidden_data,
@@ -25,7 +25,7 @@ ShortanswerQuestion <- R6::R6Class(
                              hidden_seed = hidden_seed,
                              feedback = feedback,
                              answer = answer,
-                             tag = tag)
+                             tags = tags)
             self$dist <- dist
         },
 

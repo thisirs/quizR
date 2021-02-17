@@ -18,7 +18,7 @@ NumericalQuestion <- R6::R6Class(
                               answer = NULL,
                               tolerance_type = "relative",
                               tolerance = 1e-3,
-                              tag = NULL) {
+                              tags = NULL) {
             super$initialize(text,
                              data = data,
                              hidden_data = hidden_data,
@@ -26,7 +26,7 @@ NumericalQuestion <- R6::R6Class(
                              hidden_seed = hidden_seed,
                              feedback = feedback,
                              answer = answer,
-                             tag = tag)
+                             tags = tags)
 
             self$type <- "numerical"
 

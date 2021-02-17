@@ -301,7 +301,7 @@ clozify_questions <- function(questions, N, n, make_sampler = NULL, ...) {
 
 clozify_group <- function(quiz_group,
                           sample_size = NULL,
-                          group_by = "tag",
+                          group_by = "tags",
                           group_sizes = NULL) {
 
     questions <- quiz_group$children
@@ -309,12 +309,12 @@ clozify_group <- function(quiz_group,
 
     if (is.null(group_by)) {
         group <- factor(1:n)
-    } else if (identical(group_by, "tag")) {
+    } else if (identical(group_by, "tags")) {
         # Extract tag or random tag if none
         group <- sapply(questions, function(q) {
             # Keep strings as is
-            if(is.character(q$tag) & length(q$tag) == 1)
-                q$tag
+            if(is.character(q$tags) & length(q$tags) == 1)
+                q$tags
             else
                 digest::digest(runif(1), "md5")
         })
@@ -587,7 +587,7 @@ Sampler <- R6::R6Class(
 # Return a sample from the list of questions QUESTIONS.
 
 # The GROUP_BY parameter identifies groups of questions. If GROUP_BY
-# is equal to "tag" questions are grouped by common value of their tag
+# is equal to "tags" questions are grouped by common value of their tags
 # attribute. Otherwise each question is in its own group.
 
 # SAMPLE_SIZE is the final number of sample from QUESTIONS.
@@ -623,7 +623,7 @@ Sampler <- R6::R6Class(
 ##' @author 
 sample_questions <- function(questions,
                              sample_size = 10,
-                             group_by = "tag",
+                             group_by = "tags",
                              batch_size = Inf,
                              seed = "DATA",
                              group_sizes = 1,
@@ -637,12 +637,12 @@ sample_questions <- function(questions,
     # Assign each question a group from GROUP_BY
     if (is.null(group_by)) {
         group <- factor(1:n_questions)
-    } else if (identical(group_by, "tag")) {
+    } else if (identical(group_by, "tags")) {
         ## Extract tag or random tag if none
         group <- sapply(questions, function(q)
             ## Keep strings as is
-            if(is.character(q$tag) & length(q$tag) == 1)
-                q$tag
+            if(is.character(q$tags) & length(q$tags) == 1)
+                q$tags
             else
                 digest::digest(runif(1), "md5"))
 

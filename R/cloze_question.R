@@ -19,7 +19,7 @@ ClozeQuestion <- R6::R6Class(
                               answer = NULL,
                               questions = NULL,
                               subquestions_opts = NULL,
-                              tag = NULL) {
+                              tags = NULL) {
 
             if(is.null(text) & is.null(questions))
                 stop("Either ", sQuote("text"), " or ", sQuote("questions"), " has to be specified")
@@ -32,7 +32,7 @@ ClozeQuestion <- R6::R6Class(
                                  hidden_seed = hidden_seed,
                                  feedback = feedback,
                                  answer = answer,
-                                 tag = tag)
+                                 tags = tags)
 
                 self$subquestions <- private$get_subquestions(text, answer, feedback, subquestions_opts)
 
@@ -66,7 +66,7 @@ ClozeQuestion <- R6::R6Class(
                                  hidden_seed = hidden_seed,
                                  feedback = feedback,
                                  answer = answer,
-                                 tag = tag)
+                                 tags = tags)
 
                 ## hidden_data is used to store the merged hidden_data of subquestions
                 if (!is.null(hidden_data))
