@@ -83,9 +83,17 @@ Quiz <- R6::R6Class(
         },
 
         get_title = function(opts, info) {
-            sprintf("---
+            title = sprintf("---
 title: \"%s\"
----\n", self$title)
+", self$title)
+
+            if(!is.null(opts$preamble)) {
+                title <- paste0(title, "header-includes:\n")
+                preamble <- paste0("  - ", strsplit(opts$preamble, "\n")[[1]], collapse="\n")
+                title <- paste0(title, preamble, "\n")
+            }
+
+            paste0(title, "---")
         },
 
         generate_correction = function(...) {

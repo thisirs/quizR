@@ -127,15 +127,27 @@ instantiate_chunk_list <- function(text, var_list) {
     return(text)
 }
 
-render_HTML <- function(text, args, info) {
+render_HTML <- function(text, opts, info) {
     if (is.null(info$env))
         env <- parent.frame()
     else
         env <- info$env
 
     tmpfile <- tempfile("question", fileext = ".Rmd")
+
+    # Add a Markdown header with LaTeX preamble
+    if(!is.null(opts$preamble)) {
+        preamble <- trimws(opts$preamble)
+        preamble <- paste0("  - ", strsplit(opts$preamble, "\n")[[1]], collapse="\n")
+
+        write("---", tmpfile, append = TRUE)
+        write("header-includes:", tmpfile, append = TRUE)
+        write(preamble, tmpfile, append = TRUE)
+        write("---", tmpfile, append = TRUE)
+    }
+
     write(text, tmpfile, append = TRUE)
-    output <- rmarkdown::render(tmpfile, rmarkdown::html_fragment(), envir = env, quiet = args$quiet)
+    output <- rmarkdown::render(tmpfile, rmarkdown::html_fragment(), envir = env, quiet = opts$quiet)
     to_string(output)
 }
 
