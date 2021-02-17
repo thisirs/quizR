@@ -18,11 +18,11 @@ MultipleChoice <- R6::R6Class(
                               hidden_seed = NULL,
                               feedback = NULL,
                               answer = NULL,
-                              statements = NULL,
+                              items = NULL,
                               answer_feedbacks = NULL,
                               shuffle_answers = FALSE,
                               single = FALSE,
-                              tag = NULL) {
+                              tags = NULL) {
             super$initialize(text,
                              data = data,
                              hidden_data = hidden_data,
@@ -30,10 +30,36 @@ MultipleChoice <- R6::R6Class(
                              hidden_seed = hidden_seed,
                              feedback = feedback,
                              answer = answer,
-                             tag = tag)
+                             tag = tags,
+                             )
 
             self$type <- "multichoice"
-            self$statements <- statements
+
+            # FIXME: choose between items and statements
+            self$statements <- as.list(items)
+
+            if(is.null(self$answer)) {
+                n <- length(self$statements)
+                answers <- lapply(seq_len(n), function(i) {
+                    self$statements[[i]][[1]]
+                })
+                statements <- lapply(seq_len(n), function(i) {
+                    self$statements[[i]][[2]]
+                })
+                self$answer <- answers
+                self$statements <- statements
+            }
+
+            n <- length(self$statements)
+            if(is.null(answer_feedbacks)) {
+                self$answer_feedbacks <- as.list(rep("", n))
+            } else {
+                if(length(answer_feedbacks) == n)
+                    self$answer_feedbacks <- answer_feedbacks
+                else
+                    stop("Wrong number of answer feedbacks")
+            }
+
             self$shuffle_answers <- shuffle_answers
             self$single <- single
 
