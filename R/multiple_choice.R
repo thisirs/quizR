@@ -188,6 +188,12 @@ MultipleChoice <- R6::R6Class(
             })
         },
 
+        instantiated_answer_feedbacks = function() {
+            lapply(self$answer_feedbacks, function(f) {
+                instantiate_text_list(f, self$hidden_data_list)
+            })
+        },
+
         instantiated_statements = function() {
             lapply(self$statements, function(statement) {
                 instantiate_text_list(statement, self$hidden_data_list)
