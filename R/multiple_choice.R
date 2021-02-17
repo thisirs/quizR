@@ -9,6 +9,7 @@ MultipleChoice <- R6::R6Class(
         shuffle_answers = FALSE,
         single = FALSE,
         statements = NULL,
+        answer_feedbacks = NULL,
 
         initialize = function(text,
                               data = quote({}),
@@ -18,6 +19,7 @@ MultipleChoice <- R6::R6Class(
                               feedback = NULL,
                               answer = NULL,
                               statements = NULL,
+                              answer_feedbacks = NULL,
                               shuffle_answers = FALSE,
                               single = FALSE,
                               tag = NULL) {
@@ -115,10 +117,11 @@ MultipleChoice <- R6::R6Class(
                 fraction <- ifelse(evaluated_answer, "100", "0")
 
                 inst_stat <- instantiated_statements[[i]]
+                inst_feed <- self$instantiated_answer_feedbacks[[i]]
 
                 tmpl <- add_spaces_left(private$xml_answer_template, opts$indent + 2)
 
-                sprintf(tmpl, fraction, inst_stat)
+                sprintf(tmpl, fraction, inst_stat, inst_feed)
             })
 
             paste(answers, collapse = "\n")
@@ -173,6 +176,7 @@ MultipleChoice <- R6::R6Class(
                             hidden_seed = self$hidden_seed,
                             hidden_data = self$hidden_data,
                             statements = self$statements,
+                            answer_feedbacks = self$answer_feedbacks,
                             data = self$data,
                             answer = self$answer,
                             feedback = self$feedback,
@@ -205,6 +209,9 @@ MultipleChoice <- R6::R6Class(
         xml_answer_template = trimws("
 <answer fraction=\"%s\">
   <text><![CDATA[%s]]></text>
+      <feedback format=\"html\">
+        <text><![CDATA[%s]]></text>
+      </feedback>
 </answer>"),
         xml_question_template = trimws("
 <question type=\"@TYPE@\">
