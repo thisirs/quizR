@@ -21,9 +21,13 @@ ClozeQuestion <- R6::R6Class(
                               subquestions_opts = NULL,
                               tags = NULL) {
 
+            # A cloze question is built from a list of other questions
+            # (including cloze ones) or from a text containing
+            # cookies.
             if(is.null(text) & is.null(questions))
                 stop("Either ", sQuote("text"), " or ", sQuote("questions"), " has to be specified")
 
+            # From a text (and cookies), we reconstruct a list of questions
             if(!is.null(text)) {
                 super$initialize(text,
                                  data = data,
@@ -45,6 +49,8 @@ ClozeQuestion <- R6::R6Class(
                 # Invalidate all
                 self$invalidate_all()
             } else if (!is.null(questions)) {
+                # From a list of questions, we clone questions, rename
+                # data, connect them.
 
                 ## Checking that answer, feedback and subquestions_opts are of the right size
                 if (!is.null(answer))
