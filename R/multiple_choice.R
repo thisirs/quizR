@@ -8,7 +8,7 @@ MultipleChoice <- R6::R6Class(
     public = list(
         shuffle_answers = FALSE,
         single = FALSE,
-        statements = NULL,
+        items = NULL,
         answer_feedbacks = NULL,
 
         initialize = function(text,
@@ -35,22 +35,21 @@ MultipleChoice <- R6::R6Class(
 
             self$type <- "multichoice"
 
-            # FIXME: choose between items and statements
-            self$statements <- as.list(items)
+            self$items <- as.list(items)
 
             if(is.null(self$answer)) {
-                n <- length(self$statements)
+                n <- length(self$items)
                 answers <- lapply(seq_len(n), function(i) {
-                    self$statements[[i]][[1]]
+                    self$items[[i]][[1]]
                 })
-                statements <- lapply(seq_len(n), function(i) {
-                    self$statements[[i]][[2]]
+                items <- lapply(seq_len(n), function(i) {
+                    self$items[[i]][[2]]
                 })
                 self$answer <- answers
-                self$statements <- statements
+                self$items <- items
             }
 
-            n <- length(self$statements)
+            n <- length(self$items)
             if(is.null(answer_feedbacks)) {
                 self$answer_feedbacks <- as.list(rep("", n))
             } else {
@@ -74,7 +73,7 @@ MultipleChoice <- R6::R6Class(
         get_inst_cookie = function(opts, info) {
             evaluated_answers <- self$get_evaluated_answer2(opts, info)
             prefix <- ifelse(evaluated_answers, "=", "")
-            cookie <- paste0(prefix, self$instantiated_statements, collapse = "~")
+            cookie <- paste0(prefix, self$instantiated_items, collapse = "~")
             sprintf("{1:MC:%s}", cookie)
         },
 
@@ -98,12 +97,11 @@ MultipleChoice <- R6::R6Class(
             statement_list <- as.list(self$statements)
 
             answers <- lapply(seq_len(n), function(i) {
-                statement <- statement_list[[i]]
-                inst_stat <- instantiate_text_list(statement, self$hidden_data_list)
+                inst_item <- self$instantiated_items[[i]]
 
                 fn <- "checkbox_unchecked.png"
                 icon <- sprintf("![](%s){height=16px}", system.file("etc", fn, package="quizR"))
-                sprintf("%s%s %s", indent, icon, inst_stat)
+                sprintf("%s%s %s", indent, icon, inst_item)
             })
 
             paste(answers, collapse = "\n\n")
@@ -136,13 +134,13 @@ MultipleChoice <- R6::R6Class(
         get_xml_answers = function(opts, info) {
             n <- length(self$answer)
             evaluated_answers <- self$get_evaluated_answer2(opts, info)
-            instantiated_statements <- self$instantiated_statements
+            instantiated_items <- self$instantiated_items
 
             answers <- lapply(1:n, function(i) {
                 evaluated_answer <- evaluated_answers[[i]]
                 fraction <- ifelse(evaluated_answer, "100", "0")
 
-                inst_stat <- instantiated_statements[[i]]
+                inst_stat <- instantiated_items[[i]]
                 inst_feed <- self$instantiated_answer_feedbacks[[i]]
 
                 tmpl <- add_spaces_left(private$xml_answer_template, opts$indent + 2)
@@ -176,15 +174,15 @@ MultipleChoice <- R6::R6Class(
         get_feedback_answer = function(opts, info) {
             indent <- ifelse(is.null(opts$indent), "", "    ")
             evaluated_answers <- self$get_evaluated_answer2(opts, info)
-            instantiated_statements <- self$instantiated_statements
+            instantiated_items <- self$instantiated_items
 
             feedback <- lapply(seq_along(evaluated_answers), function(i) {
                 evaluated_answer <- evaluated_answers[[i]]
-                instantiated_statement <- instantiated_statements[[i]]
+                instantiated_item <- instantiated_items[[i]]
 
                 filename <- ifelse(evaluated_answer, "checkbox_checked.png", "checkbox_unchecked.png")
                 icon <- sprintf("![](%s){height=16px}", system.file("etc", filename, package="quizR"))
-                sprintf("%s%s %s", indent, icon, instantiated_statement)
+                sprintf("%s%s %s", indent, icon, instantiated_item)
             })
 
             paste(feedback, collapse = "\n\n")
@@ -201,7 +199,7 @@ MultipleChoice <- R6::R6Class(
                             seed = self$seed,
                             hidden_seed = self$hidden_seed,
                             hidden_data = self$hidden_data,
-                            statements = self$statements,
+                            items = self$items,
                             answer_feedbacks = self$answer_feedbacks,
                             data = self$data,
                             answer = self$answer,
@@ -224,8 +222,8 @@ MultipleChoice <- R6::R6Class(
             })
         },
 
-        instantiated_statements = function() {
-            lapply(self$statements, function(statement) {
+        instantiated_items = function() {
+            lapply(self$items, function(statement) {
                 instantiate_text_list(statement, self$hidden_data_list)
             })
         }
