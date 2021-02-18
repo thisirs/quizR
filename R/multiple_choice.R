@@ -85,8 +85,14 @@ MultipleChoice <- R6::R6Class(
             indent <- ifelse(grepl("^ *[0-9]+\\.", inst_text), "    ", "")
             opts$indent <- indent
 
-            sprintf("%s (%d)\n\n%s",
+            if(substr(inst_text, nchar(inst_text) - 2, nchar(inst_text)) == '```')
+                sep <- "\n"
+            else
+                sep <- " "
+
+            sprintf("%s%s(%d)\n\n%s",
                     inst_text,
+                    sep,
                     info$index,
                     self$get_answers(opts, info))
         },
