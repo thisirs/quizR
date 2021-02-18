@@ -188,6 +188,18 @@ MultipleChoice <- R6::R6Class(
             paste(feedback, collapse = "\n\n")
         },
 
+        rename_text = function(prefix, names = self$hidden_data_names()) {
+            self$text <- prefix_object(prefix, names, private$.text)
+
+            self$items <- lapply(self$items, function(item) {
+                prefix_object(prefix, names, item)
+            })
+
+            self$invalidate_text()
+
+            self
+        },
+
         rename_answer = function(prefix, names0 = names(self$hidden_data_list)) {
             self$answer <- lapply(self$answer, function(answer) {
                 prefix_object(prefix, names0, answer)
