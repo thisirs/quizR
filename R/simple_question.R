@@ -414,7 +414,7 @@ SimpleQuestion <- R6::R6Class(
         },
 
         get_inst_text_and_cookie = function(opts, info) {
-            sprintf("%s\n%s", self$get_inst_text(opts, info), self$get_inst_cookie(opts, info))
+            sprintf("%s\n\n%s", self$get_inst_text(opts, info), self$get_inst_cookie(opts, info))
         },
 
         get_inst_text_and_number = function(opts, info) {
