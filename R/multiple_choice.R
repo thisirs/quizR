@@ -132,7 +132,7 @@ MultipleChoice <- R6::R6Class(
             opts$indent <- indent
 
             if(substr(inst_text, nchar(inst_text) - 2, nchar(inst_text)) == '```')
-                sep <- "\n"
+                sep <- "\n\n"
             else
                 sep <- " "
 
