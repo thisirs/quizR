@@ -144,9 +144,9 @@ MultipleChoice <- R6::R6Class(
         },
 
         get_answers = function(opts, info) {
-            indent <- ifelse(is.null(opts$indent), "", "    ")
-            n <- length(self$statements)
-            statement_list <- as.list(self$statements)
+            ## indent <- ifelse(is.null(opts$indent), "", "    ")
+            indent <- ""
+            n <- length(self$items)
 
             answers <- lapply(seq_len(n), function(i) {
                 inst_item <- self$instantiated_items[[i]]
