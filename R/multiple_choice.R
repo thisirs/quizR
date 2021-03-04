@@ -127,12 +127,12 @@ MultipleChoice <- R6::R6Class(
             } else stop("Unknown export type: ", sQuote(opts$export))
         },
 
-        get_xml_shuffle_answers = function(opts, info) {
+        get_xml_single = function(opts, info) {
             flag <- ifelse(self$single, "true", "false")
             sprintf("<single>%s</single>", flag)
         },
 
-        get_xml_single = function(opts, info) {
+        get_xml_shuffle_answers = function(opts, info) {
             flag <- as.numeric(self$single)
             sprintf("<shuffleanswers>%d</shuffleanswers>", flag)
         },
