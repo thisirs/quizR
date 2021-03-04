@@ -1,6 +1,31 @@
 #' @include simple_question.R
 NULL
 
+cookies_keyword <- list(
+    "multiplechoice" = "MC",
+    "multichoice" = "MC",
+    "mc" = "MC",
+    "multichoice_v" = "MCV",
+    "mcv" = "MCV",
+    "multichoice_h" = "MCH",
+    "mch" = "MCH",
+    "multiresponse" = "MR",
+    "mr" = "MR",
+    "multiresponse_h" = "MRH",
+    "mrh" = "MRH",
+    "multichoice_s" = "MCS",
+    "mcs" = "MCS",
+    "multichoice_vs" = "MCVS",
+    "mcvs" = "MCVS",
+    "multichoice_hs" = "MCHS",
+    "mchs" = "MCHS",
+    "multiresponse_s" = "MRS",
+    "mrs" = "MRS",
+    "multiresponse_hs" = "MRHS",
+    "mrhs" = "MRHS"
+)
+
+
 #' @export
 MultipleChoice <- R6::R6Class(
     "MultipleChoice",
@@ -10,6 +35,7 @@ MultipleChoice <- R6::R6Class(
         single = FALSE,
         items = NULL,
         answer_feedbacks = NULL,
+        format = NULL,
 
         initialize = function(text,
                               data = quote({}),
@@ -20,8 +46,9 @@ MultipleChoice <- R6::R6Class(
                               answer = NULL,
                               items = NULL,
                               answer_feedbacks = NULL,
-                              shuffle_answers = FALSE,
+                              shuffle_answers = NULL,
                               single = FALSE,
+                              format = "MC",
                               tags = NULL) {
             super$initialize(text,
                              data = data,
@@ -34,6 +61,20 @@ MultipleChoice <- R6::R6Class(
                              )
 
             self$type <- "multichoice"
+
+            if(is.null(format))
+                self$format <- "MC"
+            else
+                self$format <- format
+
+            # Set shuffle_answers from format; can be overridden by
+            # shuffle_answers argument
+            if(is.null(shuffle_answers)) {
+                last_char <- substr(self$format, nchar(self$format), nchar(self$format))
+                if(last_char == "S")
+                    self$shuffle_answers <- TRUE
+            } else
+                self$shuffle_answers <- shuffle_answers
 
             self$items <- as.list(items)
 
@@ -74,7 +115,12 @@ MultipleChoice <- R6::R6Class(
             evaluated_answers <- self$get_evaluated_answer2(opts, info)
             prefix <- ifelse(evaluated_answers, "=", "")
             cookie <- paste0(prefix, self$instantiated_items, collapse = "~")
-            sprintf("{1:MC:%s}", cookie)
+
+            cookie_kw <- cookies_keyword[[self$format]]
+            if(is.null(cookie_kw))
+                stop("Unknown format")
+
+            sprintf("{1:%s:%s}", cookie_kw, cookie)
         },
 
         get_inst_text_and_number = function(opts, info) {
@@ -223,7 +269,8 @@ MultipleChoice <- R6::R6Class(
                             answer = self$answer,
                             feedback = self$feedback,
                             shuffle_answers = self$shuffle_answers,
-                            single = self$single)
+                            single = self$single,
+                            format = self$format)
         }
     ),
 
