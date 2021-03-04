@@ -129,22 +129,6 @@ ClozeQuestion <- R6::R6Class(
                 private$.subquestions_opts <- subquestions_opts
             } else stop("Logical flaw")
 
-            private$cloze_cookie_list <- list(
-                SHORTANSWER = private$get_shortanswer_answer_cookie,
-                SA = private$get_shortanswer_answer_cookie,
-                MW = NULL,
-                SHORTANSWER_C = NULL,
-                SAC = NULL,
-                MWC = NULL,
-                NUMERICAL = NULL,
-                NM = NULL,
-                MULTICHOICE = private$get_multiple_choice_cookie,
-                MC = private$get_multiple_choice_cookie,
-                MULTICHOICE_V = NULL,
-                MCV = NULL,
-                MULTICHOICE_H = NULL,
-                MCH = NULL)
-
             # Add new placeholders for cloze questions
             private$placeholders$FEEDBACKS <- "get_feedbacks"
 
@@ -464,24 +448,6 @@ ClozeQuestion <- R6::R6Class(
             MULTICHOICE_H = NULL,
             MCH = NULL),
 
-        cloze_cookie_list = NULL,
-
-        get_multiple_choice_cookie = function(points, answer, opts) {
-            if (is.null(opts$multichoice_type)) opts$multichoice_type <- "inline"
-            type <- switch(opts$multichoice_type,
-                           inline = "MULTICHOICE",
-                           vectical = "MULTICHOICE_V",
-                           horizontal = "MULTICHOICE_H")
-
-            answers <- sapply(seq_along())
-
-            sprintf("{%s:%s:%s}", points, type, answers)
-        },
-
-        get_shortanswer_answer_cookie = function(points, answer, opts) {
-            sprintf("{%s:SA:=%s}", points, answer)
-        },
-
         get_data_from_questions = function() {
             languages <- lapply(self$subquestions, function(question) {
                 question$data
@@ -502,37 +468,6 @@ ClozeQuestion <- R6::R6Class(
             })
 
             merge_languages(languages)
-        },
-
-        replace_cloze_cookies = function(text, opts, info) {
-            loc <- stringi::stri_locate_all_regex(text, private$cloze_regex, omit_no_match = TRUE)[[1]]
-            matches <- stringi::stri_match_all_regex(text, private$cloze_regex, omit_no_match = TRUE)[[1]]
-
-            stopifnot(nrow(loc) == self$total_num)
-            stopifnot(nrow(matches) == self$total_num)
-            stopifnot(self$total_num == length(self$subquestions_opts))
-
-            replacements <-
-                lapply(seq_len(nrow(loc)), function(i) {
-                    points <- matches[i, 2]
-                    type <- matches[i, 3]
-                    rest <- matches[i, 4]
-                    method <- private$cloze_cookie_list[[type]]
-                    if (is.null(method))
-                        stop("Unsupported question type:", sQuote(type))
-                    opts <- self$subquestions_opts[[i]]
-
-                    answer <- self$instantiated_answer[[i]]
-                    eval_answer <- eval(answer, envir = info$env)
-
-                    method(points, eval_answer, opts)
-                })
-
-            for (i in rev(seq_len(nrow(loc)))) {
-                stringi::stri_sub(text, loc[i, 1], loc[i, 2]) <- replacements[[i]]
-            }
-
-            text
         },
 
         get_text_from_questions = function() {
