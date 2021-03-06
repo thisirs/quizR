@@ -485,6 +485,7 @@ versionize_questions <- function(questions, seed, nver) {
 # Build NVER versions of QUESTIONS with SEED identifier. Then
 # construct N cloze questions from K different questions with random
 # version.
+#' @export
 clozify_independant_questions <- function(questions, seed, N, k, nver) {
     n <- length(questions)
     if (length(nver) == 1) nver <- rep(nver, n)
