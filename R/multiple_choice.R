@@ -183,6 +183,11 @@ MultipleChoice <- R6::R6Class(
             sprintf("<shuffleanswers>%d</shuffleanswers>", flag)
         },
 
+        get_xml_item = function(md_text, opts, info) {
+            HTML_question <- render_HTML(md_text, opts, info)
+            trimws(HTML_question) # pandoc seems to add some leading newlines
+        },
+
         get_xml_answers = function(opts, info) {
             n <- length(self$answer)
             evaluated_answers <- self$get_evaluated_answer2(opts, info)
@@ -192,7 +197,7 @@ MultipleChoice <- R6::R6Class(
                 evaluated_answer <- evaluated_answers[[i]]
                 fraction <- ifelse(evaluated_answer, "100", "0")
 
-                inst_stat <- instantiated_items[[i]]
+                inst_stat <- self$get_xml_item(instantiated_items[[i]], opts, info)
                 inst_feed <- self$instantiated_answer_feedbacks[[i]]
 
                 tmpl <- add_spaces_left(private$xml_answer_template, opts$indent + 2)
