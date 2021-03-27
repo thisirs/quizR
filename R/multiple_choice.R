@@ -179,7 +179,7 @@ MultipleChoice <- R6::R6Class(
         },
 
         get_xml_shuffle_answers = function(opts, info) {
-            flag <- as.numeric(self$single)
+            flag <- as.numeric(self$shuffle_answers)
             sprintf("<shuffleanswers>%d</shuffleanswers>", flag)
         },
 
