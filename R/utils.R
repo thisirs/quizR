@@ -448,6 +448,7 @@ versionize_group <- function(group, seed, N) {
     })
 }
 
+#' @export
 versionize_questions <- function(questions, seed, nver) {
     n <- length(questions)
 
