@@ -1,6 +1,47 @@
 #' @include simple_question.R
 NULL
 
+formats <- c(
+    "multiplechoice",
+    "multichoice",
+    "mc",
+    "multichoice_v",
+    "mcv",
+    "multichoice_h",
+    "mch",
+    "multiresponse",
+    "mr",
+    "multiresponse_h",
+    "mrh",
+    "multichoice_s",
+    "mcs",
+    "multichoice_vs",
+    "mcvs",
+    "multichoice_hs",
+    "mchs",
+    "multiresponse_s",
+    "mrs",
+    "multiresponse_hs",
+    "mrhs"
+)
+
+single_formats <- c(
+    "multiplechoice",
+    "multichoice",
+    "mc",
+    "multichoice_v",
+    "mcv",
+    "multichoice_h",
+    "mch",
+    "multiresponse",
+    "multichoice_s",
+    "mcs",
+    "multichoice_vs",
+    "mcvs",
+    "multichoice_hs",
+    "mchs"
+)
+
 cookies_keyword <- list(
     "multiplechoice" = "MC",
     "multichoice" = "MC",
@@ -63,18 +104,15 @@ MultipleChoice <- R6::R6Class(
             self$type <- "multichoice"
 
             if(is.null(format))
-                self$format <- "MC"
-            else
-                self$format <- format
+                format <- "mc"
+            if(!tolower(format) %in% formats)
+                stop("Unknown format")
+            self$format <- tolower(format)
 
-            # Set shuffle_answers from format; can be overridden by
-            # shuffle_answers argument
-            if(is.null(shuffle_answers)) {
-                last_char <- substr(self$format, nchar(self$format), nchar(self$format))
-                if(last_char == "S")
-                    self$shuffle_answers <- TRUE
-            } else
-                self$shuffle_answers <- shuffle_answers
+            # Set `single` and `shuffle_answers` based on format
+            last_char <- substr(self$format, nchar(self$format), nchar(self$format))
+            self$shuffle_answers <- (last_char == "s")
+            self$single <- (self$format %in% single_formats)
 
             self$items <- as.list(items)
 
@@ -99,9 +137,6 @@ MultipleChoice <- R6::R6Class(
                 else
                     stop("Wrong number of answer feedbacks")
             }
-
-            self$shuffle_answers <- shuffle_answers
-            self$single <- single
 
             private$xml_placeholders$SHUFFLEANSWERS <-
                 "get_xml_shuffle_answers"
