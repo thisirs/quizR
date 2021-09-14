@@ -18,10 +18,8 @@ Imports:
     R6,
     tools,
     logging
-Suggests: testthat,
-    knitr,
-    rmarkdown
 RoxygenNote: 7.1.2
+Suggests: testthat
 Collate:
     'simple_question.R'
     'multiple_choice.R'
