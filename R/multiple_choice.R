@@ -225,12 +225,23 @@ MultipleChoice <- R6::R6Class(
 
         get_xml_answers = function(opts, info) {
             n <- length(self$answer)
+            # Evaluate answers as TRUE/FALSE
             evaluated_answers <- self$get_evaluated_answer2(opts, info)
+
+            # Get corresponding fractions
+            n.true <- max(sum(evaluated_answers), 1)
+            n.false <- max(sum(!evaluated_answers), 1)
+            d <- ifelse(evaluated_answers, n.true, n.false)
+            evaluated_answers2 <- ifelse(evaluated_answers, 1, -1)
+            fractions <-  100 * evaluated_answers2 / d
+            fractions <- sprintf("%.4f", fractions)
+
+            # Instantiate items
             instantiated_items <- self$instantiated_items
 
             answers <- lapply(1:n, function(i) {
                 evaluated_answer <- evaluated_answers[[i]]
-                fraction <- ifelse(evaluated_answer, "100", "0")
+                fraction <- fractions[i]
 
                 inst_stat <- self$get_xml_item(instantiated_items[[i]], opts, info)
                 inst_feed <- self$instantiated_answer_feedbacks[[i]]
