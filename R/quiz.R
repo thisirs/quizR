@@ -110,6 +110,8 @@ title: \"%s\"
             markdown <- self$to_markdown(opts = opts, info = info)
 
             tmpfile <- tempfile("quiz", fileext = ".Rmd")
+            on.exit(unlink(tmpfile), add = TRUE)
+
             write(markdown, tmpfile)
 
             rmarkdown::render(input = tmpfile,
