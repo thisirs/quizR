@@ -40,8 +40,7 @@ cleanenv <- function() {
 
 #' Helper function to specify list of languages
 #'
-#' Helper function
-#' @param Expressions
+#' @param ...
 #'
 #' @return A quoted expression or a list of quoted expression
 #' @export
