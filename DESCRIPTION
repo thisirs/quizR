@@ -18,10 +18,10 @@ Imports:
     R6,
     tools,
     logging
-RoxygenNote: 7.1.0
 Suggests: testthat,
     knitr,
     rmarkdown
+RoxygenNote: 7.1.2
 Collate:
     'simple_question.R'
     'multiple_choice.R'
