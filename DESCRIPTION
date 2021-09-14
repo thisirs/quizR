@@ -31,4 +31,3 @@ Collate:
     'question.R'
     'quiz.R'
     'utils.R'
-VignetteBuilder: knitr
