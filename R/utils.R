@@ -389,11 +389,11 @@ clozify_group <- function(quiz_group,
               children = cl_list)
 }
 
-##' Merge several group quiz objects
-##'
-##' @param groups A list of groups
-##' @param title The title of the merged group
-##' @return The merged group
+#' Merge several group quiz objects
+#'
+#' @param groups A list of groups
+#' @param title The title of the merged group
+#' @return The merged group
 merge_groups <- function(groups, title) {
     for (group in groups)
         group$include_header()
