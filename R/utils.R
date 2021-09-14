@@ -594,43 +594,47 @@ Sampler <- R6::R6Class(
                        .counter = NULL
                    ))
 
-# Return a sample from the list of questions QUESTIONS.
 
-# The GROUP_BY parameter identifies groups of questions. If GROUP_BY
-# is equal to "tags" questions are grouped by common value of their tags
-# attribute. Otherwise each question is in its own group.
-
-# SAMPLE_SIZE is the final number of sample from QUESTIONS.
-
-# If CLOZIFY is TRUE
-
-# POLICY specify how we sample from each question. If POLICY is
-# "batch" we can sample corresponding BATCH_SIZE questions. Otherwise
-# we can indefinitely sample a version of that question.
-
-# GROUP_SIZES specify the number of different versions of the same
-# question we can sample from. Used only if corresponding POLICY is
-# "batch".
-
-##' Return a sample from the list of questions QUESTIONS
-##'
-##' This function creates a new list of questions from
-##' \code{questions}. It does so by sampling new versions of existing
-##' questions and combining them.
-##'
-##' SAMPLE_SIZE is the desired number of returned questions.
-##'
-##' CLOZIFY is a boolean number set to TRUE if you want the sampled
-##' questions to be clozified before being returned.
-##' 
-##' @param questions A list of questions
-##' @param group_by 
-##' @param batch_size 
-##' @param seed 
-##' @param sample_size An integer vector or scalar
-##' @param clozify A logical scalar
-##' @return A list of questions or a list of list of questions
-##' @author 
+#' Return a list of questions or a list of clozified questions.
+#'
+#' This function samples repeatedly (\code{sample_size} times without
+#' replacement) from \code{questions} a number of questions
+#' (controlled by \code{group_sizes} and \code{group_by}) from a set
+#' of provided questions. If \code{clozified} is false, it returns a
+#' list of lists of questions. If \code{clozified} is true each list
+#' consisting of questions turned into a cloze question.
+#'
+#' The argument \code{sample_size} is the desired number of returned
+#' list of questions or clozified questions.
+#'
+#' The argument \code{group_by} is used to first make groups of
+#' questions so that sampling without replacement is done in each
+#' subgroups according to \code{group_sizes}. If \code{group_by} is
+#' set to \code{NULL} each question is in its own group. If
+#' \code{group_by} is set to \code{"tags"}, the field tags each
+#' questions is used to make groups. If \code{group_by} is a vector of
+#' the same length as \code{questions} it is used as a grouping key.
+#'
+#' The argument \code{batch_size} is a vector of same length as
+#' \code{questions} and specify the number of different versions to
+#' create for each question. If \code{batch_size} is just a number,
+#' it is used for each question.
+#'
+#' The argument \code{group_sizes} is a vector whose length is the
+#' number of groups. It specified the number of questions to sample in
+#' each subgroups.
+#'
+#' The argument \code{seed} is used to set the seed for each question.
+#'
+#' @param questions A list of base questions to sample from
+#' @param sample_size Number of questions to create
+#' @param group_by Group question before sampling
+#' @param batch_size Number of duplicates for each question
+#' @param seed Seed for each question
+#' @param group_sizes Size a sample in each subgroup
+#' @param clozify Specify if questions should be clozified
+#' @return A list of questions or a list of list of questions
+#' @importFrom stats runif
 sample_questions <- function(questions,
                              sample_size = 10,
                              group_by = "tags",
