@@ -87,6 +87,10 @@ Quiz <- R6::R6Class(
 title: \"%s\"
 ", self$title)
 
+            if(!is.null(opts$header)) {
+                title <- paste0(title, opts$header, "\n")
+            }
+
             if(!is.null(opts$preamble)) {
                 title <- paste0(title, "header-includes:\n")
                 preamble <- paste0("  - ", strsplit(opts$preamble, "\n")[[1]], collapse="\n")
