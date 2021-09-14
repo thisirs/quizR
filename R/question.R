@@ -28,6 +28,8 @@ Question_classes <- list(
 )
 
 #' Factory class that creates questions object give their type
+#'
+#' @param ... A list of named arguments
 #' @export
 Question <- function(...) {
     args <- list(...)
