@@ -306,6 +306,7 @@ clozify_questions <- function(questions, N, n, make_sampler = NULL, ...) {
 ## quiz object before clozifying them.
 
 
+#' @importFrom stats runif
 clozify_group <- function(quiz_group,
                           sample_size = NULL,
                           group_by = "tags",
@@ -493,6 +494,7 @@ versionize_questions <- function(questions, seed, nver) {
 # Build NVER versions of QUESTIONS with SEED identifier. Then
 # construct N cloze questions from K different questions with random
 # version.
+#' @importFrom stats runif
 #' @export
 clozify_independant_questions <- function(questions, seed, N, k, nver) {
     n <- length(questions)
