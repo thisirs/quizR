@@ -627,7 +627,9 @@ Sampler <- R6::R6Class(
 #' number of groups. It specified the number of questions to sample in
 #' each subgroups.
 #'
-#' The argument \code{seed} is used to set the seed for each question.
+#' The argument \code{seed} is a base identifier that is used to
+#' generate unique identifiers for each question when creating
+#' multiple versions of each questions.
 #'
 #' @param questions A list of base questions to sample from
 #' @param sample_size Number of questions to create
@@ -652,7 +654,7 @@ sample_questions <- function(questions,
 
     n_questions  <- length(questions)
 
-    # Assign each question a group from GROUP_BY
+    # Set `group`, assign each question a group from `group_by`
     if (is.null(group_by)) {
         group <- factor(1:n_questions)
     } else if (identical(group_by, "tags")) {
@@ -671,10 +673,11 @@ sample_questions <- function(questions,
         group <- factor(group_by, levels = unique(group_by))
     } else stop('Unsupported group_by')
 
-    n_groups <- length(unique(group))
+    # Number of different groupes of questions
+    n_groups <- nlevels(group)
 
-    # Set GROUP_SAMPLER; how to sample from the list of questions with
-    # groups and GROUP_SIZES
+    # Set `group_sampler`; how to sample from a subset of
+    # `group_sizes` groups in groups defined by `group`.
     if (is.list(group_sizes)) {
         stopifnot(setequal(names(group_sizes), levels(group)))
         stopifnot(all(group_sizes <= table(group)[names(group_sizes)]))
@@ -737,7 +740,7 @@ sample_questions <- function(questions,
         batch_sizes = as.list(batch_size)
     }
 
-    # Build a sampler for one question
+    # Build a sampler for each question using `Sampler`
     make_sampler <- function(question, batch_size, seed) {
         Sampler$new(question, batch_size = batch_size, seed = seed)
     }
@@ -746,7 +749,7 @@ sample_questions <- function(questions,
     # batch_size and seed.
     samplers <- mapply(make_sampler, questions, batch_sizes, seeds)
 
-    # Sample SAMPLE_SIZE of list of questions or clozified list of
+    # Sample `sample_size` of list of questions or clozified list of
     # questions
     lapply(seq_len(sample_size), function(i) {
         # Number of remaining versions for each question
