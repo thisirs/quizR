@@ -227,6 +227,27 @@ ClozeQuestion <- R6::R6Class(
             paste(c(inst_header, inst_texts), collapse = "\n\n")
         },
 
+        get_XML_question_text = function(opts, info) {
+            HTML_texts <- lapply(self$subquestions, function(question) {
+                trimws(render_HTML(question$get_inst_text(opts, info), opts, info))
+            })
+
+            opts
+            cookies <- lapply(self$subquestions, function(question) {
+                question$get_inst_cookie(opts, info)
+            })
+
+            tmp <- mapply(
+                function(html, cookie) {
+                    sprintf("%s\n<p>%s</p>", html, cookie)
+                },
+                HTML_texts,
+                cookies
+            )
+
+            paste(tmp, collapse = "\n")
+        },
+
         get_inst_text_and_number = function(opts, info) {
             stopifnot(is.numeric(info$index))
 
