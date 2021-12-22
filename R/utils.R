@@ -637,6 +637,7 @@ Sampler <- R6::R6Class(
 #' @param group_sizes Size a sample in each subgroup
 #' @param clozify Specify if questions should be clozified
 #' @return A list of questions or a list of list of questions
+#' @export
 #' @importFrom stats runif
 sample_questions <- function(questions,
                              sample_size = 10,
