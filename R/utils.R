@@ -135,19 +135,21 @@ render_HTML <- function(text, opts, info) {
     tmpfile <- tempfile("question", tmpdir = ".", fileext = ".Rmd")
     on.exit(unlink(tmpfile), add = TRUE)
 
-    write("---", tmpfile, append = TRUE)
-    if(!is.null(opts$header)) {
-        write(opts$header, tmpfile, append = TRUE)
-    }
+    if(!is.null(opts$header) | !is.null(opts$preamble)) {
+        write("---", tmpfile, append = TRUE)
+        if(!is.null(opts$header)) {
+            write(opts$header, tmpfile, append = TRUE)
+        }
 
-    # Add a Markdown header with LaTeX preamble
-    if(!is.null(opts$preamble)) {
-        preamble <- trimws(opts$preamble)
-        preamble <- paste0("  - ", strsplit(opts$preamble, "\n")[[1]], collapse="\n")
-        write("header-includes:", tmpfile, append = TRUE)
-        write(preamble, tmpfile, append = TRUE)
+        # Add a Markdown header with LaTeX preamble
+        if(!is.null(opts$preamble)) {
+            preamble <- trimws(opts$preamble)
+            preamble <- paste0("  - ", strsplit(opts$preamble, "\n")[[1]], collapse="\n")
+            write("header-includes:", tmpfile, append = TRUE)
+            write(preamble, tmpfile, append = TRUE)
+        }
+        write("---", tmpfile, append = TRUE)
     }
-    write("---", tmpfile, append = TRUE)
 
     write(text, tmpfile, append = TRUE)
 
