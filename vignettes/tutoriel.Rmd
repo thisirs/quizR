@@ -1,0 +1,353 @@
+---
+title: "Tutoriel QuizR"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Tutoriel QuizR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+`QuizR` permet de créer des quiz sur Moodle en utilisant `R`. Il faut
+créer un objet quiz qui peut ensuite être exporté sous forme de
+fichier XML pour importation dans Moodle ou sous forme de pdf.
+
+
+## Installation
+
+```r
+install.packages("devtools")
+library(devtools)
+install_github("thisirs/quizR")
+install.packages(c("rmarkdown", "tinytex"))
+```
+
+## Introduction
+
+On commence par charger la bibliothèque `quizR`
+```r
+library(quizR)
+```
+
+Un objet quiz contient des groupes. Chaque groupe contient des
+questions. On crée un quiz avec l'instruction suivante
+```r
+quiz <- Quiz$new("Mon quiz")
+```
+
+Pour le moment le quiz ne contient pas de groupe. Créons un groupe
+avec l'instruction suivante
+```r
+group <- Group$new("Mon goupe")
+```
+
+On ajoute ensuite le groupe au quiz avec l'instruction suivante
+```r
+quiz$add_child(group)
+```
+
+Le groupe ne contient pas encore de questions, commençons par créer
+des questions.
+```r
+q1 <- Question("Que vaut \\(2+2\\)")
+```
+
+Les balises `\\(` est `\\)` permettent de délimiter un fragment LaTeX
+qui sera exporté correctement.
+
+Il existe plusieurs type de questions. Par défaut, les questions sont
+de type numérique ; elles attendent une entrée numérique. Pour la
+correction automatique, il faut indiquer quelle est la bonne réponse.
+```r
+q1 <- Question("Que vaut \\(2+2\\)", answer = 4)
+```
+
+On ajoute la question au groupe
+```r
+group$add_child(q1)
+```
+
+Ça y est `quiz` est un objet quiz fonctionnel. On peut générer le
+fichier XML avec l'instruction
+
+```r
+quiz$generate_XML()
+```
+
+Il existe également un export PDF avec l'instruction
+```r
+quiz$generate_correction()
+```
+
+Si on récapitule, on a les instructions suivantes pour créer un quiz
+minimal
+```r
+library(quizR)
+quiz <- Quiz$new("Mon quiz")
+group <- Group$new("Mon groupe")
+quiz$add_child(group)
+q1 <- Question("Que vaut \\(2+2\\)", answer = 4)
+group$add_child(q1)
+quiz$generate_XML()
+quiz$generate_correction()
+```
+
+## Types de questions
+
+Pour le moment, on a vu les questions de type numérique mais il existe
+d'autres types de questions présentes dans Moodle et supportées par
+quizR.
+
+### Les questions à choix multiples
+
+Les questions à choix multiples
+```r
+q1 <- Question("Le nombre 7 est",
+               type = "MC",
+               items = c(
+                 "un nombre premier",
+                 "un nombre composé",
+                 "un nombre pair",
+                 "un nombre impair"),
+               answer = c(TRUE, FALSE, FALSE, TRUE))
+```
+
+Cette fois, il faut spécifier le type "MC", les différents choix
+possibles dans `items` et les réponses correspondantes dans
+`answer` sous forme d'un tableau de booléens.
+
+On peut également spécifier seulement `answer` avec une liste de liste.
+```r
+q1 <- Question("Le nombre 7 est",
+               type = "MC",
+               answer = list(
+                 list(TRUE, "un nombre premier"),
+                 list(FALSE, "un nombre composé"),
+                 list(FALSE, "un nombre pair"),
+                 list(TRUE, "un nombre impair")))
+```
+
+### Les questions de type cloze
+
+Les questions cloze sont des questions qui contiennent plusieurs
+champs appelant des réponses à l'intérieur même du texte. On peut les
+voir comme des concaténations de questions simples.
+
+
+## Quiz paramétrique
+
+Le problème avec le quiz précédent est que la question reste toujours
+la même. Il est possible de rendre les questions paramétriques de
+sorte qu'on puisse facilement générer d'autres quiz avec des questions
+similaires mais différentes. On introduit par exemple le paramètre
+`param` qui représente le deuxième terme de la somme. On déclare les
+paramètres avec l'argument `hidden_data` auquel on fournit un bloc de
+code délimité par des accolades définissant le ou les paramètres.
+
+On obtient alors la question suivante.
+```r
+q_generique <- Question("Que vaut \\(2+`r param`\\)",
+                        hidden_seed = 1,
+                        hidden_data = quote({
+                            param <- sample(1:10, 1)
+                        }),
+                        answer = quote({ 2 + param }))
+```
+
+Pour ce qui est du texte, on utilise le paramètre `param` dans un bloc
+en ligne. Pour l'argument `hidden_data`, la fonction `quote` évite que
+le bloc de code soit directement exécuté. On doit également rajouter
+l'argument `hidden_seed` qui fixe la graine utilisée pour initialiser
+le générateur aléatoire.
+
+```r
+quiz <- Quiz$new("Mon quiz")
+group <- Group$new("Mon groupe")
+quiz$add_child(group)
+q_generique <- Question("Que vaut \\(2+`r param`\\)",
+                        hidden_seed = 2,
+                        hidden_data = quote({
+                            param <- sample(1:10, 1)
+                        }),
+                        answer = quote({ 2 + param }))
+group$add_child(q_generique)
+quiz$generate_XML()
+quiz$generate_correction()
+```
+
+Pour faire varier la question du quiz, il suffit de changer la graine
+et la question sera différente.
+
+
+## Données
+
+On peut également mettre des données à disposition des étudiants
+nécessaires pour la résolution de la question. Par exemple
+```r
+q1 <- Question("La variable `a` contient un entier. Que vaut \\(a^2\\) ?",
+               seed = 1,
+               data = quote({
+                   a <- 12
+               }),
+               answer = quote({ a^2 }))
+```
+
+L'argument `data` est de même nature que `hidden_data`. Il faut
+également fournir une graine pour la génération des données. Mais
+cette fois, les données sont mises à disposition dans un fichier `R`.
+Une fois le quiz construit, il faut rajouter l'instruction
+
+```r
+quiz$generate_data_file()
+```
+
+pour générer le fichier contenant les données que l'étudiant chargera
+avant de faire le quiz.
+
+On peut évidemment combiner les données cachées et les données
+utilisateurs. Les données générées changeront donc lorsque
+`hidden_seed` sera changée.
+
+```r
+q1 <- Question("La variable `a` contient un entier. Que vaut \\(a^2\\) ?",
+               hidden_seed = 1,
+               hidden_data = quote({
+                   param <- sample(1:10, 1)
+               }),
+               seed = 1,
+               data = quote({
+                   a <- param
+               }),
+               answer = quote({ a^2 }))
+```
+
+## Duplication et combinaison de questions
+
+### Duplication simple
+
+Pour le moment, il est seulement possible d'avoir des questions
+différentes en changeant la graine `seed` et la graine `hidden_seed`
+pour des données différentes. Cependant, une fois généré et chargé sur
+Moodle, le quiz reste le même. Pour avoir un seul quiz avec des
+questions différentes à chaque tentative, il faut dupliquer les
+questions au sein d'un même quiz. C'est ce que fait la fonction
+`sample_questions`.
+
+```r
+q1 <- Question("Quel est le nombre suivant le nombre `r n` ?",
+               hidden_data = quote({
+                   n <- sample(1:1000, 1)
+               }),
+               answer = quote(n+1))
+qs  <- sample_questions(q1, sample_size = 3)
+```
+
+L'argument `sample_size` fixe le nombre de duplications. La variable
+`qs` contient donc les 3 mêmes questions avec un `n` différent. On
+peut donc ajouter ces questions dans un groupe et marquer le groupe
+comme aléatoire avec une seule question à choisir aléatoirement.
+
+```r
+group <- Group$new("Groupe",
+                   type = "random",
+                   num = 1,
+                   children = qs)
+```
+
+Ainsi, au sein d'un même quiz, on aura plusieurs questions qui sont
+générées à partir d'une seule. Il faut juste veiller à mettre ces
+questions dans un groupe aléatoire pour éviter qu'un étudiant ait
+plusieurs fois le même type de questions.
+
+
+### Duplication multiple
+
+Pour le moment, on ne fait que dupliquer une seule question. Il est
+possible de dupliquer plusieurs questions simultanément.
+
+```r
+q1 <- Question("Quel est le nombre suivant le nombre `r n` ?",
+               hidden_data = quote({
+                   n <- sample(1:1000, 1)
+               }),
+               answer = quote(n+1))
+q2 <- Question("Quel est le double du nombre `r n` ?",
+               hidden_data = quote({
+                   n <- sample(1:1000, 1)
+               }),
+               answer = quote(2*n))
+qs  <- sample_questions(list(q1, q2), sample_size = 10)
+```
+
+La variable `qs` contient 10 questions avec des variantes des
+questions `q1` et `q2`.
+
+
+### Duplication multiple et combinaison
+
+On peut également créer des questions résultant de la fusion de deux
+autres questions.
+
+
+```r
+qs  <- sample_questions(list(q1, q2),
+                        sample_size = 10,
+                        group_sizes = c(1, 1))
+```
+
+Ici, on crée 10 questions mais on spécifie également des groupes avec
+`group_sizes`. On veut une question issue de `q1` et une question
+issue de `q2` qu'on fusionne. Par défaut, chaque question est seule
+dans son groupe mais il est possible d'indiquer explicitement des
+groupes de questions avec `group_by`
+
+```r
+q1 <- Question("Quel est le nombre suivant le nombre `r n` ?",
+               hidden_data = quote({
+                   n <- sample(1:1000, 1)
+               }),
+               answer = quote(n+1))
+q2 <- Question("Quel est le double du nombre `r n` ?",
+               hidden_data = quote({
+                   n <- sample(1:1000, 1)
+               }),
+               answer = quote(2*n))
+q3 <- Question("Dur1")
+q4 <- Question("Dur2")
+
+qs  <- sample_questions(list(q1, q2, q3, q4),
+                        sample_size = 100,
+                        group_by = c(1, 1, 2, 2),
+                        group_sizes = c(1, 1))
+```
+
+`q1` et `q2` font partie d'un même groupe et `q3` et `q4` font partie
+d'un autre groupe. Avec `group_sizes` on choisit donc à chaque fois
+une question dans le premier groupe et une question dans le deuxième
+groupe.
+
+### Quid des données lors de la duplication
+
+Lorsque la question que l'on souhaite dupliquer contient des données,
+il faut pouvoir les renommer pour qu'elles ne s'écrasent pas dans le
+fichier de données. Cela peut être accompli en utilisant les variables
+`ds_name` et `ds_sym` qu'on peut utiliser directement dans les blocs
+de données. Lors de la duplication, elles seront changées pour éviter
+les collisions.
+
+```r
+q1 <- Question("Quel est la moyenne du jeu de données `r ds_sym` ?",
+               data = quote({
+                   ds_sym <- sample(1:1000, 1)
+               }),
+               answer = quote(n+1))
+qs  <- sample_questions(q1, sample_size = 3)
+```
+
+La variable `qs` contient trois questions qui ont chacune leur propre
+donnée avec un nom différent. On aura par exemple
+
+```r
+DATA_1 <- sample(1:1000, 1)
+DATA_2 <- sample(1:1000, 1)
+DATA_3 <- sample(1:1000, 1)
+```

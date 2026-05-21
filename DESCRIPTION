@@ -20,6 +20,7 @@ Imports:
     logging
 RoxygenNote: 7.3.2
 Suggests: testthat
+VignetteBuilder: knitr
 Collate:
     'simple_question.R'
     'multiple_choice.R'
