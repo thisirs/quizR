@@ -9,8 +9,8 @@ Description: This library lets you create quizzes in R that can be exported to a
 License: GPL (>= 3)
 Encoding: UTF-8
 Imports:
-    pryr,
     rmarkdown,
+    knitr,
     digest,
     stringr,
     stringi,
@@ -18,7 +18,7 @@ Imports:
     R6,
     tools,
     logging
-RoxygenNote: 7.1.2
+RoxygenNote: 7.3.2
 Suggests: testthat
 Collate:
     'simple_question.R'
