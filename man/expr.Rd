@@ -7,11 +7,11 @@
 expr(...)
 }
 \arguments{
-\item{Expressions}{}
+\item{...}{}
 }
 \value{
 A quoted expression or a list of quoted expression
 }
 \description{
-Helper function
+Helper function to specify list of languages
 }

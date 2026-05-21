@@ -1,5 +1,7 @@
-#' Base class
-#'
+#' @title foo
+#' @name SimpleQuestion
+NULL
+
 #' @export
 SimpleQuestion <- R6::R6Class(
     "SimpleQuestion",

@@ -6,6 +6,9 @@
 \usage{
 Question(...)
 }
+\arguments{
+\item{...}{A list of named arguments}
+}
 \description{
 Factory class that creates questions object give their type
 }
