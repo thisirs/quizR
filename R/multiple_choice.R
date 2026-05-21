@@ -114,28 +114,34 @@ MultipleChoice <- R6::R6Class(
             self$shuffle_answers <- (last_char == "s")
             self$single <- (self$format %in% single_formats)
 
-            self$items <- as.list(items)
-
-            if(is.null(self$answer)) {
-                n <- length(self$items)
-                answers <- lapply(seq_len(n), function(i) {
-                    self$items[[i]][[1]]
-                })
-                items <- lapply(seq_len(n), function(i) {
-                    self$items[[i]][[2]]
-                })
-                self$answer <- answers
+            if (is.language(items)) {
+                # Items is a language object to be evaluated from hidden_data
                 self$items <- items
-            }
-
-            n <- length(self$items)
-            if(is.null(answer_feedbacks)) {
-                self$answer_feedbacks <- as.list(rep("", n))
+                self$answer_feedbacks <- answer_feedbacks  # NULL or provided
             } else {
-                if(length(answer_feedbacks) == n)
-                    self$answer_feedbacks <- answer_feedbacks
-                else
-                    stop("Wrong number of answer feedbacks")
+                self$items <- as.list(items)
+
+                if(is.null(self$answer)) {
+                    n <- length(self$items)
+                    answers <- lapply(seq_len(n), function(i) {
+                        self$items[[i]][[1]]
+                    })
+                    items <- lapply(seq_len(n), function(i) {
+                        self$items[[i]][[2]]
+                    })
+                    self$answer <- answers
+                    self$items <- items
+                }
+
+                n <- length(self$items)
+                if(is.null(answer_feedbacks)) {
+                    self$answer_feedbacks <- as.list(rep("", n))
+                } else {
+                    if(length(answer_feedbacks) == n)
+                        self$answer_feedbacks <- answer_feedbacks
+                    else
+                        stop("Wrong number of answer feedbacks")
+                }
             }
 
             private$xml_placeholders$SHUFFLEANSWERS <-
@@ -144,18 +150,20 @@ MultipleChoice <- R6::R6Class(
                 "get_xml_single"
             private$xml_placeholders$ANSWERS <-
                 "get_xml_answers"
+
         },
 
         get_inst_cookie = function(opts, info) {
             evaluated_answers <- self$get_evaluated_answer2(opts, info)
             prefix <- ifelse(evaluated_answers, "=", "")
+
             cookie <- paste0(prefix, self$instantiated_items, collapse = "~")
 
             cookie_kw <- cookies_keyword[[self$format]]
             if(is.null(cookie_kw))
                 stop("Unknown format")
 
-            sprintf("{1:%s:%s}", cookie_kw, cookie)
+            sprintf("`{1:%s:%s}`", cookie_kw, cookie)
         },
 
         get_inst_text_and_number = function(opts, info) {
@@ -181,10 +189,11 @@ MultipleChoice <- R6::R6Class(
         get_answers = function(opts, info) {
             ## indent <- ifelse(is.null(opts$indent), "", "    ")
             indent <- ""
-            n <- length(self$items)
+            instantiated_items <- self$instantiated_items
+            n <- length(instantiated_items)
 
             answers <- lapply(seq_len(n), function(i) {
-                inst_item <- self$instantiated_items[[i]]
+                inst_item <- instantiated_items[[i]]
 
                 fn <- "checkbox_unchecked.png"
                 icon <- sprintf("![](%s){height=16px}", system.file("etc", fn, package="quizR"))
@@ -224,9 +233,9 @@ MultipleChoice <- R6::R6Class(
         },
 
         get_xml_answers = function(opts, info) {
-            n <- length(self$answer)
             # Evaluate answers as TRUE/FALSE
             evaluated_answers <- self$get_evaluated_answer2(opts, info)
+            n <- length(evaluated_answers)
 
             # Get corresponding fractions
             n.true <- max(sum(evaluated_answers), 1)
@@ -266,12 +275,18 @@ MultipleChoice <- R6::R6Class(
             if (is.null(info$env))
                 stop("Unable to evaluate answers ; no environment provided")
 
-            evaluated_answers <- sapply(self$instantiated_answer, function(answer) {
-                eval(answer, info$env)
-            })
-            stopifnot(is.logical(evaluated_answers))
-
-            evaluated_answers
+            if (is.language(self$answer)) {
+                inst_answer <- instantiate_data_list(self$answer, self$hidden_data_list)
+                evaluated_answers <- eval(inst_answer, info$env)
+                stopifnot(is.logical(evaluated_answers))
+                evaluated_answers
+            } else {
+                evaluated_answers <- sapply(self$instantiated_answer, function(answer) {
+                    eval(answer, info$env)
+                })
+                stopifnot(is.logical(evaluated_answers))
+                evaluated_answers
+            }
         },
 
         get_feedback_answer = function(opts, info) {
@@ -294,9 +309,13 @@ MultipleChoice <- R6::R6Class(
         rename_text = function(prefix, names = self$hidden_data_names()) {
             self$text <- prefix_object(prefix, names, private$.text)
 
-            self$items <- lapply(self$items, function(item) {
-                prefix_object(prefix, names, item)
-            })
+            if (is.language(self$items)) {
+                self$items <- prefix_object(prefix, names, self$items)
+            } else {
+                self$items <- lapply(self$items, function(item) {
+                    prefix_object(prefix, names, item)
+                })
+            }
 
             self$invalidate_text()
 
@@ -304,9 +323,13 @@ MultipleChoice <- R6::R6Class(
         },
 
         rename_answer = function(prefix, names0 = names(self$hidden_data_list)) {
-            self$answer <- lapply(self$answer, function(answer) {
-                prefix_object(prefix, names0, answer)
-            })
+            if (is.language(self$answer)) {
+                self$answer <- prefix_object(prefix, names0, self$answer)
+            } else {
+                self$answer <- lapply(self$answer, function(answer) {
+                    prefix_object(prefix, names0, answer)
+                })
+            }
         },
 
         copy = function() {
@@ -333,15 +356,24 @@ MultipleChoice <- R6::R6Class(
         },
 
         instantiated_answer_feedbacks = function() {
-            lapply(self$answer_feedbacks, function(f) {
-                instantiate_text_list(f, self$hidden_data_list)
-            })
+            if (is.null(self$answer_feedbacks)) {
+                as.list(rep("", length(self$instantiated_items)))
+            } else {
+                lapply(self$answer_feedbacks, function(f) {
+                    instantiate_text_list(f, self$hidden_data_list)
+                })
+            }
         },
 
         instantiated_items = function() {
-            lapply(self$items, function(statement) {
-                instantiate_text_list(statement, self$hidden_data_list)
-            })
+            if (is.language(self$items)) {
+                env <- list2env(self$hidden_data_list, envir = empty_env())
+                as.list(eval(self$items, envir = env))
+            } else {
+                lapply(self$items, function(statement) {
+                    instantiate_text_list(statement, self$hidden_data_list)
+                })
+            }
         }
     ),
 
