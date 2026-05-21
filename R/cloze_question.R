@@ -227,26 +227,25 @@ ClozeQuestion <- R6::R6Class(
             paste(c(inst_header, inst_texts), collapse = "\n\n")
         },
 
-        get_XML_question_text = function(opts, info) {
-            HTML_texts <- lapply(self$subquestions, function(question) {
-                trimws(render_HTML(question$get_inst_text(opts, info), opts, info))
-            })
+        # get_XML_question_text = function(opts, info) {
+        #     HTML_texts <- lapply(self$subquestions, function(question) {
+        #         trimws(render_HTML(question$get_inst_text(opts, info), opts, info))
+        #     })
 
-            opts
-            cookies <- lapply(self$subquestions, function(question) {
-                question$get_inst_cookie(opts, info)
-            })
+        #      cookies <- lapply(self$subquestions, function(question) {
+        #         question$get_inst_cookie(opts, info)
+        #     })
 
-            tmp <- mapply(
-                function(html, cookie) {
-                    sprintf("%s\n<p>%s</p>", html, cookie)
-                },
-                HTML_texts,
-                cookies
-            )
+        #     tmp <- mapply(
+        #         function(html, cookie) {
+        #             sprintf("%s\n<p>%s</p>", html, cookie)
+        #         },
+        #         HTML_texts,
+        #         cookies
+        #     )
 
-            paste(tmp, collapse = "\n")
-        },
+        #     paste(tmp, collapse = "\n")
+        # },
 
         get_inst_text_and_number = function(opts, info) {
             stopifnot(is.numeric(info$index))
@@ -410,6 +409,36 @@ ClozeQuestion <- R6::R6Class(
             for (question in self$subquestions)
                 question$rename_hidden_data(prefix, names)
             self$invalidate_hidden_data()
+        },
+
+        to_amc = function(opts = NULL, info = NULL) {
+            opts$export <- "amc"
+
+            if (is.null(info$env)) {
+                info0 <- self$get_data_and_environment()
+                info <- update_list(info, info0)
+            }
+
+            parts <- list()
+
+            # Render header text (context shared by all subquestions)
+            if (!is.null(self$header)) {
+                inst_header <- instantiate_text_list(self$header, self$hidden_data_list)
+                parts <- c(parts, list(render_latex_fragment(inst_header, opts, info)))
+            }
+
+            # Render each subquestion, scoping info$num to avoid ID collisions
+            cloze_num <- info$num
+            for (i in seq_along(self$subquestions)) {
+                subq_info <- info
+                subq_info$num <- if (!is.null(cloze_num)) paste0(cloze_num, "-", i) else i
+                subq_latex <- self$subquestions[[i]]$to_amc(opts, subq_info)
+                if (!is.null(subq_latex))
+                    parts <- c(parts, list(subq_latex))
+            }
+
+            if (length(parts) == 0) return(NULL)
+            paste(parts, collapse = "\n\n")
         },
 
         copy = function() {

@@ -126,6 +126,26 @@ title: \"%s\"
                               "pdf_document")
         },
 
+        generate_AMC = function(...) {
+            opts <- list(...)
+            if (is.null(opts$output)) opts$output <- paste0(self$title, ".tex")
+
+            data <- self$recursive_instantiated_data()
+            env <- empty_env()
+            eval(data, env)
+            info <- list(data = data, env = env)
+
+            tex <- self$to_amc(opts = opts, info = info)
+            write(tex, opts$output)
+        },
+
+        to_amc = function(opts, info) {
+            children_elements <- lapply(self$children, function(child) {
+                child$to_amc(opts, info)
+            })
+            paste(Filter(Negate(is.null), children_elements), collapse = "\n\n")
+        },
+
         generate_data_file = function(filename = paste0(self$title, "-data.R")) {
             data <- self$recursive_instantiated_data()
             if (!is_empty_language(data))

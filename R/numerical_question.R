@@ -8,6 +8,7 @@ NumericalQuestion <- R6::R6Class(
     public = list(
         tolerance = NULL,
         tolerance_type = NULL,
+        distractors = NULL,
 
         initialize = function(text,
                               data = quote({}),
@@ -18,6 +19,7 @@ NumericalQuestion <- R6::R6Class(
                               answer = NULL,
                               tolerance_type = "relative",
                               tolerance = 1e-3,
+                              distractors = NULL,
                               tags = NULL) {
             super$initialize(text,
                              data = data,
@@ -35,6 +37,9 @@ NumericalQuestion <- R6::R6Class(
 
             self$tolerance_type <- tolerance_type
             self$tolerance <- tolerance
+            self$distractors <- if (is.null(distractors)) NULL
+                               else if (is.language(distractors)) distractors
+                               else as.list(distractors)
         },
 
         get_inst_cookie = function(opts, info) {
@@ -60,6 +65,79 @@ NumericalQuestion <- R6::R6Class(
                 NULL
             else
                 sprintf("<tolerancetype>%s</tolerancetype>", self$tolerance_type)
+        },
+
+        rename_answer = function(prefix, names0 = names(self$hidden_data_list)) {
+            super$rename_answer(prefix, names0)
+            if (!is.null(self$distractors)) {
+                if (is.language(self$distractors)) {
+                    self$distractors <- prefix_object(prefix, names0, self$distractors)
+                } else {
+                    self$distractors <- lapply(self$distractors, function(d) {
+                        prefix_object(prefix, names0, d)
+                    })
+                }
+            }
+        },
+
+        to_amc = function(opts, info) {
+            if (is.null(self$distractors))
+                stop("AMC export requires 'distractors' for numerical question: ",
+                     sQuote(self$title))
+
+            opts$export <- "amc"
+
+            if (is.null(info$env)) {
+                info0 <- self$get_data_and_environment()
+                info <- update_list(info, info0)
+            }
+
+            qid <- {
+                title <- evaluate_inline_r(self$title, info$env)
+                id <- gsub("[^a-zA-Z0-9]", "-", title)
+                id <- gsub("-+", "-", id)
+                id <- gsub("^-|-$", "", id)
+                if (nchar(id) > 30) id <- substr(id, 1, 30)
+                if (!is.null(info$num)) id <- paste0("q", info$num, "-", id)
+                if (nchar(id) == 0) id <- "question"
+                id
+            }
+
+            qtext  <- render_latex_fragment(self$instantiated_text, opts, info)
+            answer <- eval(self$instantiated_answer, info$env)
+            distractor_values <- sapply(self$instantiated_distractors, function(d) {
+                eval(d, info$env)
+            })
+
+            if (any(distractor_values == answer))
+                stop("Distractor(s) equal to the correct answer (",
+                     format(answer), ") in question: ", sQuote(self$title))
+            if (anyDuplicated(distractor_values))
+                stop("Duplicate distractors in question: ", sQuote(self$title))
+
+            choices <- c(
+                sprintf("    \\correctchoice{$%s$}", format(answer)),
+                sprintf("    \\wrongchoice{$%s$}", format(distractor_values))
+            )
+            choices_str <- paste(choices, collapse = "\n")
+
+            sprintf(
+                "\\begin{question}{%s}\n  %s\n  \\begin{choices}\n%s\n  \\end{choices}\n\\end{question}",
+                qid, qtext, choices_str)
+        }
+    ),
+
+    active = list(
+        instantiated_distractors = function() {
+            if (is.null(self$distractors)) return(NULL)
+            if (is.language(self$distractors)) {
+                env <- list2env(self$hidden_data_list, envir = empty_env())
+                as.list(eval(self$distractors, envir = env))
+            } else {
+                lapply(self$distractors, function(d) {
+                    instantiate_data_list(d, self$hidden_data_list)
+                })
+            }
         }
     ),
 

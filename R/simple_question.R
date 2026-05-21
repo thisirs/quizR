@@ -411,6 +411,10 @@ SimpleQuestion <- R6::R6Class(
                 self$instantiated_text
         },
 
+        to_amc = function(opts = NULL, info = NULL) {
+            stop("AMC export not supported for question type: ", sQuote(self$type))
+        },
+
         get_inst_cookie = function(opts, info) {
             stop("Abstract method")
         },
@@ -546,7 +550,8 @@ SimpleQuestion <- R6::R6Class(
                      hidden_data = self$hidden_data,
                      data = self$data,
                      answer = self$answer,
-                     feedback = self$feedback)
+                     feedback = self$feedback,
+                     distractors = self$distractors)
         }
     ),
     active = list(

@@ -151,6 +151,7 @@ MultipleChoice <- R6::R6Class(
             private$xml_placeholders$ANSWERS <-
                 "get_xml_answers"
 
+            private$amc_placeholders <- list()
         },
 
         get_inst_cookie = function(opts, info) {
@@ -306,6 +307,45 @@ MultipleChoice <- R6::R6Class(
             paste(feedback, collapse = "\n\n")
         },
 
+        get_amc_id = function(opts, info) {
+            title <- evaluate_inline_r(self$title, info$env)  # cheap eval for ID only
+            id <- gsub("[^a-zA-Z0-9]", "-", title)
+            id <- gsub("-+", "-", id)
+            id <- gsub("^-|-$", "", id)
+            if (nchar(id) > 30) id <- substr(id, 1, 30)
+            if (!is.null(info$num)) id <- paste0("q", info$num, "-", id)
+            if (nchar(id) == 0) id <- "question"
+            id
+        },
+
+        to_amc = function(opts, info) {
+            opts$export <- "amc"
+
+            if (is.null(info$env)) {
+                info0 <- self$get_data_and_environment()
+                info <- update_list(info, info0)
+            }
+
+            qtype <- if (self$single) "question" else "questionmult"
+            qid   <- self$get_amc_id(opts, info)
+            qtext <- render_latex_fragment(self$instantiated_text, opts, info)
+
+            evaluated_answers <- self$get_evaluated_answer2(opts, info)
+            inst_items <- lapply(self$instantiated_items, function(item) {
+                render_latex_fragment(item, opts, info)
+            })
+
+            choices <- lapply(seq_along(inst_items), function(i) {
+                cmd <- if (evaluated_answers[[i]]) "\\correctchoice" else "\\wrongchoice"
+                sprintf("    %s{%s}", cmd, inst_items[[i]])
+            })
+            choices_str <- paste(choices, collapse = "\n")
+
+            sprintf(
+                "\\begin{%s}{%s}\n  %s\n  \\begin{choices}\n%s\n  \\end{choices}\n\\end{%s}",
+                qtype, qid, qtext, choices_str, qtype)
+        },
+
         rename_text = function(prefix, names = self$hidden_data_names()) {
             self$text <- prefix_object(prefix, names, private$.text)
 
@@ -378,6 +418,8 @@ MultipleChoice <- R6::R6Class(
     ),
 
     private = list(
+        amc_placeholders = NULL,
+
         xml_answer_template = trimws("
 <answer fraction=\"%s\">
   <text><![CDATA[%s]]></text>

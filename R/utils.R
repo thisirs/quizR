@@ -117,7 +117,7 @@ instantiate_chunk_list <- function(text, var_list) {
             expr <- parse(text = chunk)
             chunks <- lapply(as.list(expr), function(lang) {
                 lang_rep <- instantiate_data_list(lang, var_list)
-                paste(deparse(lang_rep, control = c("keepInteger")), collapse = "\n")
+                paste(deparse(lang_rep), collapse = "\n")
             })
             new_chunk <- paste(chunks, collapse = "\n")
             stringi::stri_sub(text, begin[i, 2] + 2, end[i, 1] - 2) <- new_chunk
@@ -158,6 +158,30 @@ render_HTML <- function(text, opts, info) {
 
     result <- to_string(output)
     return(result)
+}
+
+render_latex_fragment <- function(text, opts, info) {
+    if (is.null(info$env))
+        env <- parent.frame()
+    else
+        env <- info$env
+
+    rmd_file <- tempfile("question", tmpdir = ".", fileext = ".Rmd")
+    on.exit(unlink(rmd_file), add = TRUE)
+    write(text, rmd_file)
+
+    # Knit evaluates inline R and code chunks, producing plain markdown
+    md_file <- tempfile("question", tmpdir = ".", fileext = ".md")
+    on.exit(unlink(md_file), add = TRUE)
+    knitr::knit(rmd_file, output = md_file, quiet = TRUE, envir = env)
+
+    # Pandoc converts markdown to LaTeX; without --standalone it emits a fragment
+    tex_file <- tempfile("question", tmpdir = ".", fileext = ".tex")
+    on.exit(unlink(tex_file), add = TRUE)
+    rmarkdown::pandoc_convert(md_file, to = "latex", output = tex_file,
+                               options = "--wrap=none")
+
+    trimws(paste(readLines(tex_file), collapse = "\n"))
 }
 
 ## Taken from RCurl
@@ -536,6 +560,95 @@ clozify_independant_questions <- function(questions, seed, N, k, nver) {
     questions_list
 }
 
+#' @export
+expand_with_gaussian <- function(
+                                    answers,
+                                    target_n,
+                                    constraint = function(x) TRUE,
+                                    min_sep = NULL,
+                                    integer_mode = NULL,
+                                    max_iter = 10000,
+                                    use_spline = FALSE
+                                    ) {
+    # Keep original answers untouched
+    answers <- unique(answers)
+
+    # Work on sorted copy for the mapping
+    a_sorted <- sort(unique(answers))
+    n <- length(a_sorted)
+
+    if (n >= target_n) {
+        return(sort(a_sorted)[1:target_n])
+    }
+
+    # Detect integer mode
+    if (is.null(integer_mode)) {
+        integer_mode <- all(abs(a_sorted - round(a_sorted)) < .Machine$double.eps^0.5)
+    }
+
+    # Gaussian quantiles
+    probs <- (seq_len(n) - 0.5) / n
+    z_vals <- stats::qnorm(probs)
+
+    # Interpolation function
+    if (use_spline && n >= 3) {
+        f <- stats::splinefun(z_vals, a_sorted, method = "natural")
+    } else {
+        f <- stats::approxfun(z_vals, a_sorted, rule = 2)
+    }
+
+    result <- answers
+    iter <- 0
+
+    while (length(result) < target_n && iter < max_iter) {
+        iter <- iter + 1
+
+        z <- stats::rnorm(1)
+        candidate <- f(z)
+
+        if (integer_mode) {
+            candidate <- round(candidate)
+        }
+
+        # Constraint check
+        if (!constraint(candidate)) next
+
+        # Distance / uniqueness
+        if (!is.null(min_sep)) {
+            if (any(abs(candidate - result) < min_sep)) next
+        } else {
+            if (any(abs(candidate - result) < .Machine$double.eps^0.5)) next
+        }
+
+        result <- c(result, candidate)
+    }
+
+    if (length(result) < target_n) {
+        warning("Could not generate enough answers")
+    }
+
+    return(result)
+}
+
+evaluate_inline_r <- function(text, env) {
+    if (is.null(env) || is.null(text)) return(text)
+
+    loc <- stringi::stri_locate_all_regex(
+        text, "`r[ #]([^`]+)\\s*`", omit_no_match = TRUE)[[1]]
+
+    if (nrow(loc) == 0) return(text)
+
+    for (i in rev(seq_len(nrow(loc)))) {
+        chunk <- stringi::stri_sub(text, loc[i, 1] + 2, loc[i, 2] - 1)
+        result <- tryCatch(
+            paste(eval(parse(text = chunk), envir = env), collapse = " "),
+            error = function(e) paste0("`r", chunk, "`")
+        )
+        stringi::stri_sub(text, loc[i, 1], loc[i, 2]) <- result
+    }
+    return(text)
+}
+
 distinct_language <- function (lang1, lang2) {
     env1 <- cleanenv()
     env2 <- cleanenv()
@@ -770,8 +883,9 @@ sample_questions <- function(questions,
         if (clozify) {
             if (length(questions) == 1)
                 questions[[1]]
-            else
+            else {
                 Question(type = "cloze", questions = questions)
+            }
         } else
             questions
     })

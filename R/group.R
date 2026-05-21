@@ -141,6 +141,25 @@ Group <- R6::R6Class(
                 stop("Unhandled group type")
         },
 
+        to_amc = function(opts, info) {
+            title <- self$title
+
+            elements <- lapply(seq_along(self$children), function(i) {
+                info$num <- i
+                child <- self$children[[i]]
+                if (inherits(child, "Group")) {
+                    child$to_amc(opts, info)
+                } else {
+                    child_content <- child$to_amc(opts, info)
+                    if (is.null(child_content)) return(NULL)
+                    sprintf("\\element{%s}{\n%s\n}", title, child_content)
+                }
+            })
+            elements[sapply(elements, is.null)] <- NULL
+            if (length(elements) == 0) return(NULL)
+            paste(elements, collapse = "\n\n")
+        },
+
         to_markdown = function(opts = list(), info = list()) {
             template <- "@TITLE@\n\n"
             markdown_group <- self$instantiate_placeholders(template, private$placeholders, opts, info)
