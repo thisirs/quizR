@@ -32,9 +32,6 @@ NumericalQuestion <- R6::R6Class(
 
             self$type <- "numerical"
 
-            private$xml_placeholders$TOLERANCE = "get_xml_tolerance"
-            private$xml_placeholders$TOLERANCE_TYPE = "get_xml_tolerance_type"
-
             self$tolerance_type <- tolerance_type
             self$tolerance <- tolerance
             self$distractors <- if (is.null(distractors)) NULL
@@ -51,20 +48,6 @@ NumericalQuestion <- R6::R6Class(
             else
                 tolerance <- self$tolerance
             sprintf("{%s:NM:=%s:%s}", 1, answer, tolerance)
-        },
-
-        get_xml_tolerance = function(opts, info) {
-            if (is.null(self$tolerance))
-                NULL
-            else
-                sprintf("<tolerance>%f</tolerance>", self$tolerance)
-        },
-
-        get_xml_tolerance_type = function(opts, info) {
-            if (is.null(self$tolerance_type))
-                NULL
-            else
-                sprintf("<tolerancetype>%s</tolerancetype>", self$tolerance_type)
         },
 
         build_xml_context = function(opts, info) {
@@ -161,23 +144,6 @@ NumericalQuestion <- R6::R6Class(
     ),
 
     private = list(
-        xml_question_template = trimws("
-<question type=\"@TYPE@\">
-  <name>
-    <text><![CDATA[@TITLE@]]></text>
-  </name>
-  <questiontext format=\"html\">
-    <text><![CDATA[@XML_QUESTION_TEXT@]]></text>
-  </questiontext>
-  <answer fraction=\"100\" format=\"plain_text\">
-    <text>@XML_ANSWER@</text>
-    @TOLERANCE@
-    @TOLERANCE_TYPE@
-  </answer>
-@XML_GENERALFEEDBACK@
-  <hidden>0</hidden>
-</question>
-"),
         whisker_xml_template = trimws('
 <question type="{{type}}">
   <name>

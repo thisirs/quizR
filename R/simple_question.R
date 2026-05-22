@@ -41,23 +41,19 @@ SimpleQuestion <- R6::R6Class(
                 FEEDBACK_ANSWER = "get_feedback_answer",
                 ANSWER_STRING = "get_answer_string")
 
-            # Specific placeholders for XML export
-            private$xml_placeholders <- list(
-                TYPE = "get_type",
-                TITLE = "get_title",
-                XML_QUESTION_TEXT = "get_XML_question_text",
-                XML_GENERALFEEDBACK = "get_XML_generalfeedback",
-                XML_ANSWER = "get_XML_answer"
-            )
-
             private$overrides <- list()
             private$preprocs <- list()
             private$kind_to_placeholder <- list(
-                "text.xml"      = "XML_QUESTION_TEXT",
-                "text.markdown" = "INST_TEXT",
-                "feedback.xml"  = "XML_GENERALFEEDBACK",
+                "text.xml"          = "XML_QUESTION_TEXT",
+                "text.markdown"     = "INST_TEXT",
+                "feedback.xml"      = "XML_GENERALFEEDBACK",
                 "feedback.markdown" = "FEEDBACK",
-                "answer.xml"    = "XML_ANSWER"
+                "answer.xml"        = "XML_ANSWER"
+            )
+            private$xml_ctx_field_map <- list(
+                XML_QUESTION_TEXT   = "question_text",
+                XML_GENERALFEEDBACK = "feedback",
+                XML_ANSWER          = "answer"
             )
         },
 
@@ -247,46 +243,18 @@ SimpleQuestion <- R6::R6Class(
         get_XML_generalfeedback = function(opts, info) {
             if(!opts$feedback) return(NULL)
 
-            # Generate HTML for feedback
-            placeholders <- update_list(private$placeholders, private$xml_placeholders)
             tmpl <- self$get_feedback(opts, info)
-            md_feedback <- self$instantiate_placeholders(tmpl, placeholders, opts, info)
+            md_feedback <- self$instantiate_placeholders(tmpl, private$placeholders, opts, info)
 
             HTML_feedback <- render_HTML(md_feedback, opts, info)
-            HTML_feedback0 <- trimws(HTML_feedback) # pandoc seems to add some leading newlines
+            HTML_feedback0 <- trimws(HTML_feedback)
 
-            # Return XML with inner HTML
-            tmpl <-"<generalfeedback format=\"html\">
-  <text><![CDATA[%s]]></text>
-</generalfeedback>"
-            tmpl0 <- add_spaces_left(tmpl, opts$indent)
-            sprintf(tmpl0, HTML_feedback0)
+            sprintf("<generalfeedback format=\"html\">\n  <text><![CDATA[%s]]></text>\n</generalfeedback>",
+                    HTML_feedback0)
         },
 
         get_XML_answer = function(opts, info) {
             as.character(self$get_evaluated_answer2(opts, info))
-        },
-
-        #' Export Question as XML
-        to_XML = function(opts = NULL, info = NULL) {
-            # Set up environment for evaluating data if not already
-            if (is.null(info$env)) {
-                info0 <- self$get_data_and_environment()
-                info <- update_list(info, info0)
-            }
-
-            # Setting options
-            default_opts <- update_list(private$default_options, private$xml_default_options)
-            opts <- update_list(default_opts, opts)
-            opts$export <- "xml"
-
-            private$validate_options(opts, info)
-
-            template <- add_spaces_left(private$xml_question_template, opts$indent)
-            placeholders <- update_list(private$placeholders, private$xml_placeholders)
-            # Answers might modify datasets stored in info$env
-
-            self$instantiate_placeholders(template, placeholders, opts, info)
         },
 
         build_xml_context = function(opts, info) {
@@ -303,7 +271,8 @@ SimpleQuestion <- R6::R6Class(
             )
         },
 
-        to_XML_whisker = function(opts = NULL, info = NULL) {
+        #' Export Question as XML
+        to_XML = function(opts = NULL, info = NULL) {
             if (is.null(info$env)) {
                 info0 <- self$get_data_and_environment()
                 info <- update_list(info, info0)
@@ -315,8 +284,27 @@ SimpleQuestion <- R6::R6Class(
 
             private$validate_options(opts, info)
 
-            ctx <- self$build_xml_context(opts, info)
-            whisker::whisker.render(private$whisker_xml_template, ctx)
+            # Build context with indent=0; add_spaces_left below is the single indentation step
+            ctx_opts <- update_list(opts, list(indent = 0))
+            ctx <- self$build_xml_context(ctx_opts, info)
+
+            # Apply per-question overrides/preprocs on context values
+            for (ph in names(private$xml_ctx_field_map)) {
+                cf <- private$xml_ctx_field_map[[ph]]
+                if (!is.null(cf)) {
+                    if (!is.null(private$overrides[[ph]]))
+                        ctx[[cf]] <- private$overrides[[ph]](ctx[[cf]])
+                    else if (!is.null(private$preprocs[[ph]]))
+                        ctx[[cf]] <- private$preprocs[[ph]](ctx[[cf]])
+                }
+            }
+
+            output <- whisker::whisker.render(private$whisker_xml_template, ctx)
+
+            if (!is.null(opts$indent) && opts$indent > 0)
+                output <- add_spaces_left(output, opts$indent)
+
+            output
         },
 
         invalidate_all = function() {
@@ -872,6 +860,7 @@ SimpleQuestion <- R6::R6Class(
         overrides = NULL,
         preprocs = NULL,
         kind_to_placeholder = NULL,
+        xml_ctx_field_map = NULL,
 
         validate_options = function(opts, info) {
             if (!is.null(opts$numbered) && opts$numbered && is.null(info$num))
@@ -882,21 +871,6 @@ SimpleQuestion <- R6::R6Class(
             ## super$validate_feedback_options(opts, info)
         },
 
-        xml_question_template = trimws("
-<question type=\"@TYPE@\">
-  <name>
-    <text><![CDATA[@TITLE@]]></text>
-  </name>
-  <questiontext format=\"html\">
-    <text><![CDATA[@XML_QUESTION_TEXT@]]></text>
-  </questiontext>
-  <answer fraction=\"100\" format=\"plain_text\">
-    <text>@XML_ANSWER@</text>
-  </answer>
-@XML_GENERALFEEDBACK@
-  <hidden>0</hidden>
-</question>
-"),
         whisker_xml_template = trimws('
 <question type="{{type}}">
   <name>
@@ -913,5 +887,5 @@ SimpleQuestion <- R6::R6Class(
 {{/feedback}}
   <hidden>0</hidden>
 </question>
-'),
-xml_placeholders = NULL))
+')))
+

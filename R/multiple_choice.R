@@ -144,12 +144,8 @@ MultipleChoice <- R6::R6Class(
                 }
             }
 
-            private$xml_placeholders$SHUFFLEANSWERS <-
-                "get_xml_shuffle_answers"
-            private$xml_placeholders$SINGLE <-
-                "get_xml_single"
-            private$xml_placeholders$ANSWERS <-
-                "get_xml_answers"
+            private$kind_to_placeholder[["answers.xml"]] <- "XML_ANSWERS"
+            private$xml_ctx_field_map[["XML_ANSWERS"]] <- "answers"
 
             private$amc_placeholders <- list()
         },
@@ -218,50 +214,40 @@ MultipleChoice <- R6::R6Class(
             } else stop("Unknown export type: ", sQuote(opts$export))
         },
 
-        get_xml_single = function(opts, info) {
-            flag <- ifelse(self$single, "true", "false")
-            sprintf("<single>%s</single>", flag)
-        },
+        build_xml_context = function(opts, info) {
+            if (is.null(info$env)) {
+                info0 <- self$get_data_and_environment()
+                info <- update_list(info, info0)
+            }
 
-        get_xml_shuffle_answers = function(opts, info) {
-            flag <- as.numeric(self$shuffle_answers)
-            sprintf("<shuffleanswers>%d</shuffleanswers>", flag)
-        },
-
-        get_xml_item = function(md_text, opts, info) {
-            HTML_question <- render_HTML(md_text, opts, info)
-            trimws(HTML_question) # pandoc seems to add some leading newlines
-        },
-
-        get_xml_answers = function(opts, info) {
-            # Evaluate answers as TRUE/FALSE
             evaluated_answers <- self$get_evaluated_answer2(opts, info)
             n <- length(evaluated_answers)
-
-            # Get corresponding fractions
-            n.true <- max(sum(evaluated_answers), 1)
+            n.true  <- max(sum(evaluated_answers), 1)
             n.false <- max(sum(!evaluated_answers), 1)
-            d <- ifelse(evaluated_answers, n.true, n.false)
-            evaluated_answers2 <- ifelse(evaluated_answers, 1, -1)
-            fractions <-  100 * evaluated_answers2 / d
-            fractions <- sprintf("%.4f", fractions)
+            fractions <- sprintf("%.4f",
+                100 * ifelse(evaluated_answers, 1, -1) /
+                ifelse(evaluated_answers, n.true, n.false))
 
-            # Instantiate items
             instantiated_items <- self$instantiated_items
+            feedbacks <- self$instantiated_answer_feedbacks
 
-            answers <- lapply(1:n, function(i) {
-                evaluated_answer <- evaluated_answers[[i]]
-                fraction <- fractions[i]
-
-                inst_stat <- self$get_xml_item(instantiated_items[[i]], opts, info)
-                inst_feed <- self$instantiated_answer_feedbacks[[i]]
-
-                tmpl <- add_spaces_left(private$xml_answer_template, opts$indent + 2)
-
-                sprintf(tmpl, fraction, inst_stat, inst_feed)
+            answers_ctx <- lapply(seq_len(n), function(i) {
+                list(
+                    fraction        = fractions[[i]],
+                    text            = trimws(render_HTML(instantiated_items[[i]], opts, info)),
+                    answer_feedback = feedbacks[[i]]
+                )
             })
 
-            paste(answers, collapse = "\n")
+            list(
+                type          = self$type,
+                title         = self$title,
+                question_text = self$get_XML_question_text(opts, info),
+                feedback      = self$get_XML_generalfeedback(opts, info),
+                answers       = answers_ctx,
+                single        = if (self$single) "true" else "false",
+                shuffle       = as.character(as.integer(self$shuffle_answers))
+            )
         },
 
         get_answer_info = function(opts, info) {
@@ -420,25 +406,27 @@ MultipleChoice <- R6::R6Class(
     private = list(
         amc_placeholders = NULL,
 
-        xml_answer_template = trimws("
-<answer fraction=\"%s\">
-  <text><![CDATA[%s]]></text>
-      <feedback format=\"html\">
-        <text><![CDATA[%s]]></text>
-      </feedback>
-</answer>"),
-        xml_question_template = trimws("
-<question type=\"@TYPE@\">
+        whisker_xml_template = trimws('
+<question type="{{type}}">
   <name>
-    <text><![CDATA[@TITLE@]]></text>
+    <text><![CDATA[{{{title}}}]]></text>
   </name>
-  <questiontext format=\"html\">
-    <text><![CDATA[@XML_QUESTION_TEXT@]]></text>
+  <questiontext format="html">
+    <text><![CDATA[{{{question_text}}}]]></text>
   </questiontext>
-@ANSWERS@
-  @SHUFFLEANSWERS@
-  @SINGLE@
-@XML_GENERALFEEDBACK@
+{{#answers}}
+  <answer fraction="{{{fraction}}}">
+    <text><![CDATA[{{{text}}}]]></text>
+    <feedback format="html">
+      <text><![CDATA[{{{answer_feedback}}}]]></text>
+    </feedback>
+  </answer>
+{{/answers}}
+  <shuffleanswers>{{{shuffle}}}</shuffleanswers>
+  <single>{{{single}}}</single>
+{{#feedback}}
+{{{feedback}}}
+{{/feedback}}
   <hidden>0</hidden>
 </question>
-")))
+')))
