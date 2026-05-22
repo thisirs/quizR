@@ -293,25 +293,7 @@ MultipleChoice <- R6::R6Class(
             paste(feedback, collapse = "\n\n")
         },
 
-        get_amc_id = function(opts, info) {
-            title <- evaluate_inline_r(self$title, info$env)  # cheap eval for ID only
-            id <- gsub("[^a-zA-Z0-9]", "-", title)
-            id <- gsub("-+", "-", id)
-            id <- gsub("^-|-$", "", id)
-            if (nchar(id) > 30) id <- substr(id, 1, 30)
-            if (!is.null(info$num)) id <- paste0("q", info$num, "-", id)
-            if (nchar(id) == 0) id <- "question"
-            id
-        },
-
-        to_amc = function(opts, info) {
-            opts$export <- "amc"
-
-            if (is.null(info$env)) {
-                info0 <- self$get_data_and_environment()
-                info <- update_list(info, info0)
-            }
-
+        build_amc_context = function(opts, info) {
             qtype <- if (self$single) "question" else "questionmult"
             qid   <- self$get_amc_id(opts, info)
             qtext <- render_latex_fragment(self$instantiated_text, opts, info)
@@ -321,15 +303,18 @@ MultipleChoice <- R6::R6Class(
                 render_latex_fragment(item, opts, info)
             })
 
-            choices <- lapply(seq_along(inst_items), function(i) {
+            choices_ctx <- lapply(seq_along(inst_items), function(i) {
                 cmd <- if (evaluated_answers[[i]]) "\\correctchoice" else "\\wrongchoice"
-                sprintf("    %s{%s}", cmd, inst_items[[i]])
+                list(choice = sprintf("    %s{%s}", cmd, inst_items[[i]]))
             })
-            choices_str <- paste(choices, collapse = "\n")
 
-            sprintf(
-                "\\begin{%s}{%s}\n  %s\n  \\begin{choices}\n%s\n  \\end{choices}\n\\end{%s}",
-                qtype, qid, qtext, choices_str, qtype)
+            list(
+                begin_tag = sprintf("\\begin{%s}", qtype),
+                end_tag   = sprintf("\\end{%s}", qtype),
+                id        = sprintf("{%s}", qid),
+                text      = qtext,
+                choices   = choices_ctx
+            )
         },
 
         rename_text = function(prefix, names = self$hidden_data_names()) {
@@ -405,6 +390,17 @@ MultipleChoice <- R6::R6Class(
 
     private = list(
         amc_placeholders = NULL,
+
+        whisker_amc_template = trimws('
+{{{begin_tag}}}{{{id}}}
+  {{{text}}}
+  \\begin{choices}
+{{#choices}}
+{{{choice}}}
+{{/choices}}
+  \\end{choices}
+{{{end_tag}}}
+'),
 
         whisker_xml_template = trimws('
 <question type="{{type}}">

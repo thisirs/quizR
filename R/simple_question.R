@@ -466,8 +466,36 @@ SimpleQuestion <- R6::R6Class(
                 self$instantiated_text
         },
 
-        to_amc = function(opts = NULL, info = NULL) {
+        get_amc_id = function(opts, info) {
+            title <- evaluate_inline_r(self$title, info$env)
+            id <- gsub("[^a-zA-Z0-9]", "-", title)
+            id <- gsub("-+", "-", id)
+            id <- gsub("^-|-$", "", id)
+            if (nchar(id) > 30) id <- substr(id, 1, 30)
+            if (!is.null(info$num)) id <- paste0("q", info$num, "-", id)
+            if (nchar(id) == 0) id <- "question"
+            id
+        },
+
+        build_amc_context = function(opts, info) {
             stop("AMC export not supported for question type: ", sQuote(self$type))
+        },
+
+        to_amc = function(opts = NULL, info = NULL) {
+            if (is.null(private$whisker_amc_template))
+                stop("AMC export not supported for question type: ", sQuote(self$type))
+
+            if (is.null(opts)) opts <- list()
+            opts$export <- "amc"
+
+            if (is.null(info)) info <- list()
+            if (is.null(info$env)) {
+                info0 <- self$get_data_and_environment()
+                info <- update_list(info, info0)
+            }
+
+            ctx <- self$build_amc_context(opts, info)
+            whisker::whisker.render(private$whisker_amc_template, ctx)
         },
 
         get_inst_cookie = function(opts, info) {
@@ -861,6 +889,7 @@ SimpleQuestion <- R6::R6Class(
         preprocs = NULL,
         kind_to_placeholder = NULL,
         xml_ctx_field_map = NULL,
+        whisker_amc_template = NULL,
 
         validate_options = function(opts, info) {
             if (!is.null(opts$numbered) && opts$numbered && is.null(info$num))

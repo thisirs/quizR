@@ -82,30 +82,14 @@ NumericalQuestion <- R6::R6Class(
             }
         },
 
-        to_amc = function(opts, info) {
+        build_amc_context = function(opts, info) {
             if (is.null(self$distractors))
                 stop("AMC export requires 'distractors' for numerical question: ",
                      sQuote(self$title))
 
-            opts$export <- "amc"
+            qid   <- self$get_amc_id(opts, info)
+            qtext <- render_latex_fragment(self$instantiated_text, opts, info)
 
-            if (is.null(info$env)) {
-                info0 <- self$get_data_and_environment()
-                info <- update_list(info, info0)
-            }
-
-            qid <- {
-                title <- evaluate_inline_r(self$title, info$env)
-                id <- gsub("[^a-zA-Z0-9]", "-", title)
-                id <- gsub("-+", "-", id)
-                id <- gsub("^-|-$", "", id)
-                if (nchar(id) > 30) id <- substr(id, 1, 30)
-                if (!is.null(info$num)) id <- paste0("q", info$num, "-", id)
-                if (nchar(id) == 0) id <- "question"
-                id
-            }
-
-            qtext  <- render_latex_fragment(self$instantiated_text, opts, info)
             answer <- eval(self$instantiated_answer, info$env)
             distractor_values <- sapply(self$instantiated_distractors, function(d) {
                 eval(d, info$env)
@@ -117,15 +101,14 @@ NumericalQuestion <- R6::R6Class(
             if (anyDuplicated(distractor_values))
                 stop("Duplicate distractors in question: ", sQuote(self$title))
 
-            choices <- c(
-                sprintf("    \\correctchoice{$%s$}", format(answer)),
-                sprintf("    \\wrongchoice{$%s$}", format(distractor_values))
+            choices_ctx <- c(
+                list(list(choice = sprintf("    \\correctchoice{$%s$}", format(answer)))),
+                lapply(format(distractor_values), function(d) {
+                    list(choice = sprintf("    \\wrongchoice{$%s$}", d))
+                })
             )
-            choices_str <- paste(choices, collapse = "\n")
 
-            sprintf(
-                "\\begin{question}{%s}\n  %s\n  \\begin{choices}\n%s\n  \\end{choices}\n\\end{question}",
-                qid, qtext, choices_str)
+            list(id = sprintf("{%s}", qid), text = qtext, choices = choices_ctx)
         }
     ),
 
@@ -144,6 +127,17 @@ NumericalQuestion <- R6::R6Class(
     ),
 
     private = list(
+        whisker_amc_template = trimws('
+\\begin{question}{{{id}}}
+  {{{text}}}
+  \\begin{choices}
+{{#choices}}
+{{{choice}}}
+{{/choices}}
+  \\end{choices}
+\\end{question}
+'),
+
         whisker_xml_template = trimws('
 <question type="{{type}}">
   <name>
