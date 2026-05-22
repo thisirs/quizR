@@ -28,7 +28,7 @@ Start by loading the library:
 library(quizR)
 ```
 
-A quiz contains groups, and each group contains questions. Create a quiz with:
+A quiz contains groups, and each group contains groups or questions. Create a quiz with:
 ```r
 quiz <- Quiz$new("My quiz")
 ```
@@ -89,6 +89,16 @@ quiz$generate_correction()
 
 Beyond numerical questions, quizR supports several other Moodle question types.
 
+### Short-answer questions
+
+Short-answer questions expect a text response:
+
+```r
+q1 <- Question("What is the capital of France?",
+               type = "SA",
+               answer = "Paris")
+```
+
 ### Multiple-choice questions
 
 ```r
@@ -116,10 +126,55 @@ q1 <- Question("The number 7 is",
                  list(TRUE,  "an odd number")))
 ```
 
+The type string controls the display layout. Common variants include:
+
+| Type    | Description                          |
+|---------|--------------------------------------|
+| `"MC"`  | Multiple choice, vertical, one answer |
+| `"MCH"` | Multiple choice, horizontal layout   |
+| `"MR"`  | Multiple response (several correct)  |
+| `"MRH"` | Multiple response, horizontal        |
+| `"MCS"` | Single correct, shuffled             |
+
 ### Cloze questions
 
 Cloze questions embed several answer fields directly inside the question text.
 They can be thought of as a sequence of simple sub-questions joined into one.
+
+**Building from a text with embedded cookies**
+
+A "cookie" is Moodle's inline answer syntax: `{weight:TYPE:=answer}` placed
+directly inside the question text. Supported types are `NM` (numerical), `SA`
+(short answer), `MC` (multiple choice), etc. For example:
+
+```r
+q1 <- ClozeQuestion$new(
+    "The mean of 1, 2 and 3 is {1:NM:=2} and their sum is {1:NM:=6}."
+)
+```
+
+Cookies with no answer yet (`{1:NM:=}`) are also valid when the answer is
+provided through the `answer` argument:
+
+```r
+q1 <- ClozeQuestion$new(
+    "The mean of 1, 2 and 3 is {1:NM:=} and their sum is {1:NM:=}.",
+    answer = list(2, 6)
+)
+```
+
+**Building from a list of sub-questions**
+
+Alternatively, pass a list of existing question objects. Each question's text
+becomes a label and its answer is appended automatically:
+
+```r
+sq1 <- Question("What is 1+1?",          answer = 2)
+sq2 <- Question("What is 2*3?",          answer = 6)
+sq3 <- Question("Name a prime < 10.",    type = "SA", answer = "2")
+
+q1 <- ClozeQuestion$new(questions = list(sq1, sq2, sq3))
+```
 
 
 ## Parametric quizzes
@@ -288,10 +343,11 @@ output question takes one variant from each pool.
 
 When a question with student data is duplicated, variable names must be made
 unique to avoid collisions in the data file. Use the special variables `ds_name`
-and `ds_sym` inside data blocks — they are automatically renamed on each copy:
+and `ds_sym` inside data blocks — `ds_name` is a string identifier and `ds_sym`
+is the corresponding R symbol, so both can be referenced in text and code:
 
 ```r
-q1 <- Question("What is the mean of dataset `r ds_sym`?",
+q1 <- Question("What is the mean of dataset `r ds_name`?",
                data = quote({
                    ds_sym <- sample(1:1000, 1)
                }),
@@ -306,3 +362,36 @@ DATA_1 <- sample(1:1000, 1)
 DATA_2 <- sample(1:1000, 1)
 DATA_3 <- sample(1:1000, 1)
 ```
+
+`ds_name` and `ds_sym` are not defined by the user — they are injected
+automatically by the duplication functions before the `data` block is evaluated:
+
+- `sample_questions()` — draws variants from one or several question templates
+- `versionize_questions()` — creates a fixed number of versions per question
+- `versionize_group()` — versions all questions inside a group together
+- `clozify_independant_questions()` — combines independent questions into cloze questions
+
+You only need `ds_name`/`ds_sym` when a question uses student-visible data
+**and** will be duplicated by one of these functions.
+
+
+## AMC export
+
+In addition to Moodle XML, quizR can export to
+[Auto Multiple Choice](https://www.auto-multiple-choice.net/) (AMC) format,
+which produces a LaTeX source suitable for printed multiple-choice exams with
+automatic scanning and grading.
+
+```r
+quiz$generate_AMC()
+```
+
+This writes a `.tex` file (named after the quiz title by default). You can
+override the output path:
+
+```r
+quiz$generate_AMC(output = "my_exam.tex")
+```
+
+AMC export is supported for multiple-choice question types (`MC`, `MCH`, `MR`,
+etc.). Numerical and short-answer questions are not supported by the AMC format.
