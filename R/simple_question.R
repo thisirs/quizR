@@ -49,6 +49,16 @@ SimpleQuestion <- R6::R6Class(
                 XML_GENERALFEEDBACK = "get_XML_generalfeedback",
                 XML_ANSWER = "get_XML_answer"
             )
+
+            private$overrides <- list()
+            private$preprocs <- list()
+            private$kind_to_placeholder <- list(
+                "text.xml"      = "XML_QUESTION_TEXT",
+                "text.markdown" = "INST_TEXT",
+                "feedback.xml"  = "XML_GENERALFEEDBACK",
+                "feedback.markdown" = "FEEDBACK",
+                "answer.xml"    = "XML_ANSWER"
+            )
         },
 
         instantiate_placeholders = function(template, placeholders, opts, info) {
@@ -69,6 +79,13 @@ SimpleQuestion <- R6::R6Class(
                     stop("Unable to find corresponding function for ", sQuote(id))
                 replacement <- self[[funcname]](opts, info)
 
+                # Apply per-question override or preproc if defined
+                if (!is.null(private$overrides[[id]])) {
+                    replacement <- private$overrides[[id]](replacement)
+                } else if (!is.null(private$preprocs[[id]])) {
+                    replacement <- private$preprocs[[id]](replacement)
+                }
+
                 # If replacement is NULL, try to replace whole line
                 if (is.null(replacement)) {
                     template <- stringi::stri_replace_first_regex(template, paste0("^ *@", id, "@ *\n"), "", opts_regex = list(multiline = TRUE))
@@ -84,6 +101,26 @@ SimpleQuestion <- R6::R6Class(
                 NULL
             else
                 template
+        },
+
+        add_override = function(kind, export_type, fn) {
+            key <- paste(kind, export_type, sep = ".")
+            placeholder <- private$kind_to_placeholder[[key]]
+            if (is.null(placeholder))
+                stop("Unknown kind/export_type combination: ", sQuote(key),
+                     ". Valid kinds: text, feedback, answer. Valid export types: xml, markdown.")
+            private$overrides[[placeholder]] <- fn
+            invisible(self)
+        },
+
+        add_preproc = function(kind, export_type, fn) {
+            key <- paste(kind, export_type, sep = ".")
+            placeholder <- private$kind_to_placeholder[[key]]
+            if (is.null(placeholder))
+                stop("Unknown kind/export_type combination: ", sQuote(key),
+                     ". Valid kinds: text, feedback, answer. Valid export types: xml, markdown.")
+            private$preprocs[[placeholder]] <- fn
+            invisible(self)
         },
 
         update_quiz = function(quiz) {
@@ -803,6 +840,9 @@ SimpleQuestion <- R6::R6Class(
         feedback_options = NULL,
         placeholders = NULL,
         placeholders_regex = NULL,
+        overrides = NULL,
+        preprocs = NULL,
+        kind_to_placeholder = NULL,
 
         validate_options = function(opts, info) {
             if (!is.null(opts$numbered) && opts$numbered && is.null(info$num))
