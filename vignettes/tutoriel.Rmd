@@ -394,4 +394,79 @@ quiz$generate_AMC(output = "my_exam.tex")
 ```
 
 AMC export is supported for multiple-choice question types (`MC`, `MCH`, `MR`,
-etc.). Numerical and short-answer questions are not supported by the AMC format.
+etc.) and for numerical questions (see below). Short-answer questions are not
+supported by the AMC format.
+
+### Distractors for numerical questions
+
+AMC is a paper-based format: every answer must appear as a printed choice.
+Numerical questions therefore require wrong answer choices — called
+*distractors* — so that the question can be rendered as multiple-choice on
+paper.
+
+Provide them with the `distractors` argument:
+
+```r
+q1 <- Question("What is \\(2 \\times 3\\)?",
+               answer = 6,
+               distractors = c(3, 4, 9))
+```
+
+When the question is parametric, distractors can reference `hidden_data`
+variables through a quoted expression, so the wrong choices track the
+randomised correct answer:
+
+```r
+q1 <- Question("What is \\(`r a` \\times `r b`\\)?",
+               hidden_seed = 1,
+               hidden_data = quote({
+                   a <- sample(2:9, 1)
+                   b <- sample(2:9, 1)
+               }),
+               answer = quote(a * b),
+               distractors = quote(c(a * b + 1, a * b - 1, (a + 1) * b)))
+```
+
+Two checks run at export time: no distractor may equal the correct answer, and
+no two distractors may be identical.
+
+### Generating distractors with `expand_with_gaussian`
+
+Writing plausible distractors by hand is tedious, especially for parametric
+questions. `expand_with_gaussian` automates this: given a set of seed values
+(typically including the correct answer), it samples additional candidates from
+a distribution fitted to those seeds until the requested total count is reached.
+
+```r
+answer <- 42
+distractors <- expand_with_gaussian(answer, target_n = 4)
+```
+
+This returns 4 values (the original plus 3 new ones) drawn so that they are
+spread around the seed in a statistically plausible way.
+
+Key arguments:
+
+- `target_n` — total number of values to return (seeds + generated)
+- `constraint` — a function returning `TRUE` for acceptable candidates, e.g.
+  `constraint = function(x) x > 0` to avoid negative distractors
+- `min_sep` — minimum distance between any two values, useful to prevent
+  distractors that are too close to the answer
+- `integer_mode` — auto-detected from the seeds; set to `TRUE` to force
+  integer output
+
+In a parametric question, call it inside the `distractors` quote:
+
+```r
+q1 <- Question("What is \\(`r a` \\times `r b`\\)?",
+               hidden_seed = 1,
+               hidden_data = quote({
+                   a <- sample(2:9, 1)
+                   b <- sample(2:9, 1)
+               }),
+               answer = quote(a * b),
+               distractors = quote({
+                   others <- expand_with_gaussian(a * b, target_n = 4,
+                                                  constraint = function(x) x > 0)
+                   others[others != a * b]
+               }))
