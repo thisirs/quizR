@@ -74,6 +74,18 @@ NumericalQuestion <- R6::R6Class(
             ctx
         },
 
+        copy = function() {
+            Question(self$text,
+                     type = self$type,
+                     seed = self$seed,
+                     hidden_seed = self$hidden_seed,
+                     hidden_data = self$hidden_data,
+                     data = self$data,
+                     answer = self$answer,
+                     feedback = self$feedback,
+                     distractors = self$distractors)
+        },
+
         rename_answer = function(prefix, names0 = names(self$hidden_data_list)) {
             super$rename_answer(prefix, names0)
             if (!is.null(self$distractors)) {

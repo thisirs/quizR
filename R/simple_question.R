@@ -617,8 +617,7 @@ SimpleQuestion <- R6::R6Class(
                      hidden_data = self$hidden_data,
                      data = self$data,
                      answer = self$answer,
-                     feedback = self$feedback,
-                     distractors = self$distractors)
+                     feedback = self$feedback)
         }
     ),
     active = list(

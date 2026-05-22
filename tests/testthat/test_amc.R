@@ -102,10 +102,10 @@ test_that("NumericalQuestion to_amc generates correct LaTeX structure", {
     result <- q$to_amc(list(), list())
 
     expect_match(result, "\\\\begin\\{question\\}")
-    expect_match(result, "\\\\correctchoice\\{2\\}")
-    expect_match(result, "\\\\wrongchoice\\{1\\}")
-    expect_match(result, "\\\\wrongchoice\\{3\\}")
-    expect_match(result, "\\\\wrongchoice\\{4\\}")
+    expect_match(result, "\\\\correctchoice\\{\\$2\\$\\}")
+    expect_match(result, "\\\\wrongchoice\\{\\$1\\$\\}")
+    expect_match(result, "\\\\wrongchoice\\{\\$3\\$\\}")
+    expect_match(result, "\\\\wrongchoice\\{\\$4\\$\\}")
 })
 
 test_that("NumericalQuestion to_amc errors when a distractor equals the answer", {
@@ -133,12 +133,12 @@ test_that("NumericalQuestion to_amc works with randomized answer and distractors
 
     result <- q$to_amc(list(), list())
 
-    expect_match(result, "\\\\correctchoice\\{10\\}")
+    expect_match(result, "\\\\correctchoice\\{\\$10\\$\\}")
     # format() may pad single-digit numbers with a leading space when the
     # vector contains wider values, so allow an optional leading space
-    expect_match(result, "\\\\wrongchoice\\{ *9\\}")
-    expect_match(result, "\\\\wrongchoice\\{11\\}")
-    expect_match(result, "\\\\wrongchoice\\{12\\}")
+    expect_match(result, "\\\\wrongchoice\\{\\$ *9\\$\\}")
+    expect_match(result, "\\\\wrongchoice\\{\\$11\\$\\}")
+    expect_match(result, "\\\\wrongchoice\\{\\$12\\$\\}")
 })
 
 # ── Unsupported types ─────────────────────────────────────────────────────────
