@@ -17,7 +17,8 @@ Imports:
     utils,
     R6,
     tools,
-    logging
+    logging,
+    whisker
 RoxygenNote: 7.3.2
 Suggests: testthat
 VignetteBuilder: knitr

@@ -67,6 +67,13 @@ NumericalQuestion <- R6::R6Class(
                 sprintf("<tolerancetype>%s</tolerancetype>", self$tolerance_type)
         },
 
+        build_xml_context = function(opts, info) {
+            ctx <- super$build_xml_context(opts, info)
+            ctx$tolerance      <- if (!is.null(self$tolerance)) sprintf("%f", self$tolerance) else NULL
+            ctx$tolerance_type <- self$tolerance_type
+            ctx
+        },
+
         rename_answer = function(prefix, names0 = names(self$hidden_data_list)) {
             super$rename_answer(prefix, names0)
             if (!is.null(self$distractors)) {
@@ -158,4 +165,27 @@ NumericalQuestion <- R6::R6Class(
 @XML_GENERALFEEDBACK@
   <hidden>0</hidden>
 </question>
-")))
+"),
+        whisker_xml_template = trimws('
+<question type="{{type}}">
+  <name>
+    <text><![CDATA[{{{title}}}]]></text>
+  </name>
+  <questiontext format="html">
+    <text><![CDATA[{{{question_text}}}]]></text>
+  </questiontext>
+  <answer fraction="100" format="plain_text">
+    <text>{{{answer}}}</text>
+{{#tolerance}}
+    <tolerance>{{{tolerance}}}</tolerance>
+{{/tolerance}}
+{{#tolerance_type}}
+    <tolerancetype>{{{tolerance_type}}}</tolerancetype>
+{{/tolerance_type}}
+  </answer>
+{{#feedback}}
+{{{feedback}}}
+{{/feedback}}
+  <hidden>0</hidden>
+</question>
+')))

@@ -289,6 +289,36 @@ SimpleQuestion <- R6::R6Class(
             self$instantiate_placeholders(template, placeholders, opts, info)
         },
 
+        build_xml_context = function(opts, info) {
+            if (is.null(info$env)) {
+                info0 <- self$get_data_and_environment()
+                info <- update_list(info, info0)
+            }
+            list(
+                type          = self$type,
+                title         = self$title,
+                question_text = self$get_XML_question_text(opts, info),
+                answer        = self$get_XML_answer(opts, info),
+                feedback      = self$get_XML_generalfeedback(opts, info)
+            )
+        },
+
+        to_XML_whisker = function(opts = NULL, info = NULL) {
+            if (is.null(info$env)) {
+                info0 <- self$get_data_and_environment()
+                info <- update_list(info, info0)
+            }
+
+            default_opts <- update_list(private$default_options, private$xml_default_options)
+            opts <- update_list(default_opts, opts)
+            opts$export <- "xml"
+
+            private$validate_options(opts, info)
+
+            ctx <- self$build_xml_context(opts, info)
+            whisker::whisker.render(private$whisker_xml_template, ctx)
+        },
+
         invalidate_all = function() {
             self$invalidate_text()
             self$invalidate_answer()
@@ -868,4 +898,21 @@ SimpleQuestion <- R6::R6Class(
   <hidden>0</hidden>
 </question>
 "),
+        whisker_xml_template = trimws('
+<question type="{{type}}">
+  <name>
+    <text><![CDATA[{{{title}}}]]></text>
+  </name>
+  <questiontext format="html">
+    <text><![CDATA[{{{question_text}}}]]></text>
+  </questiontext>
+  <answer fraction="100" format="plain_text">
+    <text>{{{answer}}}</text>
+  </answer>
+{{#feedback}}
+{{{feedback}}}
+{{/feedback}}
+  <hidden>0</hidden>
+</question>
+'),
 xml_placeholders = NULL))
