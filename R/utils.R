@@ -178,8 +178,8 @@ render_latex_fragment <- function(text, opts, info) {
     # Pandoc converts markdown to LaTeX; without --standalone it emits a fragment
     tex_file <- tempfile("question", tmpdir = ".", fileext = ".tex")
     on.exit(unlink(tex_file), add = TRUE)
-    rmarkdown::pandoc_convert(md_file, to = "latex", output = tex_file,
-                               options = "--wrap=none")
+    rmarkdown::pandoc_convert(md_file, from = "markdown+tex_math_single_backslash",
+                               to = "latex", output = tex_file, options = "--wrap=none")
 
     trimws(paste(readLines(tex_file), collapse = "\n"))
 }
