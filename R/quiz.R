@@ -69,10 +69,11 @@ Quiz <- R6::R6Class(
         },
 
         generate_data_file = function(filename = paste0(self$text, "-data.R")) {
-            inode <- instantiate(self)
-            data  <- inode$data_expr
-            if (!is_empty_language(data))
-                write(answerstr(data), filename)
+            inode  <- instantiate(self)
+            exprs  <- collect_data_exprs(inode)
+            if (length(exprs) == 0) return(invisible(NULL))
+            data   <- merge_languages(exprs)
+            write(answerstr(data), filename)
         }
     )
 )

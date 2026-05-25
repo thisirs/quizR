@@ -214,3 +214,17 @@ instantiate_group <- function(g, parent_var_list = list()) {
         var_list   = var_list
     )
 }
+
+# ── Data-file helper ──────────────────────────────────────────────────────────
+
+# Recursively collect non-empty data_expr from an inode tree (depth-first).
+collect_data_exprs <- function(inode) {
+    exprs <- list()
+    if (!is_empty_language(inode$data_expr))
+        exprs <- c(exprs, list(inode$data_expr))
+    if (!is.null(inode$children))
+        exprs <- c(exprs, unlist(lapply(inode$children, collect_data_exprs), recursive = FALSE))
+    if (!is.null(inode$subquestions))
+        exprs <- c(exprs, unlist(lapply(inode$subquestions, collect_data_exprs), recursive = FALSE))
+    exprs
+}
