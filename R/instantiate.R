@@ -105,8 +105,10 @@ instantiate_leaf <- function(q, parent_var_list = list()) {
         inode$tolerance      <- q$tolerance
         inode$tolerance_type <- q$tolerance_type
         inode$distractors    <- instantiate_distractors(q$distractors, var_list, env)
-        if (is.language(inode$answer))
-            inode$answer <- eval(instantiate_data_list(inode$answer, var_list), envir = env)
+        if (is.language(q$answer)) {
+            subst        <- instantiate_object(q$answer, Filter(is.language, var_list))
+            inode$answer <- eval(subst, envir = env)
+        }
     } else if (inherits(q, "MultipleChoice")) {
         inode$items            <- instantiate_mc_items(q$items, var_list, env)
         inode$answer_feedbacks <- instantiate_mc_answer_feedbacks(q$answer_feedbacks, var_list)
@@ -121,21 +123,18 @@ instantiate_leaf <- function(q, parent_var_list = list()) {
 
 instantiate_distractors <- function(distractors, var_list, env) {
     if (is.null(distractors)) return(NULL)
+    lv <- Filter(is.language, var_list)
     if (is.language(distractors)) {
-        inst <- instantiate_data_list(distractors, var_list)
-        as.list(eval(inst, envir = env))
+        as.list(eval(instantiate_data_list(distractors, lv), envir = env))
     } else {
-        lapply(distractors, function(d) {
-            inst <- instantiate_data_list(d, var_list)
-            eval(inst, envir = env)
-        })
+        lapply(distractors, function(d) eval(instantiate_data_list(d, lv), envir = env))
     }
 }
 
 instantiate_mc_items <- function(items, var_list, env) {
     if (is.language(items)) {
-        inst <- instantiate_data_list(items, var_list)
-        as.list(eval(inst, envir = env))
+        lv <- Filter(is.language, var_list)
+        as.list(eval(instantiate_data_list(items, lv), envir = env))
     } else {
         lapply(items, function(item) instantiate_text_list(item, var_list))
     }
@@ -148,16 +147,13 @@ instantiate_mc_answer_feedbacks <- function(feedbacks, var_list) {
 
 # Returns a logical vector.
 instantiate_mc_answer <- function(answer, var_list, env) {
+    lv <- Filter(is.language, var_list)
     if (is.language(answer)) {
-        inst <- instantiate_data_list(answer, var_list)
-        result <- eval(inst, envir = env)
+        result <- eval(instantiate_data_list(answer, lv), envir = env)
         stopifnot(is.logical(result))
         result
     } else {
-        result <- sapply(answer, function(a) {
-            inst <- instantiate_data_list(a, var_list)
-            eval(inst, envir = env)
-        })
+        result <- sapply(answer, function(a) eval(instantiate_data_list(a, lv), envir = env))
         stopifnot(is.logical(result))
         result
     }
@@ -176,7 +172,7 @@ instantiate_cloze <- function(q, parent_var_list = list()) {
         instantiate_text_list(q$header, full_var_list)
     else NULL
 
-    inst_subqs <- lapply(q$subquestions, function(sq) instantiate_leaf(sq, full_var_list))
+    inst_subqs <- lapply(q$subquestions, function(sq) instantiate(sq, full_var_list))
 
     cloze_fb <- if (!is.null(q$cloze_feedback))
         q$cloze_feedback
