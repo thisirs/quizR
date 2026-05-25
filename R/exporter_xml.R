@@ -81,16 +81,11 @@ XMLExporter <- R6::R6Class(
         render_numerical = function(inode, opts) {
             info  <- list(env = inode$env)
             html  <- trimws(render_HTML(inode$text, opts, info))
-            ans_val <- if (is.language(inode$answer))
-                eval(inode$answer, inode$env)
-            else
-                inode$answer
-
             ctx <- list(
                 type          = "numerical",
                 title         = private$html_escape(inode$title),
                 question_text = html,
-                answer        = as.character(ans_val),
+                answer        = as.character(inode$answer),
                 tolerance     = if (!is.null(inode$tolerance))
                                     sprintf("%f", inode$tolerance)
                                 else NULL,

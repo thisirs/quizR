@@ -40,7 +40,7 @@ build_env <- function(var_list, data = quote({}), seed = NULL) {
     if (!is.null(seed))
         eval(bquote(set.seed(.(seed))), envir = env)
     if (!is_empty_language(data))
-        eval(data, envir = env)
+        eval(instantiate_data_list(data, var_list), envir = env)
     env
 }
 
@@ -105,6 +105,8 @@ instantiate_leaf <- function(q, parent_var_list = list()) {
         inode$tolerance      <- q$tolerance
         inode$tolerance_type <- q$tolerance_type
         inode$distractors    <- instantiate_distractors(q$distractors, var_list, env)
+        if (is.language(inode$answer))
+            inode$answer <- eval(instantiate_data_list(inode$answer, var_list), envir = env)
     } else if (inherits(q, "MultipleChoice")) {
         inode$items            <- instantiate_mc_items(q$items, var_list, env)
         inode$answer_feedbacks <- instantiate_mc_answer_feedbacks(q$answer_feedbacks, var_list)
@@ -168,11 +170,13 @@ instantiate_cloze <- function(q, parent_var_list = list()) {
     env       <- build_env(var_list, q$cloze_data, q$seed)
     data_expr <- build_data_expr(var_list, q$cloze_data, q$seed)
 
+    full_var_list <- as.list(env, all.names = TRUE)
+
     header <- if (!is.null(q$header))
-        instantiate_text_list(q$header, var_list)
+        instantiate_text_list(q$header, full_var_list)
     else NULL
 
-    inst_subqs <- lapply(q$subquestions, function(sq) instantiate_leaf(sq, var_list))
+    inst_subqs <- lapply(q$subquestions, function(sq) instantiate_leaf(sq, full_var_list))
 
     cloze_fb <- if (!is.null(q$cloze_feedback))
         q$cloze_feedback
