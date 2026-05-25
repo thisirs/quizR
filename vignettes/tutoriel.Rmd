@@ -14,7 +14,7 @@ correction sheet.
 
 ## Installation
 
-```r
+```{r eval=FALSE}
 install.packages("devtools")
 library(devtools)
 install_github("thisirs/quizR")
@@ -24,27 +24,27 @@ install.packages(c("rmarkdown", "tinytex"))
 ## Introduction
 
 Start by loading the library:
-```r
+```{r eval=FALSE}
 library(quizR)
 ```
 
 A quiz contains groups, and each group contains groups or questions. Create a quiz with:
-```r
+```{r eval=FALSE}
 quiz <- Quiz$new("My quiz")
 ```
 
 The quiz has no groups yet. Create one with:
-```r
+```{r eval=FALSE}
 group <- Group$new("My group")
 ```
 
 Then add the group to the quiz:
-```r
+```{r eval=FALSE}
 quiz$add_child(group)
 ```
 
 The group has no questions yet. Create one:
-```r
+```{r eval=FALSE}
 q1 <- Question("What is \\(2+2\\)?")
 ```
 
@@ -54,27 +54,27 @@ correctly on export.
 There are several question types. By default questions are numerical — they
 expect a numeric answer. To enable automatic grading, provide the correct
 answer:
-```r
+```{r eval=FALSE}
 q1 <- Question("What is \\(2+2\\)?", answer = 4)
 ```
 
 Add the question to the group:
-```r
+```{r eval=FALSE}
 group$add_child(q1)
 ```
 
 The quiz is now functional. Generate the Moodle XML file with:
-```r
+```{r eval=FALSE}
 quiz$generate_XML()
 ```
 
 A PDF correction sheet can also be generated:
-```r
+```{r eval=FALSE}
 quiz$generate_correction()
 ```
 
 In summary, the minimal quiz workflow is:
-```r
+```{r eval=FALSE}
 library(quizR)
 quiz <- Quiz$new("My quiz")
 group <- Group$new("My group")
@@ -93,7 +93,7 @@ Beyond numerical questions, quizR supports several other Moodle question types.
 
 Short-answer questions expect a text response:
 
-```r
+```{r eval=FALSE}
 q1 <- Question("What is the capital of France?",
                type = "SA",
                answer = "Paris")
@@ -101,7 +101,7 @@ q1 <- Question("What is the capital of France?",
 
 ### Multiple-choice questions
 
-```r
+```{r eval=FALSE}
 q1 <- Question("The number 7 is",
                type = "MC",
                items = c(
@@ -116,7 +116,7 @@ You must specify the type `"MC"`, the choices in `items`, and the corresponding
 correct/incorrect flags in `answer` as a logical vector.
 
 Alternatively, `answer` alone can hold a list of `(correct, label)` pairs:
-```r
+```{r eval=FALSE}
 q1 <- Question("The number 7 is",
                type = "MC",
                answer = list(
@@ -147,7 +147,7 @@ A "cookie" is Moodle's inline answer syntax: `{weight:TYPE:=answer}` placed
 directly inside the question text. Supported types are `NM` (numerical), `SA`
 (short answer), `MC` (multiple choice), etc. For example:
 
-```r
+```{r eval=FALSE}
 q1 <- ClozeQuestion$new(
     "The mean of 1, 2 and 3 is {1:NM:=2} and their sum is {1:NM:=6}."
 )
@@ -156,7 +156,7 @@ q1 <- ClozeQuestion$new(
 Cookies with no answer yet (`{1:NM:=}`) are also valid when the answer is
 provided through the `answer` argument:
 
-```r
+```{r eval=FALSE}
 q1 <- ClozeQuestion$new(
     "The mean of 1, 2 and 3 is {1:NM:=} and their sum is {1:NM:=}.",
     answer = list(2, 6)
@@ -168,7 +168,7 @@ q1 <- ClozeQuestion$new(
 Alternatively, pass a list of existing question objects. Each question's text
 becomes a label and its answer is appended automatically:
 
-```r
+```{r eval=FALSE}
 sq1 <- Question("What is 1+1?",          answer = 2)
 sq2 <- Question("What is 2*3?",          answer = 6)
 sq3 <- Question("Name a prime < 10.",    type = "SA", answer = "2")
@@ -184,7 +184,7 @@ so that similar but distinct variants are generated automatically. For example,
 introduce a parameter `param` for the second term of a sum. Parameters are
 declared via `hidden_data`, which takes a quoted code block:
 
-```r
+```{r eval=FALSE}
 q_generic <- Question("What is \\(2+`r param`\\)?",
                       hidden_seed = 1,
                       hidden_data = quote({
@@ -197,7 +197,7 @@ The parameter `param` is referenced in the question text as an inline R
 expression. `quote()` prevents the block from being evaluated immediately.
 `hidden_seed` fixes the random seed used when generating the parameter value.
 
-```r
+```{r eval=FALSE}
 quiz <- Quiz$new("My quiz")
 group <- Group$new("My group")
 quiz$add_child(group)
@@ -219,7 +219,7 @@ Changing `hidden_seed` produces a different variant of the question.
 
 You can also make data available to students that they need to solve the
 question:
-```r
+```{r eval=FALSE}
 q1 <- Question("Variable `a` contains an integer. What is \\(a^2\\)?",
                seed = 1,
                data = quote({
@@ -231,7 +231,7 @@ q1 <- Question("Variable `a` contains an integer. What is \\(a^2\\)?",
 `data` works like `hidden_data` but the values are exposed to students in a
 separate R file. After building the quiz, call:
 
-```r
+```{r eval=FALSE}
 quiz$generate_data_file()
 ```
 
@@ -240,7 +240,7 @@ to produce the data file that students load before starting the quiz.
 Hidden and student data can be combined — the generated data will change
 whenever `hidden_seed` changes:
 
-```r
+```{r eval=FALSE}
 q1 <- Question("Variable `a` contains an integer. What is \\(a^2\\)?",
                hidden_seed = 1,
                hidden_data = quote({
@@ -262,7 +262,7 @@ once uploaded to Moodle a quiz is static. To present different variants within
 a single quiz attempt, duplicate questions inside the quiz using
 `sample_questions`:
 
-```r
+```{r eval=FALSE}
 q1 <- Question("What is the number after `r n`?",
                hidden_data = quote({
                    n <- sample(1:1000, 1)
@@ -275,7 +275,7 @@ qs <- sample_questions(q1, sample_size = 3)
 `q1`, each with a different value of `n`. Place them in a random group so
 Moodle picks one per attempt:
 
-```r
+```{r eval=FALSE}
 group <- Group$new("Group",
                    type = "random",
                    num = 1,
@@ -286,7 +286,7 @@ group <- Group$new("Group",
 
 Several questions can be duplicated simultaneously:
 
-```r
+```{r eval=FALSE}
 q1 <- Question("What is the number after `r n`?",
                hidden_data = quote({
                    n <- sample(1:1000, 1)
@@ -307,7 +307,7 @@ qs <- sample_questions(list(q1, q2), sample_size = 10)
 
 Questions can also be merged into composite questions:
 
-```r
+```{r eval=FALSE}
 qs <- sample_questions(list(q1, q2),
                        sample_size = 10,
                        group_sizes = c(1, 1))
@@ -316,7 +316,7 @@ qs <- sample_questions(list(q1, q2),
 `group_sizes` specifies that one variant from `q1` and one from `q2` are
 combined per output question. Groups can also be set explicitly with `group_by`:
 
-```r
+```{r eval=FALSE}
 q1 <- Question("What is the number after `r n`?",
                hidden_data = quote({
                    n <- sample(1:1000, 1)
@@ -346,7 +346,7 @@ unique to avoid collisions in the data file. Use the special variables `ds_name`
 and `ds_sym` inside data blocks — `ds_name` is a string identifier and `ds_sym`
 is the corresponding R symbol, so both can be referenced in text and code:
 
-```r
+```{r eval=FALSE}
 q1 <- Question("What is the mean of dataset `r ds_name`?",
                data = quote({
                    ds_sym <- sample(1:1000, 1)
@@ -357,7 +357,7 @@ qs <- sample_questions(q1, sample_size = 3)
 
 Each copy gets its own uniquely named variable, e.g.:
 
-```r
+```{r eval=FALSE}
 DATA_1 <- sample(1:1000, 1)
 DATA_2 <- sample(1:1000, 1)
 DATA_3 <- sample(1:1000, 1)
@@ -382,14 +382,14 @@ In addition to Moodle XML, quizR can export to
 which produces a LaTeX source suitable for printed multiple-choice exams with
 automatic scanning and grading.
 
-```r
+```{r eval=FALSE}
 quiz$generate_AMC()
 ```
 
 This writes a `.tex` file (named after the quiz title by default). You can
 override the output path:
 
-```r
+```{r eval=FALSE}
 quiz$generate_AMC(output = "my_exam.tex")
 ```
 
@@ -406,7 +406,7 @@ paper.
 
 Provide them with the `distractors` argument:
 
-```r
+```{r eval=FALSE}
 q1 <- Question("What is \\(2 \\times 3\\)?",
                answer = 6,
                distractors = c(3, 4, 9))
@@ -416,7 +416,7 @@ When the question is parametric, distractors can reference `hidden_data`
 variables through a quoted expression, so the wrong choices track the
 randomised correct answer:
 
-```r
+```{r eval=FALSE}
 q1 <- Question("What is \\(`r a` \\times `r b`\\)?",
                hidden_seed = 1,
                hidden_data = quote({
@@ -437,7 +437,7 @@ questions. `expand_with_gaussian` automates this: given a set of seed values
 (typically including the correct answer), it samples additional candidates from
 a distribution fitted to those seeds until the requested total count is reached.
 
-```r
+```{r eval=FALSE}
 answer <- 42
 distractors <- expand_with_gaussian(answer, target_n = 4)
 ```
@@ -457,7 +457,7 @@ Key arguments:
 
 In a parametric question, call it inside the `distractors` quote:
 
-```r
+```{r eval=FALSE}
 q1 <- Question("What is \\(`r a` \\times `r b`\\)?",
                hidden_seed = 1,
                hidden_data = quote({
@@ -470,3 +470,4 @@ q1 <- Question("What is \\(`r a` \\times `r b`\\)?",
                                                   constraint = function(x) x > 0)
                    others[others != a * b]
                }))
+```
