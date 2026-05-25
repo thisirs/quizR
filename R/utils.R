@@ -241,9 +241,12 @@ rename_object <- function(aliases, object) {
 
 # Return names of all variables assigned in a language expression (AST walk).
 # Does not evaluate the expression, so parent-scope references are not needed.
+# Does not recurse into local() or function() — they create their own scopes.
 lhs_assigned_names <- function(expr) {
     if (!is.call(expr)) return(character(0))
     head <- expr[[1]]
+    if (identical(head, quote(local)) || identical(head, quote(`function`)))
+        return(character(0))
     if (identical(head, quote(`<-`)) || identical(head, quote(`=`)) || identical(head, quote(`<<-`)))
         return(c(if (is.symbol(expr[[2]])) as.character(expr[[2]]) else character(0),
                  lhs_assigned_names(expr[[length(expr)]])))

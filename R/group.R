@@ -52,8 +52,12 @@ Group <- R6::R6Class(
 
         include_header = function() {
             if (is.null(self$header)) return()
-            for (child in self$children)
-                child$text <- paste(c(self$header, child$text), collapse = "\n\n")
+            for (child in self$children) {
+                if (inherits(child, "ClozeQuestion"))
+                    child$header <- paste(c(self$header, child$header), collapse = "\n\n")
+                else
+                    child$text <- paste(c(self$header, child$text), collapse = "\n\n")
+            }
             self$header <- NULL
         },
 
