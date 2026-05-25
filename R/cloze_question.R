@@ -89,12 +89,7 @@ ClozeQuestion <- R6::R6Class(
         },
 
         hidden_data_names = function() {
-            env <- empty_env()
-            if (!is.null(self$hidden_seed))
-                eval(bquote(set.seed(.(self$hidden_seed))), envir = env)
-            if (!is_empty_language(self$cloze_hidden_data))
-                eval(self$cloze_hidden_data, envir = env)
-            ls(envir = env, all.names = TRUE)
+            lhs_assigned_names(self$cloze_hidden_data)
         },
 
         rename = function(prefix, names = self$hidden_data_names()) {

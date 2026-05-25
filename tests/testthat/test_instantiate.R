@@ -91,6 +91,72 @@ test_that("ClozeQuestion data-block variables are accessible in subquestion text
     expect_match(result, "hello")
 })
 
+# ── Group hidden_data inheritance ────────────────────────────────────────────
+
+test_that("group hidden_data pattern: ds_sym alias + child hidden_data uses parent vars + distractors as symbol", {
+    # Mirrors the real regression-group pattern:
+    #   - group hidden_data defines ds_sym (symbol alias), local_ds, local_reg
+    #   - group data block assigns ds_sym <- local_ds  (becomes MYDS <- local_ds in env)
+    #   - child hidden_data references local_reg and local_ds from parent
+    #   - child answer uses ds_sym (substituted to MYDS), evaluated in env via parent chain
+    #   - child distractors = quote(distractors) — a symbol resolved from child hidden_data
+    q <- Question("Q", type = "numerical",
+        hidden_data = quote({
+            correct     <- local_reg$coefficients[1]
+            distractors <- as.list(c(correct + 1, correct - 1))
+        }),
+        answer      = quote({
+            reg <- lm(Y ~ X, data = ds_sym)
+            reg$coefficients[1]
+        }),
+        distractors = quote(distractors))
+
+    group <- Group$new("G",
+        hidden_seed = 42,
+        hidden_data = quote({
+            ds_sym   <- as.symbol("MYDS")
+            local_ds <- data.frame(X = 1:5, Y = 2*(1:5) + 0.1)
+            local_reg <- lm(Y ~ X, data = local_ds)
+        }),
+        data = quote({ ds_sym <- local_ds }),
+        children = list(q))
+
+    quiz  <- Quiz$new("test", children = list(group))
+    inode <- instantiate(quiz)
+    child <- inode$children[[1]]$children[[1]]
+
+    expect_type(child$answer, "double")
+    expect_equal(length(child$distractors), 2)
+    expect_false(child$answer == child$distractors[[1]])
+})
+
+test_that("child hidden_data can reference parent group hidden_data variables", {
+    q <- Question("What is m?", type = "numerical",
+                  hidden_data = quote({ m <- n + 1 }),
+                  answer      = quote(m),
+                  distractors = list(0, 1, 2))
+    group <- Group$new("G",
+                       hidden_data = quote({ n <- 5 }),
+                       children    = list(q))
+    quiz  <- Quiz$new("test", children = list(group))
+    inode <- instantiate(quiz)
+    expect_equal(inode$children[[1]]$children[[1]]$answer, 6)
+})
+
+test_that("child hidden_data symbol alias from parent group is substituted in answer", {
+    q <- Question("Q", type = "numerical",
+                  hidden_data = quote({ local_ds <- c(1, 2, 3) }),
+                  data        = quote({ ds_sym <- local_ds }),
+                  answer      = quote(sum(ds_sym^2)),
+                  distractors = list(0, 1, 2))
+    group <- Group$new("G",
+                       hidden_data = quote({ ds_sym <- as.symbol("MYDATA") }),
+                       children    = list(q))
+    quiz  <- Quiz$new("test", children = list(group))
+    inode <- instantiate(quiz)
+    expect_equal(inode$children[[1]]$children[[1]]$answer, 14)
+})
+
 # ── collect_data_exprs ────────────────────────────────────────────────────────
 
 test_that("collect_data_exprs collects from children, not just the quiz root", {
