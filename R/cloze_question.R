@@ -6,896 +6,372 @@ NULL
 
 #' @export
 ClozeQuestion <- R6::R6Class(
-    "Cloze",
+    "ClozeQuestion",
     inherit = SimpleQuestion,
     public = list(
-        type = "cloze",
-        initialize = function(text = NULL,
-                              data = quote({}),
-                              hidden_data = quote({}),
-                              seed = NULL,
-                              hidden_seed = NULL,
-                              feedback = NULL,
-                              answer = NULL,
-                              questions = NULL,
+        type              = "cloze",
+        subquestions      = NULL,
+        cloze_hidden_data = NULL,
+        cloze_data        = NULL,
+        cloze_feedback    = NULL,
+        subquestions_opts = NULL,
+
+        initialize = function(text             = NULL,
+                              data             = quote({}),
+                              hidden_data      = quote({}),
+                              seed             = NULL,
+                              hidden_seed      = NULL,
+                              feedback         = NULL,
+                              answer           = NULL,
+                              questions        = NULL,
                               subquestions_opts = NULL,
-                              tags = NULL) {
+                              tags             = NULL,
+                              options          = list()) {
+            if (is.null(text) && is.null(questions))
+                stop("Either 'text' or 'questions' must be specified")
 
-            # A cloze question is built from a list of other questions
-            # (including cloze ones) or from a text containing
-            # cookies.
-            if(is.null(text) & is.null(questions))
-                stop("Either ", sQuote("text"), " or ", sQuote("questions"), " has to be specified")
+            # Initialize base fields (self$text / self$hidden_data / etc. go
+            # through active bindings, but ClozeQuestion's bindings are safe
+            # with NULL values during construction)
+            super$initialize(NULL,
+                             data        = data,
+                             hidden_data = hidden_data,
+                             seed        = seed,
+                             hidden_seed = hidden_seed,
+                             tags        = tags,
+                             options     = options)
+            self$cloze_hidden_data <- hidden_data
+            self$cloze_data        <- data
+            self$cloze_feedback    <- list(header = NULL)
+            self$subquestions_opts <- subquestions_opts
 
-            # From a text (and cookies), we reconstruct a list of questions
-            if(!is.null(text)) {
-                super$initialize(text,
-                                 data = data,
-                                 hidden_data = hidden_data,
-                                 seed = seed,
-                                 hidden_seed = hidden_seed,
-                                 feedback = feedback,
-                                 answer = answer,
-                                 tags = tags)
-
-                self$subquestions <- private$get_subquestions(text, answer, feedback, subquestions_opts)
-
-                if (!is.null(hidden_data))
-                    private$.cloze_hidden_data <- hidden_data
-
-                if (!is.null(data))
-                    private$.cloze_data <- data
-
-                # Invalidate all
-                self$invalidate_all()
-            } else if (!is.null(questions)) {
-                # From a list of questions, we clone questions, rename
-                # data, connect them.
-
-                ## Checking that answer, feedback and subquestions_opts are of the right size
+            if (!is.null(text)) {
+                # Text-based construction
+                parsed <- private$parse_subquestions(text, answer, feedback, subquestions_opts)
+                self$subquestions   <- parsed$subquestions
+                self$cloze_feedback <- parsed$cloze_feedback
+            } else {
+                # Questions-list construction
                 if (!is.null(answer))
                     stopifnot(length(answer) == length(questions))
                 if (!is.null(feedback)) {
-                    if (is.null(feedback$header))
-                        stopifnot(length(feedback) == length(questions))
-                    else if (length(feedback$feedbacks) != 0)
-                        stopifnot(length(feedback$feedbacks) == length(questions))
+                    fb0 <- private$sanitize_cloze_feedback(feedback)
+                    if (length(fb0$feedbacks) != 0)
+                        stopifnot(length(fb0$feedbacks) == length(questions))
                 }
                 if (!is.null(subquestions_opts))
                     stopifnot(length(subquestions_opts) == length(questions))
 
+                questions <- lapply(questions, function(q) q$copy())
+                for (i in seq_along(questions))
+                    questions[[i]]$rename(sprintf("data%s_", i))
 
-                super$initialize(text,
-                                 data = data,
-                                 hidden_data = hidden_data,
-                                 seed = seed,
-                                 hidden_seed = hidden_seed,
-                                 feedback = feedback,
-                                 answer = answer,
-                                 tags = tags)
-
-                ## hidden_data is used to store the merged hidden_data of subquestions
-                if (!is.null(hidden_data))
-                    private$.cloze_hidden_data <- hidden_data
-
-                if (!is.null(data))
-                    private$.cloze_data <- data
-
-                ## Clone questions that will be modified
-                questions <- lapply(questions, function(question) question$copy())
-
-                for (question in questions)
-                    question$invalidate_all()
-
-                ## Rename subquestions to avoid hidden_data overlap
-                ## self$subquestions <- questions # For self$hidden_data_list to succeed
-                for (i in seq_along(questions)) {
-                    prefix <- sprintf("data%s_", i)
-                    questions[[i]]$rename(prefix)
-                }
-
-                ## Connect subquestions with cloze question
-                for (i in seq_along(questions)) {
-                    questions[[i]]$ancestor <- self
-                    if (is.null(self$quiz))
-                        questions[[i]]$update_quiz(self)
-                    else
-                        questions[[i]]$update_quiz(self$quiz)
-                }
-
-                ## Modify answer and feedback of subquestions
                 if (!is.null(answer))
-                    for (i in seq_len(length(questions)))
+                    for (i in seq_along(questions))
                         if (!is.null(answer[[i]]))
                             questions[[i]]$answer <- answer[[i]]
 
                 if (!is.null(feedback)) {
-                    feedback0 <- self$sanitize_feedback(feedback)
-
-                    cloze_feedback <- feedback0
-                    cloze_feedback$feedbacks <- NULL
-                    self$cloze_feedback <- cloze_feedback
-
-                    for (i in seq_len(length(questions)))
-                        if (!is.null(feedback0$feedbacks[[i]]))
-                            questions[[i]]$feedback <- feedback0$feedbacks[[i]]
+                    fb0 <- private$sanitize_cloze_feedback(feedback)
+                    self$cloze_feedback <- list(header = fb0$header)
+                    for (i in seq_along(questions))
+                        if (!is.null(fb0$feedbacks[[i]]))
+                            questions[[i]]$feedback <- fb0$feedbacks[[i]]
                 }
 
-                self$subquestions <- questions # For self$hidden_data_list to succeed
+                self$subquestions <- questions
+            }
 
-                # Invalidate all
-                self$invalidate_all()
-
-                private$.subquestions_opts <- subquestions_opts
-            } else stop("Logical flaw")
-
-            # Add new placeholders for cloze questions
-            private$placeholders$FEEDBACKS <- "get_feedbacks"
-
-            # Add new feedback options for cloze questions
-            private$default_feedback_options$header = NULL
+            # Give each subquestion access to the cloze's own vars as parent context
+            cloze_vars <- eval_hidden_data(self$cloze_hidden_data, self$hidden_seed, list())
+            for (q in self$subquestions)
+                q$parent_var_list <- cloze_vars
         },
 
-        update_quiz = function(quiz) {
-            self$quiz <- quiz
-            for (question in self$subquestions)
-                question$update_quiz(quiz)
-            self$invalidate_hidden_data_list()
+        hidden_data_names = function() {
+            env <- empty_env()
+            if (!is.null(self$hidden_seed))
+                eval(bquote(set.seed(.(self$hidden_seed))), envir = env)
+            if (!is_empty_language(self$cloze_hidden_data))
+                eval(self$cloze_hidden_data, envir = env)
+            ls(envir = env, all.names = TRUE)
         },
 
-        sanitize_feedback = function(feedback) {
-            if ("header" %in% names(feedback))
-                feedback
-            else if ("feedbacks" %in% names(feedback))
+        rename = function(prefix, names = self$hidden_data_names()) {
+            self$rename_header(prefix, names)
+            self$cloze_data        <- prefix_object(prefix, names, self$cloze_data)
+            self$cloze_hidden_data <- prefix_object(prefix, names, self$cloze_hidden_data)
+            for (q in self$subquestions) {
+                all_names <- union(names, q$hidden_data_names())
+                q$rename(prefix, all_names)
+            }
+            invisible(self)
+        },
+
+        rename_text = function(prefix, names = self$hidden_data_names()) {
+            for (q in self$subquestions)
+                q$rename_text(prefix, names)
+            self$rename_header(prefix, names)
+            invisible(self)
+        },
+
+        rename_answer = function(prefix, names = self$hidden_data_names()) {
+            for (q in self$subquestions)
+                q$rename_answer(prefix, names)
+            invisible(self)
+        },
+
+        rename_feedback = function(prefix, names = self$hidden_data_names()) {
+            for (q in self$subquestions)
+                q$rename_feedback(prefix, names)
+            invisible(self)
+        },
+
+        rename_data = function(prefix, names = self$hidden_data_names()) {
+            self$cloze_data <- prefix_object(prefix, names, self$cloze_data)
+            for (q in self$subquestions)
+                q$rename_data(prefix, names)
+            invisible(self)
+        },
+
+        rename_hidden_data = function(prefix, names = self$hidden_data_names()) {
+            self$cloze_hidden_data <- prefix_object(prefix, names, self$cloze_hidden_data)
+            for (q in self$subquestions)
+                q$rename_hidden_data(prefix, names)
+            invisible(self)
+        },
+
+        copy = function() {
+            ClozeQuestion$new(
+                data        = self$cloze_data,
+                hidden_data = self$cloze_hidden_data,
+                seed        = self$seed,
+                hidden_seed = self$hidden_seed,
+                questions   = lapply(self$subquestions, function(q) q$copy()),
+                options     = self$options)
+        }
+    ),
+
+    active = list(
+        # text is always computed from subquestions
+        text = function(value) {
+            if (!missing(value)) {
+                if (is.null(value)) return(invisible(self))
+                parsed <- private$parse_subquestions(value, NULL, NULL, self$subquestions_opts)
+                self$subquestions   <- parsed$subquestions
+                self$cloze_feedback <- parsed$cloze_feedback
+                return(invisible(self))
+            }
+            private$gen_text_from_subqs()
+        },
+
+        hidden_data = function(value) {
+            if (!missing(value)) {
+                self$cloze_hidden_data <- value
+                cloze_vars <- eval_hidden_data(self$cloze_hidden_data, self$hidden_seed, list())
+                for (q in self$subquestions)
+                    q$parent_var_list <- cloze_vars
+                return(invisible(self))
+            }
+            parts <- list()
+            if (!is_empty_language(self$cloze_hidden_data))
+                parts <- c(parts, list(self$cloze_hidden_data))
+            for (q in self$subquestions) {
+                hd <- if (inherits(q, "ClozeQuestion")) q$cloze_hidden_data else q$hidden_data
+                if (!is_empty_language(hd))
+                    parts <- c(parts, list(hd))
+            }
+            private$to_block(parts)
+        },
+
+        data = function(value) {
+            if (!missing(value)) {
+                self$cloze_data <- value
+                return(invisible(self))
+            }
+            parts <- list()
+            if (!is_empty_language(self$cloze_data))
+                parts <- c(parts, list(self$cloze_data))
+            for (q in self$subquestions) {
+                d <- if (inherits(q, "ClozeQuestion")) q$cloze_data else q$data
+                if (!is_empty_language(d))
+                    parts <- c(parts, list(d))
+            }
+            private$to_block(parts)
+        },
+
+        # feedback: aggregated from subquestions
+        feedback = function(value) {
+            if (!missing(value)) {
+                if (is.null(value)) {
+                    self$cloze_feedback <- list(header = NULL)
+                    return(invisible(self))
+                }
+                fb0 <- private$sanitize_cloze_feedback(value)
+                self$cloze_feedback <- list(header = fb0$header)
+                if (length(fb0$feedbacks) > 0) {
+                    stopifnot(length(fb0$feedbacks) == length(self$subquestions))
+                    for (i in seq_along(self$subquestions))
+                        self$subquestions[[i]]$feedback <- fb0$feedbacks[[i]]
+                }
+                return(invisible(self))
+            }
+            header <- if (!is.null(self$cloze_feedback)) self$cloze_feedback$header else NULL
+            feedbacks <- unlist(lapply(self$subquestions, function(sq) {
+                if (inherits(sq, "ClozeQuestion"))
+                    sq$feedback$feedbacks
+                else {
+                    fb <- sq$feedback
+                    if (identical(fb$text, "") && !is.null(sq$answer))
+                        fb$text <- sq$answer
+                    list(fb)
+                }
+            }), recursive = FALSE)
+            list(header = header, feedbacks = feedbacks)
+        },
+
+        # answer: list of answers from all subquestions
+        answer = function(value) {
+            if (!missing(value)) {
+                if (is.null(value)) return(invisible(self))
+                stopifnot(length(value) == length(self$subquestions))
+                for (i in seq_along(self$subquestions))
+                    self$subquestions[[i]]$answer <- value[[i]]
+                return(invisible(self))
+            }
+            unlist(lapply(self$subquestions, function(sq) {
+                if (inherits(sq, "ClozeQuestion")) sq$answer else list(sq$answer)
+            }), recursive = FALSE)
+        },
+
+        num = function(value) {
+            if (!missing(value)) stop("num is read-only")
+            sum(sapply(self$subquestions, function(sq) {
+                if (inherits(sq, "ClozeQuestion")) sq$num else 1L
+            }))
+        },
+
+        total_num = function(value) {
+            if (!missing(value)) stop("total_num is read-only")
+            sum(sapply(self$subquestions, function(sq) {
+                if (inherits(sq, "ClozeQuestion")) sq$total_num else 1L
+            }))
+        },
+
+        hidden_data_list = function(value) {
+            if (!missing(value)) stop("hidden_data_list is read-only")
+            eval_hidden_data(self$cloze_hidden_data, self$hidden_seed, list())
+        },
+
+        instantiated_text = function(value) {
+            if (!missing(value)) stop("instantiated_text is read-only")
+            instantiate_text_list(self$text, private$combined_var_list())
+        },
+
+        instantiated_answer = function(value) {
+            if (!missing(value)) stop("instantiated_answer is read-only")
+            var_list <- private$combined_var_list()
+            lapply(self$answer, function(a) instantiate_object(a, var_list))
+        }
+    ),
+
+    private = list(
+        combined_var_list = function() {
+            var_list <- self$hidden_data_list
+            for (sq in self$subquestions)
+                var_list <- c(var_list, sq$hidden_data_list)
+            var_list
+        },
+
+        cloze_regex = paste0(
+            "\\{(\\d+):(SHORTANSWER|SA|MW|SHORTANSWER_C|SAC|MWC|",
+            "NUMERICAL|NM|MULTICHOICE|MC|MULTICHOICE_V|MCV|MULTICHOICE_H|MCH)",
+            ":=([^\\}]*)\\}"
+        ),
+
+        questions_list = list(
+            SHORTANSWER = ShortanswerQuestion, SA = ShortanswerQuestion,
+            NUMERICAL   = NumericalQuestion,   NM = NumericalQuestion,
+            MC          = MultipleChoice
+        ),
+
+        sanitize_cloze_feedback = function(feedback) {
+            if (is.null(feedback))
+                return(list(header = NULL, feedbacks = list()))
+            if ("header" %in% names(feedback) || "feedbacks" %in% names(feedback))
                 feedback
             else
                 list(header = NULL, feedbacks = feedback)
         },
 
-        update_feedback = function(feedback) {
-            feedback <- self$sanitize_feedback(feedback)
-
-            if (length(feedback$feedbacks) != 0)
-                stopifnot(length(feedback$feedbacks) == self$num)
-
-            for (i in seq_along(self$subquestions))
-                self$subquestions[[i]]$feedback <- feedback$feedbacks[[i]]
-
-            feedback
+        cookie_type_id = function(sq) {
+            list(numerical = "NM", shortanswer = "SA", multichoice = "MC")[[sq$type]]
         },
 
-        instantiate_hidden_data_list = function(var_list = NULL, seed_init = FALSE) {
-            if (!seed_init & !is_empty_language(private$.cloze_hidden_data) & is.null(self$hidden_seed))
-                stop("Hidden data but no seed to instantiate it")
-
-            ## if (!seed_init && is.null(self$hidden_seed)) {
-            ##     seed_needed <- sapply(self$subquestions, function(question) {
-            ##         is.null(question$hidden_seed) & !is_empty_language(question$hidden_data)
-            ##     })
-            ##     if(any(seed_needed))
-            ##         stop("Hidden data in a subquestion but no seed to instantiate it")
-            ## }
-
-            if (is.null(var_list)) var_list <- list()
-            env <- list2env(var_list, envir = empty_env())
-
-            # Set seed if any and eval hidden data
-            if (!is.null(private$.cloze_hidden_data))
-                eval(bquote(set.seed(.(self$hidden_seed))), envir = env)
-            eval(private$.cloze_hidden_data, envir = env)
-
-            # Update variables in VAR_LIST with ENV
-            new_var_list <- update_list(var_list, as.list(env, all.names = TRUE))
-
-            self$hidden_data_list <- new_var_list
-            ## private$.hidden_data_list <- new_var_list
-            ## private$is_hidden_data_list_available <- TRUE
-
-            for (question in self$subquestions)
-                question$instantiate_hidden_data_list(new_var_list, seed_init | !is.null(self$hidden_seed))
+        make_cookie = function(sq) {
+            type_id <- private$cookie_type_id(sq)
+            if (is.null(type_id)) stop("No cookie type for: ", sq$type)
+            sprintf("{1:%s:=}", type_id)
         },
 
-        get_inst_text = function(opts, info) {
-            if (is.null(opts$export))
-                stop("Need an export type for cloze question")
-
-            if (opts$export == "xml") {
-                inst_text <- self$get_inst_text_and_cookie(opts, info)
-            } else if (opts$export == "markdown") {
-                info$index <- 1
-                inst_text <- self$get_inst_text_and_number(opts, info)
-            } else stop("Unknown export type: ", sQuote(opts$export))
-
-            if (!is.null(opts$numbered) &&opts$numbered) {
-                paste0("**Question ", info$num, " :** ", inst_text)
-            } else
-                inst_text
-        },
-
-        get_inst_cookie = function(opts, info) {
-            stop("Not needed")
-        },
-
-        get_inst_text_and_cookie = function(opts, info) {
-            inst_texts <- lapply(self$subquestions, function(question) {
-                # Use hidden data list from self
-                ## question$hidden_data_list <- self$hidden_data_list
-                question$get_inst_text_and_cookie(opts, info)
+        gen_text_from_subqs = function() {
+            parts <- lapply(self$subquestions, function(sq) {
+                if (inherits(sq, "ClozeQuestion"))
+                    sq$text
+                else
+                    paste(sq$text, private$make_cookie(sq), sep = "\n")
             })
-
-            inst_header <- instantiate_text_list(self$header, self$hidden_data_list)
-            paste(c(inst_header, inst_texts), collapse = "\n\n")
-        },
-
-        # get_XML_question_text = function(opts, info) {
-        #     HTML_texts <- lapply(self$subquestions, function(question) {
-        #         trimws(render_HTML(question$get_inst_text(opts, info), opts, info))
-        #     })
-
-        #      cookies <- lapply(self$subquestions, function(question) {
-        #         question$get_inst_cookie(opts, info)
-        #     })
-
-        #     tmp <- mapply(
-        #         function(html, cookie) {
-        #             sprintf("%s\n<p>%s</p>", html, cookie)
-        #         },
-        #         HTML_texts,
-        #         cookies
-        #     )
-
-        #     paste(tmp, collapse = "\n")
-        # },
-
-        get_inst_text_and_number = function(opts, info) {
-            stopifnot(is.numeric(info$index))
-
-            inst_texts <- NULL
-            for (question in self$subquestions) {
-                # Use hidden data list from self
-                ## question$hidden_data_list <- self$hidden_data_list
-
-                opts$numbered <- FALSE
-
-                text <- question$get_inst_text_and_number(opts, info)
-                inst_texts <- c(inst_texts, text)
-                info$index <- if (question$type == "cloze")
-                                     info$index + question$total_num
-                                 else
-                                     info$index + 1
-            }
-
-            inst_header <- instantiate_text_list(self$header, self$hidden_data_list)
-            paste(c(inst_header, inst_texts), collapse = "\n\n")
-        },
-
-        # Get feedback of each subquestion
-        get_feedbacks = function(opts, info) {
-            if (is.null(info$starting_index))
-                current_index <- 1
-            else
-                current_index <- info$starting_index
-
-            feedbacks <- list()
-            for (question in self$subquestions) {
-                # Use hidden data list from self
-                ## question$hidden_data_list <- self$hidden_data_list
-
-                # Set options for the feedback
-                if (question$type == "cloze") {
-                    info$starting_index <- current_index
-                    opts$inner_cloze <- TRUE
-                } else {
-                    info$answer_string <- sprintf("%d. La r\u00E9ponse est : ", current_index)
-                }
-
-                # We are in an itemized env, add indentation
-                opts$indent = 4
-
-                tmpl <- question$get_feedback(opts, info)
-                final_feedback <- question$get_markdown_from_template(tmpl, opts, info)
-                # final_feedback <- add_spaces_left(final_feedback, 4)
-
-                current_index <- if (question$type == "cloze")
-                                     current_index + question$total_num
-                                 else
-                                     current_index + 1
-
-                feedbacks <- c(feedbacks, final_feedback)
-            }
-
-            paste(c(self$instantiated_feedback$header, feedbacks), collapse = "\n\n")
-        },
-
-        get_default_feedback = function() {
-
-        },
-
-        get_feedback_from_field = function(feedback = self$feedback) {
-            feedback <-
-                if(is.null(feedback)) {
-                    self$get_default_feedback()
-                } else if(is.character(feedback)) {
-                    lapply(feedback, function(f) {
-                        list(text = f)
-                    })
-                } else if(is.language(feedback)) {
-                    lapply(feedback, function(f) {
-                        list(text = f)
-                    })
-                } else if(is.list(feedback)) {
-                    feedback
-                }
-            update_list(private$default_feedback_options, feedback)
-        },
-
-        get_feedback = function(opts, info) {
-            # No feedback
-            if (!is.null(opts$feedback) && !opts$feedback)
-                return(NULL)
-            if (!is.null(opts$inner_cloze) && opts$inner_cloze)
-                tmpl <- "@FEEDBACKS@"
-            else
-                tmpl <- "**R\u00E9ponses :**\n\n@FEEDBACKS@"
-            self$instantiate_placeholders(tmpl, private$placeholders, opts, info)
-        },
-
-        get_XML_answer = function(opts, info) {
-            "*"
-        },
-
-        get_feedback_answer = function(opts, info) {
-            stop("Undefined for a cloze question")
-        },
-
-        get_answer_info = function(opts, info) {
-            stop("Undefined for a cloze question")
-
-        },
-
-        instantiate_feedback_list = function(feedback, var_list) {
-            header <- feedback$header
-            inst_header <- instantiate_object(header, self$hidden_data_list)
-
-            list(header = inst_header,
-                 lapply(self$subquestions, function(question) {
-                     ## question$hidden_data_list <- self$hidden_data_list
-                     question$instantiated_feedback
-                 }))
-        },
-
-        rename = function(prefix, names = self$hidden_data_names()) {
-            self$rename_header(prefix, names)
-            self$data <- prefix_object(prefix, names, private$.cloze_data)
-            self$hidden_data <- prefix_object(prefix, names, private$.cloze_hidden_data)
-            for (question in self$subquestions)
-                question$rename(prefix, names)
-            self$invalidate_text()
-            self$invalidate_answer()
-            self$invalidate_hidden_data()
-            self$invalidate_hidden_data_list()
-            self$invalidate_feedback()
-            self$invalidate_data()
-        },
-
-        rename_text = function(prefix, names = self$hidden_data_names()) {
-            for (question in self$subquestions)
-                question$rename_text(prefix, names)
-            self$invalidate_text()
-            self$invalidate_header()
-        },
-
-        rename_answer = function(prefix, names = self$hidden_data_names()) {
-            for (question in self$subquestions)
-                question$rename_answer(prefix, names)
-            self$invalidate_answer()
-        },
-
-        rename_feedback = function(prefix, names = self$hidden_data_names()) {
-            for (question in self$subquestions)
-                question$rename_feedback(prefix, names)
-            self$invalidate_feedback()
-        },
-
-        rename_data = function(prefix, names = self$hidden_data_names()) {
-            self$data <- prefix_object(prefix, names, private$.cloze_data)
-            for (question in self$subquestions)
-                question$rename_data(prefix, names)
-            self$invalidate_data()
-        },
-
-        rename_hidden_data = function(prefix, names = self$hidden_data_names()) {
-            self$hidden_data <- prefix_object(prefix, names, private$.cloze_hidden_data)
-            for (question in self$subquestions)
-                question$rename_hidden_data(prefix, names)
-            self$invalidate_hidden_data()
-        },
-
-        to_amc = function(opts = NULL, info = NULL) {
-            opts$export <- "amc"
-
-            if (is.null(info$env)) {
-                info0 <- self$get_data_and_environment()
-                info <- update_list(info, info0)
-            }
-
-            parts <- list()
-
-            # Render header text (context shared by all subquestions)
-            if (!is.null(self$header)) {
-                inst_header <- instantiate_text_list(self$header, self$hidden_data_list)
-                parts <- c(parts, list(render_latex_fragment(inst_header, opts, info)))
-            }
-
-            # Render each subquestion, scoping info$num to avoid ID collisions
-            cloze_num <- info$num
-            for (i in seq_along(self$subquestions)) {
-                subq_info <- info
-                subq_info$num <- if (!is.null(cloze_num)) paste0(cloze_num, "-", i) else i
-                subq_latex <- self$subquestions[[i]]$to_amc(opts, subq_info)
-                if (!is.null(subq_latex))
-                    parts <- c(parts, list(subq_latex))
-            }
-
-            if (length(parts) == 0) return(NULL)
+            if (!is.null(self$header))
+                parts <- c(list(self$header), parts)
             paste(parts, collapse = "\n\n")
         },
 
-        copy = function() {
-            subquestions <- lapply(self$subquestions, function(question) {
-                question$copy()
-            })
-
-            ClozeQuestion$new(
-                data = self$data,
-                hidden_data = self$hidden_data,
-                seed = self$seed,
-                hidden_seed = self$hidden_seed,
-                ## feedback = self$feedback,
-                ## answer = self$answer,
-                questions = subquestions,
-                subquestions_opts = self$subquestions_opts)
-        }
-    ),
-
-    private = list(
-        .subquestions = NULL,
-
-        .subquestions_opts = NULL,
-
-        .cloze_data = NULL,
-
-        is_cloze_hidden_data_available = FALSE,
-        .cloze_hidden_data = NULL,
-
-        is_cloze_feedback_available = FALSE,
-        .cloze_feedback = NULL,
-
-        .header = NULL,
-        is_header_instantiated = FALSE,
-
-        cloze_regex = "\\{(\\d+):(SHORTANSWER|SA|MW|SHORTANSWER_C|SAC|MWC|NUMERICAL|NM|MULTICHOICE|MC|MULTICHOICE_V|MCV|MULTICHOICE_H|MCH):=([^\\}]*)\\}",
-
-        type_to_cloze_id = list(
-            numerical = "NM",
-            shortanswer = "SA",
-            multichoice = "MC"
-        ),
-
-        questions_list = list(
-            SHORTANSWER = ShortanswerQuestion,
-            SA = ShortanswerQuestion,
-            MW = NULL,
-            SHORTANSWER_C = NULL,
-            SAC = NULL,
-            MWC = NULL,
-            NUMERICAL = NumericalQuestion,
-            NM = NumericalQuestion,
-            MULTICHOICE = NULL,
-            MC = MultipleChoice,
-            MULTICHOICE_V = NULL,
-            MCV = NULL,
-            MULTICHOICE_H = NULL,
-            MCH = NULL),
-
-        get_data_from_questions = function() {
-            languages <- lapply(self$subquestions, function(question) {
-                question$data
-            })
-            merge_languages(languages)
+        to_block = function(parts) {
+            if (length(parts) == 0) return(quote({}))
+            if (length(parts) == 1) {
+                p <- parts[[1]]
+                if (is.call(p) && identical(p[[1]], as.name("{"))) return(p)
+                return(as.call(c(list(as.name("{")), list(p))))
+            }
+            merge_languages(parts)
         },
 
-        get_inst_data_from_questions = function() {
-            languages <- lapply(self$subquestions, function(question) {
-                question$instantiated_data
-            })
-            merge_languages(languages)
-        },
-
-        get_hidden_data_from_questions = function(questions = self$subquestions) {
-            languages <- lapply(questions, function(question) {
-                question$hidden_data
-            })
-
-            merge_languages(languages)
-        },
-
-        get_text_from_questions = function() {
-            texts <- sapply(self$subquestions, function(question) {
-                if (question$type == "cloze") {
-                    question$text
-                } else {
-                    id <- private$type_to_cloze_id[[question$type]]
-                    if (is.null(id))
-                        stop("No identifier ", sQuote(question$type), " in ", sQuote("type_to_cloze_id"))
-                    sprintf("%s\n{1:%s:=}", question$text, id)
-                }
-            })
-            paste(texts, collapse = "\n\n")
-        },
-
-        get_answer_from_questions = function() {
-            answers <- lapply(self$subquestions, function(question) {
-                if (question$type == "cloze") {
-                    question$answer
-                } else {
-                    list(question$answer)
-                }
-            })
-
-            unlist(answers, recursive = FALSE)
-        },
-
-        get_inst_answer_from_questions = function() {
-            inst_answers <- lapply(self$subquestions, function(question) {
-                if (question$type == "cloze") {
-                    question$instantiated_answer
-                } else {
-                    list(question$instantiated_answer)
-                }
-            })
-
-            unlist(inst_answers, recursive = FALSE)
-        },
-
-        get_inst_feedback_from_questions = function() {
-            feedback <- self$cloze_feedback
-
-            inst_feedbacks <- lapply(self$subquestions, function(question) {
-                if (question$type == "cloze") {
-                    question$instantiated_feedback$feedbacks
-                } else {
-                    list(question$instantiated_feedback)
-                }
-            })
-
-            feedbacks <- unlist(inst_feedbacks, recursive = FALSE)
-            feedback$feedbacks <- feedbacks
-            feedback
-        },
-
-
-        get_inst_text_from_questions = function() {
-            inst_texts <- sapply(self$subquestions, function(question) {
-                if (question$type == "cloze") {
-                    question$instantiated_text
-                } else {
-                    id <- private$type_to_cloze_id[[question$type]]
-                    if (is.null(id))
-                        stop("No identifier ", sQuote(question$type), " in ", sQuote("type_to_cloze_id"))
-                    sprintf("%s\n{1:%s:=}", question$instantiated_text, id)
-                }
-            })
-            paste(inst_texts, collapse = "\n\n")
-        },
-
-        get_feedback_from_questions = function() {
-            feedback <- lapply(self$subquestions, function(question) {
-                if (question$type == "cloze") {
-                    question$feedback$feedbacks
-                } else {
-                    list(question$feedback)
-                }
-            })
-
-            unlist(feedback, recursive = FALSE)
-        },
-
-
-        get_subquestions = function(text, answer = NULL, feedback = NULL, subquestions_opts = NULL) {
-            loc <- stringi::stri_locate_all_regex(text, private$cloze_regex, omit_no_match = TRUE)[[1]]
+        parse_subquestions = function(text, answer = NULL, feedback = NULL,
+                                      subquestions_opts = NULL) {
+            loc <- stringi::stri_locate_all_regex(text, private$cloze_regex,
+                                                   omit_no_match = TRUE)[[1]]
             N <- nrow(loc)
-
             stopifnot(N > 0)
-            if (length(answer) > 0)
-                stopifnot(N == length(answer))
-            if (length(feedback) > 0) {
-                feedback <- self$sanitize_feedback(feedback)
-                stopifnot(N == length(feedback$feedbacks))
+
+            if (!is.null(answer))  stopifnot(length(answer) == N)
+            if (!is.null(subquestions_opts)) stopifnot(length(subquestions_opts) == N)
+
+            cloze_feedback <- list(header = NULL)
+            if (!is.null(feedback)) {
+                feedback <- private$sanitize_cloze_feedback(feedback)
+                cloze_feedback <- list(header = feedback$header)
+                stopifnot(length(feedback$feedbacks) == N)
             }
-            if (length(subquestions_opts) > 0)
-                stopifnot(N == length(subquestions_opts))
 
-            cloze_feedback <- feedback
-            cloze_feedback$feedbacks <- NULL
-            self$cloze_feedback <- cloze_feedback
-
-            texts <- trimws(substring(text, c(1, loc[seq_len(N-1), "end"] + 1), loc[, "start"] - 1))
+            texts   <- trimws(substring(text,
+                                        c(1, loc[seq_len(N - 1), "end"] + 1),
+                                        loc[, "start"] - 1))
             cookies <- trimws(substring(text, loc[, "start"], loc[, "end"]))
-            stopifnot(length(texts) == length(cookies))
 
-            lapply(1:N, function(i) {
-                text <- texts[i]
-                cookie <- cookies[i]
-                match <- stringi::stri_match_first_regex(cookie, private$cloze_regex)[1,]
-
+            subqs <- lapply(seq_len(N), function(i) {
+                match  <- stringi::stri_match_first_regex(cookies[i], private$cloze_regex)[1, ]
                 qclass <- private$questions_list[[match[3]]]
-                if (is.null(qclass)) stop("No corresponding class for ", sQuote(match[3]))
-                question <- do.call(qclass$new, c(list(text,
-                                                        answer = answer[[i]],
-                                                        feedback = feedback$feedbacks[[i]]),
-                                                   subquestions_opts[[i]]), quote = TRUE)
-
-                question$ancestor  <- self
-
-                if (is.null(self$quiz))
-                    question$update_quiz(self)
-                else
-                    question$update_quiz(self$quiz)
-
-                question
+                if (is.null(qclass))
+                    stop("No class for cloze type: ", sQuote(match[3]))
+                do.call(qclass$new,
+                        c(list(texts[i],
+                               answer   = answer[[i]],
+                               feedback = if (!is.null(feedback)) feedback$feedbacks[[i]] else NULL),
+                          subquestions_opts[[i]]),
+                        quote = TRUE)
             })
-        },
 
-        # Return list of questions from text, answer and feedback fields
-        # get_subquestions_from_text = function() {
-        #     matches <- stringi::stri_match_all_regex(self$text, private$cloze_regex)[[1]]
-
-        #     if (any(is.na(matches))) {
-        #         self$answer <- list()
-        #         self$feedback <- list()
-        #         self$subquestions_opts <- list()
-
-        #         list()
-        #     } else {
-        #         if (!private$is_answer_available || length(self$answer) != nrow(matches))
-        #             self$answer <- vector(mode = "list", length = nrow(matches))
-
-        #         if (!private$is_feedback_available || length(self$feedback) != nrow(matches))
-        #             self$feedback <- vector(mode = "list", length = nrow(matches))
-
-        #         if (is.null(self$subquestions_opts) || length(self$subquestions_opts) != nrow(matches))
-        #             self$subquestions_opts <- vector(mode = "list", length = nrow(matches))
-
-        #         lapply(seq_len(nrow(matches)), function(i) {
-        #             qclass <- private$questions_list[[matches[i, 3]]]
-        #             if (is.null(qclass)) stop("No corresponding class for ", sQuote(matches[i, 3]))
-        #             do.call(qclass$new, c(list(sprintf("Subquestion number %d", i),
-        #                                        answer = self$answer[[i]],
-        #                                        feedback = self$feedback[[i]]),
-        #                                   self$subquestions_opts[[i]]), quote = TRUE)
-        #         })
-        #     }
-        # },
-
-        replace_cloze_fields = function(text) {
-            for (i in seq_len(self$total_num)) {
-                text <- stringi::stri_replace_first_regex(text, private$cloze_regex, paste0("(", i, ")"))
-            }
-            return(text)
-        }
-    ),
-
-    active = list(
-
-        data = function(data) {
-            if (missing(data)) {
-                if (!private$is_data_available) {
-                    private$.data <- merge_languages(
-                        private$.cloze_data,
-                        private$get_data_from_questions())
-                    self$invalidate_inst_data()
-                    private$is_data_available <- TRUE
-                }
-                private$.data
-            } else {
-                private$.cloze_data <- data
-                private$is_data_available <- FALSE
-                self$invalidate_data()
-                private$.cloze_data
-            }
-        },
-
-        instantiated_data = function() {
-            if (private$is_data_instantiated)
-                private$.instantiated_data
-            else {
-                private$.instantiated_data <- merge_languages(
-                    instantiate_data_list(
-                        private$.cloze_data,
-                        self$hidden_data_list),
-                    private$get_inst_data_from_questions())
-                private$is_data_instantiated <- TRUE
-                private$.instantiated_data
-            }
-        },
-
-        hidden_data = function(hidden_data) {
-            if (missing(hidden_data)) {
-                if (!private$is_hidden_data_available) {
-                    private$.hidden_data <- merge_languages(
-                        private$.cloze_hidden_data,
-                        private$get_hidden_data_from_questions())
-                    private$is_hidden_data_available <- TRUE
-                }
-                private$.hidden_data
-            } else {
-                private$.cloze_hidden_data <- hidden_data
-                for (question in self$subquestions)
-                    question$invalidate_hidden_data()
-
-                ## TODO Replace by a simple invalidate function?
-                if (is.null(self$ancestor))
-                    self$invalidate_hidden_data()
-                else
-                    self$ancestor$invalidate_hidden_data()
-                private$is_hidden_data_available <- FALSE # Trigger reconstruction
-
-                private$.cloze_hidden_data
-            }
-        },
-
-        cloze_hidden_data = function(hidden_data) {
-            if (missing(hidden_data)) {
-                private$.cloze_hidden_data
-            } else {
-                private$.cloze_hidden_data <- hidden_data
-                self$invalidate_hidden_data()
-                private$.cloze_hidden_data
-            }
-        },
-
-        text = function(text) {
-            if (missing(text)) {
-                if (private$is_text_available)
-                    private$.text
-                else {
-                    header_text <- c(trimws(self$header), trimws(private$get_text_from_questions()))
-                    private$.text <- paste(header_text, collapse = "\n\n")
-                    private$is_text_available <- TRUE
-                    private$.text
-                }
-            } else {
-                self$invalidate_answer()
-                self$invalidate_feedback()
-                self$invalidate_text()
-                self$subquestions <- private$get_subquestions(text)
-                text
-            }
-        },
-
-        instantiated_text = function() {
-            if (private$is_text_instantiated)
-                private$.instantiated_text
-            else {
-                private$.instantiated_text <- private$get_inst_text_from_questions()
-                private$is_text_instantiated <- TRUE
-                private$.instantiated_text
-            }
-        },
-
-        answer = function(answer) {
-            if (missing(answer)) {
-                if (private$is_answer_available) {
-                    private$.answer
-                } else {
-                    private$.answer <- private$get_answer_from_questions()
-                    private$is_answer_available <- TRUE
-                    private$.answer
-                }
-            } else {
-                if (length(answer) > 0)
-                    stopifnot(length(answer) == self$num)
-
-                for (i in seq_along(self$subquestions))
-                    self$subquestions[[i]]$answer <- answer[[i]]
-
-                self$invalidate_answer()
-            }
-        },
-
-        instantiated_answer = function() {
-            if (private$is_answer_instantiated)
-                private$.instantiated_answer
-            else {
-                private$.instantiated_answer <- private$get_inst_answer_from_questions()
-                private$is_answer_instantiated <- TRUE
-                private$.instantiated_answer
-            }
-        },
-
-        cloze_feedback = function(cloze_feedback) {
-            if (missing(cloze_feedback)) {
-                if (private$is_cloze_feedback_available)
-                    private$.cloze_feedback
-                else {
-                    private$is_cloze_feedback_available <- TRUE
-                    private$.cloze_feedback <- list(header = NULL)
-                }
-            } else {
-                private$.cloze_feedback <- cloze_feedback
-                private$is_cloze_feedback_available <- TRUE
-                self$invalidate_feedback()
-            }
-        },
-
-        feedback = function(feedback) {
-            if (missing(feedback)) {
-                if (private$is_feedback_available) {
-                    private$.feedback
-                } else {
-                    feedbacks <- private$get_feedback_from_questions()
-                    feedback <- self$cloze_feedback
-                    feedback$feedbacks <- feedbacks
-                    private$is_feedback_available <- TRUE
-                    private$.feedback <- feedback
-                }
-            } else {
-                feedback <- self$update_feedback(feedback)
-                cloze_feedback <- feedback
-                cloze_feedback$feedbacks <- NULL
-                private$.cloze_feedback <- cloze_feedback
-
-                self$invalidate_feedback() # Trigger reconstruction from subquestions
-                self$invalidate_inst_feedback()
-                private$.cloze_feedback <- cloze_feedback
-            }
-        },
-
-        instantiated_feedback = function() {
-            if (private$is_feedback_instantiated)
-                private$.instantiated_feedback
-            else {
-                private$.instantiated_feedback <- private$get_inst_feedback_from_questions()
-                private$is_feedback_instantiated <- TRUE
-                private$.instantiated_feedback
-            }
-        },
-
-        subquestions = function(subquestions) {
-            if (missing(subquestions)) {
-                private$.subquestions
-            } else {
-                private$.subquestions <- subquestions
-                self$invalidate_text()
-                self$invalidate_answer()
-                self$invalidate_feedback()
-                self$invalidate_hidden_data()
-                self$invalidate_data()
-                self$invalidate_hidden_data_list()
-                private$.subquestions
-            }
-        },
-
-        subquestions_opts = function() {
-            sqo <- lapply(self$subquestions, function(sq) {
-                if (sq$type == "cloze") {
-                    sq$subquestions_opts
-                } else {
-                    list(NULL)
-                }
-            })
-            unlist(sqo, recursive = FALSE)
-        },
-
-        num = function() length(self$subquestions),
-
-        total_num = function() {
-            sum(sapply(self$subquestions, function(question) {
-                if (question$type == "cloze")
-                    question$num
-                else 1
-            }))
+            list(subquestions = subqs, cloze_feedback = cloze_feedback)
         }
     )
 )

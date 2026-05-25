@@ -23,6 +23,7 @@ RoxygenNote: 7.3.2
 Suggests: testthat
 VignetteBuilder: knitr
 Collate:
+    'utils.R'
     'simple_question.R'
     'multiple_choice.R'
     'shortanswer_question.R'
@@ -31,5 +32,8 @@ Collate:
     'gapselect_question.R'
     'group.R'
     'question.R'
+    'instantiate.R'
+    'exporter_amc.R'
+    'exporter_xml.R'
+    'exporter_markdown.R'
     'quiz.R'
-    'utils.R'

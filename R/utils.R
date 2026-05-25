@@ -153,7 +153,8 @@ render_HTML <- function(text, opts, info) {
 
     write(text, tmpfile, append = TRUE)
 
-    output <- rmarkdown::render(tmpfile, rmarkdown::html_fragment(), envir = env, quiet = opts$quiet)
+    output <- rmarkdown::render(tmpfile, rmarkdown::html_fragment(), envir = env,
+                                quiet = isTRUE(opts$quiet))
     on.exit(unlink(output), add = TRUE)
 
     result <- to_string(output)
@@ -476,7 +477,7 @@ versionize_group <- function(group, seed, N) {
 
         new_group <- group$clone()
         new_group$hidden_data <- new_hdata
-        new_group$title <- group_name
+        new_group$text <- group_name
 
         new_group
     })

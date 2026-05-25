@@ -1,5 +1,7 @@
 context("AMC export")
 
+amc <- function(q, ...) AMCExporter$new()$render(instantiate(q), list(...))
+
 # ── MultipleChoice ────────────────────────────────────────────────────────────
 
 test_that("MultipleChoice to_amc uses \\begin{question} for single-choice format", {
@@ -7,7 +9,7 @@ test_that("MultipleChoice to_amc uses \\begin{question} for single-choice format
                   items = c("alpha", "beta", "gamma"),
                   answer = c(FALSE, TRUE, FALSE))
 
-    result <- q$to_amc(list(), list())
+    result <- amc(q)
 
     expect_match(result, "\\\\begin\\{question\\}")
     expect_match(result, "\\\\end\\{question\\}")
@@ -19,7 +21,7 @@ test_that("MultipleChoice to_amc uses \\begin{questionmult} for multi-response f
                   items = c("a", "b", "c"),
                   answer = c(TRUE, FALSE, TRUE))
 
-    result <- q$to_amc(list(), list())
+    result <- amc(q)
 
     expect_match(result, "\\\\begin\\{questionmult\\}")
     expect_match(result, "\\\\end\\{questionmult\\}")
@@ -30,7 +32,7 @@ test_that("MultipleChoice to_amc emits \\correctchoice and \\wrongchoice", {
                   items = c("right", "wrong1", "wrong2"),
                   answer = c(TRUE, FALSE, FALSE))
 
-    result <- q$to_amc(list(), list())
+    result <- amc(q)
 
     expect_match(result, "\\\\correctchoice\\{right\\}")
     expect_match(result, "\\\\wrongchoice\\{wrong1\\}")
@@ -42,7 +44,7 @@ test_that("MultipleChoice to_amc handles multiple correct answers", {
                   items = c("yes1", "no1", "yes2"),
                   answer = c(TRUE, FALSE, TRUE))
 
-    result <- q$to_amc(list(), list())
+    result <- amc(q)
 
     expect_match(result, "\\\\correctchoice\\{yes1\\}")
     expect_match(result, "\\\\wrongchoice\\{no1\\}")
@@ -54,20 +56,18 @@ test_that("MultipleChoice to_amc sanitizes the question title for the ID", {
                   items = c("a", "b"),
                   answer = c(TRUE, FALSE))
 
-    result <- q$to_amc(list(), list())
+    result <- amc(q)
 
     # Spaces and punctuation become hyphens; leading/trailing hyphens stripped
     expect_match(result, "\\{My-Question\\}")
 })
 
-test_that("MultipleChoice to_amc includes info$num in the ID when provided", {
+test_that("MultipleChoice to_amc includes num in the ID when provided", {
     q <- Question("Simple", type = "mc",
                   items = c("a", "b"),
                   answer = c(TRUE, FALSE))
 
-    info0 <- q$get_data_and_environment()
-    info0$num <- 3
-    result <- q$to_amc(list(), info0)
+    result <- amc(q, num = 3)
 
     expect_match(result, "\\{q3-Simple\\}")
 })
@@ -79,7 +79,7 @@ test_that("MultipleChoice to_amc works with randomized hidden data", {
                   items = c("`r n - 1`", "`r n`", "`r n + 1`"),
                   answer = c(FALSE, TRUE, FALSE))
 
-    result <- q$to_amc(list(), list())
+    result <- amc(q)
 
     expect_match(result, "\\\\correctchoice\\{7\\}")
     expect_match(result, "\\\\wrongchoice\\{6\\}")
@@ -91,7 +91,7 @@ test_that("MultipleChoice to_amc works with randomized hidden data", {
 test_that("NumericalQuestion to_amc errors when distractors are missing", {
     q <- Question("What is 2+2?", type = "numerical", answer = quote(4))
 
-    expect_error(q$to_amc(list(), list()), "distractors")
+    expect_error(amc(q), "distractors")
 })
 
 test_that("NumericalQuestion to_amc generates correct LaTeX structure", {
@@ -99,7 +99,7 @@ test_that("NumericalQuestion to_amc generates correct LaTeX structure", {
                   answer = quote(2),
                   distractors = c(1, 3, 4))
 
-    result <- q$to_amc(list(), list())
+    result <- amc(q)
 
     expect_match(result, "\\\\begin\\{question\\}")
     expect_match(result, "\\\\correctchoice\\{\\$2\\$\\}")
@@ -113,7 +113,7 @@ test_that("NumericalQuestion to_amc errors when a distractor equals the answer",
                   answer = quote(5),
                   distractors = c(5, 3, 4))
 
-    expect_error(q$to_amc(list(), list()), "equal to the correct answer")
+    expect_error(amc(q), "equal to correct answer")
 })
 
 test_that("NumericalQuestion to_amc errors on duplicate distractors", {
@@ -121,7 +121,7 @@ test_that("NumericalQuestion to_amc errors on duplicate distractors", {
                   answer = quote(5),
                   distractors = c(2, 2, 4))
 
-    expect_error(q$to_amc(list(), list()), "Duplicate")
+    expect_error(amc(q), "Duplicate")
 })
 
 test_that("NumericalQuestion to_amc works with randomized answer and distractors", {
@@ -131,7 +131,7 @@ test_that("NumericalQuestion to_amc works with randomized answer and distractors
                   answer = quote(n),
                   distractors = list(quote(n - 1), quote(n + 1), quote(n + 2)))
 
-    result <- q$to_amc(list(), list())
+    result <- amc(q)
 
     expect_match(result, "\\\\correctchoice\\{\\$10\\$\\}")
     # format() may pad single-digit numbers with a leading space when the
@@ -145,12 +145,12 @@ test_that("NumericalQuestion to_amc works with randomized answer and distractors
 
 test_that("ShortanswerQuestion to_amc raises an error", {
     q <- Question("Short answer?", type = "shortanswer", answer = "foo")
-    expect_error(q$to_amc(list(), list()), "not supported")
+    expect_error(amc(q), "No AMC renderer")
 })
 
 # ── Quiz / Group ──────────────────────────────────────────────────────────────
 
-test_that("Quiz to_amc concatenates children AMC output", {
+test_that("Quiz render concatenates children AMC output", {
     q1 <- Question("Q1", type = "mc",
                    items = c("a", "b"),
                    answer = c(TRUE, FALSE))
@@ -160,8 +160,7 @@ test_that("Quiz to_amc concatenates children AMC output", {
 
     quiz <- Quiz$new("myquiz", children = list(q1, q2))
 
-    # Children set up their own environments when info$env is NULL
-    result <- quiz$to_amc(list(), list())
+    result <- AMCExporter$new()$render(instantiate(quiz), list())
 
     expect_match(result, "\\\\correctchoice\\{a\\}")
     expect_match(result, "\\\\correctchoice\\{d\\}")
