@@ -7,17 +7,19 @@
 #'
 #' @param node A SimpleQuestion, Group, or Quiz R6 object.
 #' @param parent_var_list Named list of variables inherited from parent scope.
+#' @param parent_env Environment whose parent chain provides the eval context
+#'   for variables defined in ancestor data blocks.
 #' @return A plain list (inode) with all fields evaluated.
 #' @export
-instantiate <- function(node, parent_var_list = list()) {
+instantiate <- function(node, parent_var_list = list(), parent_env = empty_env()) {
     if (inherits(node, "Quiz"))
-        instantiate_group(node, parent_var_list)
+        instantiate_group(node, parent_var_list, parent_env)
     else if (inherits(node, "Group"))
-        instantiate_group(node, parent_var_list)
+        instantiate_group(node, parent_var_list, parent_env)
     else if (inherits(node, "ClozeQuestion"))
-        instantiate_cloze(node, parent_var_list)
+        instantiate_cloze(node, parent_var_list, parent_env)
     else
-        instantiate_leaf(node, parent_var_list)
+        instantiate_leaf(node, parent_var_list, parent_env)
 }
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -25,7 +27,7 @@ instantiate <- function(node, parent_var_list = list()) {
 # Evaluate hidden_data with hidden_seed in context of parent_var_list.
 # Returns the merged named list of all available variables.
 eval_hidden_data <- function(hidden_data, hidden_seed, parent_var_list) {
-    env <- list2env(parent_var_list, envir = empty_env())
+    env <- list2env(parent_var_list, parent = empty_env())
     if (!is.null(hidden_seed))
         eval(bquote(set.seed(.(hidden_seed))), envir = env)
     if (!is_empty_language(hidden_data))
@@ -34,9 +36,10 @@ eval_hidden_data <- function(hidden_data, hidden_seed, parent_var_list) {
 }
 
 # Build an R evaluation environment from var_list, then optionally evaluate
-# data (with seed) into it.  Returns the environment.
-build_env <- function(var_list, data = quote({}), seed = NULL) {
-    env <- list2env(var_list, envir = empty_env())
+# data (with seed) into it.  parent_env is set as the environment's parent so
+# that variables from ancestor data blocks are reachable via eval.
+build_env <- function(var_list, data = quote({}), seed = NULL, parent_env = empty_env()) {
+    env <- list2env(var_list, parent = parent_env)
     if (!is.null(seed))
         eval(bquote(set.seed(.(seed))), envir = env)
     if (!is_empty_language(data))
@@ -74,9 +77,9 @@ derive_title <- function(inst_text) {
 
 # ── Leaf questions ────────────────────────────────────────────────────────────
 
-instantiate_leaf <- function(q, parent_var_list = list()) {
+instantiate_leaf <- function(q, parent_var_list = list(), parent_env = empty_env()) {
     var_list  <- eval_hidden_data(q$hidden_data, q$hidden_seed, parent_var_list)
-    env       <- build_env(var_list, q$data, q$seed)
+    env       <- build_env(var_list, q$data, q$seed, parent_env)
     data_expr <- build_data_expr(var_list, q$data, q$seed)
 
     full_text <- trimws(paste(
@@ -105,10 +108,8 @@ instantiate_leaf <- function(q, parent_var_list = list()) {
         inode$tolerance      <- q$tolerance
         inode$tolerance_type <- q$tolerance_type
         inode$distractors    <- instantiate_distractors(q$distractors, var_list, env)
-        if (is.language(q$answer)) {
-            subst        <- instantiate_object(q$answer, Filter(is.language, var_list))
-            inode$answer <- eval(subst, envir = env)
-        }
+        if (is.language(inode$answer))
+            inode$answer <- eval(inode$answer, envir = env)
     } else if (inherits(q, "MultipleChoice")) {
         inode$items            <- instantiate_mc_items(q$items, var_list, env)
         inode$answer_feedbacks <- instantiate_mc_answer_feedbacks(q$answer_feedbacks, var_list)
@@ -123,18 +124,16 @@ instantiate_leaf <- function(q, parent_var_list = list()) {
 
 instantiate_distractors <- function(distractors, var_list, env) {
     if (is.null(distractors)) return(NULL)
-    lv <- Filter(is.language, var_list)
     if (is.language(distractors)) {
-        as.list(eval(instantiate_data_list(distractors, lv), envir = env))
+        as.list(eval(instantiate_data_list(distractors, var_list), envir = env))
     } else {
-        lapply(distractors, function(d) eval(instantiate_data_list(d, lv), envir = env))
+        lapply(distractors, function(d) eval(instantiate_data_list(d, var_list), envir = env))
     }
 }
 
 instantiate_mc_items <- function(items, var_list, env) {
     if (is.language(items)) {
-        lv <- Filter(is.language, var_list)
-        as.list(eval(instantiate_data_list(items, lv), envir = env))
+        as.list(eval(instantiate_data_list(items, var_list), envir = env))
     } else {
         lapply(items, function(item) instantiate_text_list(item, var_list))
     }
@@ -147,13 +146,12 @@ instantiate_mc_answer_feedbacks <- function(feedbacks, var_list) {
 
 # Returns a logical vector.
 instantiate_mc_answer <- function(answer, var_list, env) {
-    lv <- Filter(is.language, var_list)
     if (is.language(answer)) {
-        result <- eval(instantiate_data_list(answer, lv), envir = env)
+        result <- eval(instantiate_data_list(answer, var_list), envir = env)
         stopifnot(is.logical(result))
         result
     } else {
-        result <- sapply(answer, function(a) eval(instantiate_data_list(a, lv), envir = env))
+        result <- sapply(answer, function(a) eval(instantiate_data_list(a, var_list), envir = env))
         stopifnot(is.logical(result))
         result
     }
@@ -161,18 +159,19 @@ instantiate_mc_answer <- function(answer, var_list, env) {
 
 # ── Cloze questions ───────────────────────────────────────────────────────────
 
-instantiate_cloze <- function(q, parent_var_list = list()) {
+# var_list (hidden_data-derived) flows into subquestions as the substitution
+# map.  env is passed as parent_env so that data-block variables are reachable
+# by subquestion eval without polluting the substitution map.
+instantiate_cloze <- function(q, parent_var_list = list(), parent_env = empty_env()) {
     var_list  <- eval_hidden_data(q$cloze_hidden_data, q$hidden_seed, parent_var_list)
-    env       <- build_env(var_list, q$cloze_data, q$seed)
+    env       <- build_env(var_list, q$cloze_data, q$seed, parent_env)
     data_expr <- build_data_expr(var_list, q$cloze_data, q$seed)
 
-    full_var_list <- as.list(env, all.names = TRUE)
-
     header <- if (!is.null(q$header))
-        instantiate_text_list(q$header, full_var_list)
+        instantiate_text_list(q$header, var_list)
     else NULL
 
-    inst_subqs <- lapply(q$subquestions, function(sq) instantiate(sq, full_var_list))
+    inst_subqs <- lapply(q$subquestions, function(sq) instantiate(sq, var_list, env))
 
     cloze_fb <- if (!is.null(q$cloze_feedback))
         q$cloze_feedback
@@ -194,12 +193,12 @@ instantiate_cloze <- function(q, parent_var_list = list()) {
 
 # ── Groups and Quiz ───────────────────────────────────────────────────────────
 
-instantiate_group <- function(g, parent_var_list = list()) {
+instantiate_group <- function(g, parent_var_list = list(), parent_env = empty_env()) {
     var_list  <- eval_hidden_data(g$hidden_data, g$hidden_seed, parent_var_list)
-    env       <- build_env(var_list, g$data, g$seed)
+    env       <- build_env(var_list, g$data, g$seed, parent_env)
     data_expr <- build_data_expr(var_list, g$data, g$seed)
 
-    children <- lapply(g$children, function(child) instantiate(child, var_list))
+    children <- lapply(g$children, function(child) instantiate(child, var_list, env))
 
     cls <- class(g)[1]
     list(

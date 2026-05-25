@@ -76,6 +76,8 @@ test_that("ClozeQuestion data-block variables are accessible to subquestion answ
 })
 
 test_that("ClozeQuestion data-block variables are accessible in subquestion text", {
+    # Data-block vars are not substituted at instantiation time; they are
+    # resolved via the env parent chain at render time.
     cloze <- ClozeQuestion$new(
         data      = quote({ label <- "hello" }),
         questions = list(
@@ -84,8 +86,9 @@ test_that("ClozeQuestion data-block variables are accessible in subquestion text
                      distractors = list(2, 3, 4))
         )
     )
-    inode <- instantiate(cloze)
-    expect_match(inode$subquestions[[1]]$text, "hello")
+    inode  <- instantiate(cloze)
+    result <- XMLExporter$new()$render(inode, list(quiet = TRUE))
+    expect_match(result, "hello")
 })
 
 # ── collect_data_exprs ────────────────────────────────────────────────────────
