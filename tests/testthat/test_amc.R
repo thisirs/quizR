@@ -141,6 +141,85 @@ test_that("NumericalQuestion to_amc works with randomized answer and distractors
     expect_match(result, "\\\\wrongchoice\\{\\$12\\$\\}")
 })
 
+# ── ClozeQuestion ─────────────────────────────────────────────────────────────
+
+test_that("ClozeQuestion built from text sets text_based=TRUE", {
+    q <- ClozeQuestion$new(
+        text = "A: {1:NM:=1:0.1} B: {1:NM:=2:0.1}",
+        subquestions_opts = list(
+            list(distractors = c(3, 4, 5)),
+            list(distractors = c(6, 7, 8))
+        )
+    )
+    expect_true(q$text_based)
+})
+
+test_that("ClozeQuestion built from questions list sets text_based=FALSE", {
+    q1 <- NumericalQuestion$new("A", answer = 1, distractors = c(3, 4, 5))
+    q2 <- NumericalQuestion$new("B", answer = 2, distractors = c(6, 7, 8))
+    q  <- ClozeQuestion$new(questions = list(q1, q2))
+    expect_false(q$text_based)
+})
+
+test_that("ClozeQuestion text_based=TRUE: question envs are interleaved with text", {
+    q <- ClozeQuestion$new(
+        text    = "Part A: {1:NM:=10:0.1} Part B: {1:NM:=20:0.1}",
+        answer  = list(quote(10), quote(20)),
+        subquestions_opts = list(
+            list(distractors = c(1, 2, 3)),
+            list(distractors = c(4, 5, 6))
+        )
+    )
+    result <- amc(q)
+    # Each question env follows its own text inline (no outer enumerate wrapper)
+    expect_no_match(result, "\\\\begin\\{enumerate\\}")
+    expect_match(result, "(?s)Part A:.*\\\\begin\\{question\\}", perl = TRUE)
+    expect_match(result, "(?s)Part B:.*\\\\begin\\{question\\}", perl = TRUE)
+    expect_match(result, "\\\\correctchoice\\{\\$10\\$\\}")
+    expect_match(result, "\\\\correctchoice\\{\\$20\\$\\}")
+})
+
+test_that("ClozeQuestion text_based=TRUE: list structure produces single enumerate with interleaved envs", {
+    q <- ClozeQuestion$new(
+        text = "Intro:\n\n1. First question {1:NM:=10:0.1}\n2. Second question {1:NM:=20:0.1}",
+        answer = list(quote(10), quote(20)),
+        subquestions_opts = list(
+            list(distractors = c(1, 2, 3)),
+            list(distractors = c(4, 5, 6))
+        )
+    )
+    result <- amc(q)
+    # A single enumerate contains both items interleaved with their question blocks
+    expect_match(result, "\\\\begin\\{enumerate\\}")
+    expect_match(result, "(?s)\\\\item.*First question.*\\\\begin\\{question\\}", perl = TRUE)
+    expect_match(result, "(?s)\\\\item.*Second question.*\\\\begin\\{question\\}", perl = TRUE)
+    expect_match(result, "\\\\correctchoice\\{\\$10\\$\\}")
+    expect_match(result, "\\\\correctchoice\\{\\$20\\$\\}")
+})
+
+test_that("ClozeQuestion text_based=FALSE: AMC output wraps subquestions in enumerate", {
+    q1 <- NumericalQuestion$new("Part A", answer = 10, distractors = c(1, 2, 3))
+    q2 <- NumericalQuestion$new("Part B", answer = 20, distractors = c(4, 5, 6))
+    q  <- ClozeQuestion$new(questions = list(q1, q2))
+    result <- amc(q)
+    expect_match(result, "\\\\begin\\{enumerate\\}")
+    expect_match(result, "\\\\item")
+    expect_match(result, "\\\\correctchoice\\{\\$10\\$\\}")
+    expect_match(result, "\\\\correctchoice\\{\\$20\\$\\}")
+})
+
+test_that("ClozeQuestion copy preserves text_based", {
+    q_text <- ClozeQuestion$new(
+        text = "Q: {1:NM:=1:0.1}",
+        subquestions_opts = list(list(distractors = c(2, 3, 4)))
+    )
+    q_list <- ClozeQuestion$new(
+        questions = list(NumericalQuestion$new("Q", answer = 1, distractors = c(2, 3, 4)))
+    )
+    expect_true(q_text$copy()$text_based)
+    expect_false(q_list$copy()$text_based)
+})
+
 # ── Unsupported types ─────────────────────────────────────────────────────────
 
 test_that("ShortanswerQuestion to_amc raises an error", {

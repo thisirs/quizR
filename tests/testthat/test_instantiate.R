@@ -192,6 +192,27 @@ test_that("collect_data_exprs recurses into cloze subquestions", {
     expect_true(length(exprs) >= 1)
 })
 
+test_that("instantiate_group exposes instantiated header in inode", {
+    g <- Group$new("g",
+                   header   = "intro",
+                   type     = "sequential",
+                   children = list(Question("q1", type = "SA")))
+    inode <- instantiate(g)
+    expect_equal(inode$header, "intro")
+    expect_equal(inode$children[[1]]$text, "q1")
+})
+
+test_that("instantiate_group header is instantiated with var_list", {
+    g <- Group$new("g",
+                   hidden_data = quote({ x <- "world" }),
+                   header      = "hello `r x`",
+                   type        = "sequential",
+                   children    = list(Question("q", type = "SA")))
+    inode <- instantiate(g)
+    expect_match(inode$header, "world")
+    expect_equal(inode$children[[1]]$text, "q")
+})
+
 test_that("generate_data_file writes content from child questions", {
     q <- Question("q", type = "numerical",
                   data        = quote({ ans <- 7 }),

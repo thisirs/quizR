@@ -41,104 +41,64 @@ test_that(paste(sQuote("sample_questions"), " is working correctly"), {
 })
 
 
-test_that(paste(sQuote("versionize_questions"), " is working correctly"), {
-    qs <- list(
-        Question("q1", answer = 1),
-        Question("q2", answer = 2),
-        Question("q3", answer = 3),
-        Question("q4", answer = 4),
-        Question("q5", answer = 5),
-        Question("q6", answer = 6),
-        Question("q7", answer = 7))
-
-    nver <- c(1:7)
-    q_list <- versionize_questions(qs, "SEED", nver)
-
-    expect_equal(sapply(q_list, length), nver)
+test_that("Sampler injects unique ds_name per version", {
+    q <- Question("q1", type = "SA", hidden_seed = 1, answer = quote(ds_name))
+    batch <- 5
+    sampler <- Sampler$new(q, batch_size = batch, seed = "SEED")
+    versions <- lapply(seq_len(batch), function(i) sampler$sample())
+    expect_equal(length(versions), batch)
+    ds_names <- sapply(versions, function(v) {
+        env <- new.env(parent = baseenv())
+        eval(v$hidden_data, envir = env)
+        env$ds_name
+    })
+    expect_equal(length(unique(ds_names)), batch)
+    expect_true(all(grepl("^SEED", ds_names)))
 })
 
-test_that(paste(sQuote("clozify_group"), " is working correctly"), {
-
-    group <-
-        Group$new("group",
-                  children = list(
-                      Question("q1", answer = 1),
-                      Question("q2", answer = 2),
-                      Question("q3", answer = 3),
-                      Question("q4", answer = 4),
-                      Question("q5", answer = 5),
-                      Question("q6", answer = 6),
-                      Question("q7", answer = 7)))
-
+test_that("sample_questions produces cloze questions from grouped questions", {
+    questions <- lapply(1:7, function(i) Question(paste0("q", i), answer = i))
     n <- 3
     N <- 10
-    cl_group <- clozify_group(group,
-                              sample_size = N,
-                              group_sizes = n)
-
-    expect_equal(length(cl_group$children), N)
-
-    expect_true(all(sapply(cl_group$children, function(q) q$type) == "cloze"))
-    expect_true(all(sapply(cl_group$children, function(q) q$num) == n))
+    q_list <- sample_questions(questions, sample_size = N, group_sizes = n, group_by = NULL)
+    expect_equal(length(q_list), N)
+    expect_true(all(sapply(q_list, function(q) q$type) == "cloze"))
+    expect_true(all(sapply(q_list, function(q) q$num) == n))
 })
 
-
-test_that(paste(sQuote("clozify_independant_questions"), " is working correctly"), {
-
-    questions <- list(
-        Question("q1", answer = 1),
-        Question("q2", answer = 2),
-        Question("q3", answer = 3),
-        Question("q4", answer = 4),
-        Question("q5", answer = 5),
-        Question("q6", answer = 6),
-        Question("q7", answer = 7))
-
+test_that("sample_questions with batch_size injects ds_name into sub-questions", {
+    questions <- lapply(1:7, function(i)
+        Question(paste0("q", i), type = "SA", hidden_seed = 1, answer = quote(ds_name)))
     N <- 10
-    nver <- 10
     k <- 3
-
-    q_list <- clozify_independant_questions(questions, "SEED", N, k, nver)
-
+    batch_size <- 10
+    q_list <- sample_questions(questions, sample_size = N, group_sizes = k,
+                               group_by = NULL, batch_size = batch_size, seed = "SEED")
     expect_equal(length(q_list), N)
     expect_true(all(sapply(q_list, function(q) q$type) == "cloze"))
     expect_true(all(sapply(q_list, function(q) q$num) == k))
-
-    questions <- list(
-        Question("q1", type = "SA", hidden_seed = 1, answer = quote(ds_name)),
-        Question("q2", type = "SA", hidden_seed = 1, answer = quote(ds_name)),
-        Question("q3", type = "SA", hidden_seed = 1, answer = quote(ds_name)),
-        Question("q4", type = "SA", hidden_seed = 1, answer = quote(ds_name)),
-        Question("q5", type = "SA", hidden_seed = 1, answer = quote(ds_name)),
-        Question("q6", type = "SA", hidden_seed = 1, answer = quote(ds_name)),
-        Question("q7", type = "SA", hidden_seed = 1, answer = quote(ds_name)))
-
-    q_list <- clozify_independant_questions(questions, "SEED", N, k, nver)
-
-    expect_true(all(sapply(q_list, function(q) grepl("SEED[0-9]{3}", q$instantiated_answer))))
+    expect_true(all(sapply(q_list, function(q)
+        all(grepl("SEED[0-9]+", unlist(q$instantiated_answer))))))
 })
 
-
-test_that(paste(sQuote("versionize_group"), " is working correctly"), {
+test_that("sample_questions versions a Group via Sampler", {
     seed <- "TEST"
-    N <- 10
+    N <- 5
     group <- Group$new("gp1",
-                       hidden_data = quote({
-                           ds_sym <- rnorm(1)
-                       }),
                        children = list(
                            Question("q1", type = "SA"),
-                           Question("q2", type = "SA"),
-                           Question("q3", type = "SA"),
-                           Question("q4", type = "SA"),
-                           Question("q5", type = "SA"),
-                           Question("q6", type = "SA"),
-                           Question("q7", type = "SA")))
-
-    v_group <- versionize_group(group, seed, N)
-
-    expect_true(all(sapply(v_group, function(g) grepl("v[0-9]{3}$", g$title))))
-
+                           Question("q2", type = "SA")))
+    v_groups <- sample_questions(list(group), sample_size = N, batch_size = N,
+                                 seed = seed, group_by = NULL)
+    expect_equal(length(v_groups), N)
+    expect_true(all(sapply(v_groups, inherits, "Group")))
+    ds_names <- sapply(v_groups, function(g) {
+        env <- new.env(parent = baseenv())
+        eval(g$hidden_data, envir = env)
+        env$ds_name
+    })
+    expect_equal(length(unique(ds_names)), N)
+    expect_true(all(grepl(paste0("^", seed), ds_names)))
 })
 
 
