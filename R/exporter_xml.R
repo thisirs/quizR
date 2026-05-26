@@ -41,6 +41,12 @@ XMLExporter <- R6::R6Class(
             child_opts          <- opts
             child_opts$.path    <- title_path
             children_xml <- lapply(inode$children, function(child) {
+                if (!is.null(inode$header)) {
+                    if (child$class_name == "ClozeQuestion")
+                        child$header <- paste(c(inode$header, child$header), collapse = "\n\n")
+                    else
+                        child$text <- paste(c(inode$header, child$text), collapse = "\n\n")
+                }
                 self$render(child, child_opts)
             })
 
