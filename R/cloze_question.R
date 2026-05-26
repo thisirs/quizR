@@ -10,6 +10,7 @@ ClozeQuestion <- R6::R6Class(
     inherit = SimpleQuestion,
     public = list(
         type              = "cloze",
+        text_based        = NULL,
         subquestions      = NULL,
         cloze_hidden_data = NULL,
         cloze_data        = NULL,
@@ -25,6 +26,7 @@ ClozeQuestion <- R6::R6Class(
                               answer           = NULL,
                               questions        = NULL,
                               subquestions_opts = NULL,
+                              header           = NULL,
                               tags             = NULL,
                               options          = list()) {
             if (is.null(text) && is.null(questions))
@@ -38,6 +40,7 @@ ClozeQuestion <- R6::R6Class(
                              hidden_data = hidden_data,
                              seed        = seed,
                              hidden_seed = hidden_seed,
+                             header      = header,
                              tags        = tags,
                              options     = options)
             self$cloze_hidden_data <- hidden_data
@@ -47,10 +50,12 @@ ClozeQuestion <- R6::R6Class(
 
             if (!is.null(text)) {
                 # Text-based construction
+                self$text_based     <- TRUE
                 parsed <- private$parse_subquestions(text, answer, feedback, subquestions_opts)
                 self$subquestions   <- parsed$subquestions
                 self$cloze_feedback <- parsed$cloze_feedback
             } else {
+                self$text_based <- FALSE
                 # Questions-list construction
                 if (!is.null(answer))
                     stopifnot(length(answer) == length(questions))
@@ -137,13 +142,15 @@ ClozeQuestion <- R6::R6Class(
         },
 
         copy = function() {
-            ClozeQuestion$new(
+            q <- ClozeQuestion$new(
                 data        = self$cloze_data,
                 hidden_data = self$cloze_hidden_data,
                 seed        = self$seed,
                 hidden_seed = self$hidden_seed,
                 questions   = lapply(self$subquestions, function(q) q$copy()),
                 options     = self$options)
+            q$text_based <- self$text_based
+            q
         }
     ),
 
@@ -152,6 +159,7 @@ ClozeQuestion <- R6::R6Class(
         text = function(value) {
             if (!missing(value)) {
                 if (is.null(value)) return(invisible(self))
+                self$text_based     <- TRUE
                 parsed <- private$parse_subquestions(value, NULL, NULL, self$subquestions_opts)
                 self$subquestions   <- parsed$subquestions
                 self$cloze_feedback <- parsed$cloze_feedback
