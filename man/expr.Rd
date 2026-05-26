@@ -6,9 +6,6 @@
 \usage{
 expr(...)
 }
-\arguments{
-\item{...}{}
-}
 \value{
 A quoted expression or a list of quoted expression
 }

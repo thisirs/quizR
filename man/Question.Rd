@@ -2,13 +2,13 @@
 % Please edit documentation in R/question.R
 \name{Question}
 \alias{Question}
-\title{Factory class that creates questions object give their type}
+\title{Factory function that creates question objects given their type.}
 \usage{
 Question(...)
 }
 \arguments{
-\item{...}{A list of named arguments}
+\item{...}{Named arguments forwarded to the appropriate question class.}
 }
 \description{
-Factory class that creates questions object give their type
+Factory function that creates question objects given their type.
 }

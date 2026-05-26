@@ -19,21 +19,21 @@ Imports:
     tools,
     logging,
     whisker
-RoxygenNote: 7.3.2
 Suggests: testthat
 VignetteBuilder: knitr
 Collate:
-    'utils.R'
     'simple_question.R'
     'multiple_choice.R'
     'shortanswer_question.R'
     'numerical_question.R'
     'cloze_question.R'
+    'exporter_amc.R'
+    'exporter_markdown.R'
+    'exporter_xml.R'
     'gapselect_question.R'
     'group.R'
-    'question.R'
     'instantiate.R'
-    'exporter_amc.R'
-    'exporter_xml.R'
-    'exporter_markdown.R'
+    'question.R'
     'quiz.R'
+    'utils.R'
+Config/roxygen2/version: 8.0.0

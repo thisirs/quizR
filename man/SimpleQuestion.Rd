@@ -2,7 +2,7 @@
 % Please edit documentation in R/simple_question.R
 \name{SimpleQuestion}
 \alias{SimpleQuestion}
-\title{foo}
+\title{SimpleQuestion}
 \description{
-foo
+SimpleQuestion
 }
