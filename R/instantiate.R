@@ -70,8 +70,10 @@ instantiate_feedback <- function(raw_feedback, var_list) {
 
 # Derive a display title: use first line of instantiated text if text is long.
 derive_title <- function(inst_text) {
+    if (!nzchar(inst_text)) return("")
     first <- strsplit(inst_text, "\n")[[1]][1]
     first <- trimws(first)
+    if (is.na(first) || !nzchar(first)) return("")
     if (nchar(first) > 60) paste0(substr(first, 1, 57), "...") else first
 }
 
@@ -181,6 +183,7 @@ instantiate_cloze <- function(q, parent_var_list = list(), parent_env = empty_en
     list(
         class_name   = "ClozeQuestion",
         type         = "cloze",
+        text_based   = isTRUE(q$text_based),
         header       = header,
         subquestions = inst_subqs,
         cloze_feedback = cloze_fb,
@@ -198,6 +201,10 @@ instantiate_group <- function(g, parent_var_list = list(), parent_env = empty_en
     env       <- build_env(var_list, g$data, g$seed, parent_env)
     data_expr <- build_data_expr(var_list, g$data, g$seed)
 
+    header <- if (!is.null(g$header))
+        instantiate_text_list(g$header, var_list)
+    else NULL
+
     children <- lapply(g$children, function(child) instantiate(child, var_list, env))
 
     cls <- class(g)[1]
@@ -206,6 +213,7 @@ instantiate_group <- function(g, parent_var_list = list(), parent_env = empty_en
         type       = g$type,
         title      = if (!is.null(g$text)) g$text else "",
         num        = g$num,
+        header     = header,
         children   = children,
         env        = env,
         data_expr  = data_expr,
