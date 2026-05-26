@@ -304,132 +304,6 @@ answerstr <- function(answer) {
            stop("Unhandled type in ", sQuote("answerstr"), ": ", type))
 }
 
-# Génération de N questions résultants de la clozification de n
-# questions prises au hasard dans questions.
-clozify_questions <- function(questions, N, n, make_sampler = NULL, ...) {
-    nq <- length(questions)
-
-    if (is.null(make_sampler))
-        sampler <- function() sample(1:nq, n)
-    else
-        sampler <- make_sampler(questions, ...)
-
-    max_iter <- n*N^2
-    choices <- matrix(ncol = n, nrow = 0)
-    iter <- 0
-    while (nrow(choices) < N & iter < max_iter) {
-        spl <- sampler()
-        choices <- rbind(choices, spl)
-        choices <- choices[!duplicated(choices), , drop = FALSE]
-        iter <- iter + 1
-    }
-
-    # Make sure we have N rows
-    stopifnot(nrow(choices) == N)
-
-    lapply(seq_len(N), function(i) {
-        subquestions <- questions[choices[i, ]]
-        Question(type = "cloze", hidden_seed = i, questions = subquestions)
-    })
-}
-
-
-## Clozify questions taken from a group quiz object
-
-## QUIZ_GROUP is a group quiz object that contains questions.
-
-## SAMPLE_SIZE is the number of questions consisting in clozification
-## of questions from QUIZ_GROUP.
-
-## GROUP_BY is used to group questions in the group quiz object.
-
-## GROUP_SIZES encodes the number of questions to sample from group
-## quiz object before clozifying them.
-
-
-#' @importFrom stats runif
-clozify_group <- function(quiz_group,
-                          sample_size = NULL,
-                          group_by = "tags",
-                          group_sizes = NULL) {
-
-    questions <- quiz_group$children
-    n <- length(questions)
-
-    if (is.null(group_by)) {
-        group <- factor(1:n)
-    } else if (identical(group_by, "tags")) {
-        # Extract tag or random tag if none
-        group <- sapply(questions, function(q) {
-            # Keep strings as is
-            if(is.character(q$tags) & length(q$tags) == 1)
-                q$tags
-            else
-                digest::digest(runif(1), "md5")
-        })
-
-        group <- factor(group, levels = unique(group))
-    } else if (is.vector(group_by)) {
-        stopifnot(length(group_by) == length(questions))
-        # Respect order c("B", "A", "A") gives c(1, 2, 2)
-        group <- factor(group, levels = unique(group_by))
-    } else stop('Unsupported group_by')
-
-    # Number of groups. From previous example: 3
-    n_groups <- nlevels(group)
-
-    if (is.list(group_sizes)) {
-        stopifnot(setequal(names(group_sizes), levels(group)))
-        stopifnot(all(group_sizes <= table(group)[names(group_sizes)]))
-
-        group_sampler <- function() {
-            unlist(sapply(levels(group), function(level) {
-                idxs <- which(group == level)
-                idxs[sample.int(length(idxs), group_sizes[[level]])]
-            }))
-        }
-    } else if (is.vector(group_sizes) & length(group_sizes) > 1) {
-        stopifnot(n_groups == length(group_sizes))
-        stopifnot(all(group_sizes <= table(group)))
-        group_sampler <- function() {
-            unlist(sapply(1:levels(group), function(i) {
-                level = levels(group)[i]
-                idxs <- which(group == level)
-                idxs[sample.int(length(idxs), group_sizes[i])]
-            }))
-        }
-    } else if (is.vector(group_sizes) & length(group_sizes) == 1) {
-        stopifnot(n_groups >= group_sizes)
-        group_sampler <- function() {
-            # Which groups to sample from
-            groups <- sample(group, group_sizes)
-
-            # Sample indexes for questions in a given group
-            sapply(groups, function(level) {
-                idxs <- which(group == level)
-                idxs[sample.int(length(idxs), 1)]
-            })
-        }
-    }
-
-    cl_list <- lapply(seq_len(sample_size), function(i) {
-        # Indexes of chosen questions
-        group_indexes <- group_sampler()
-
-        # Sample from those questions
-        ql <- questions[group_indexes]
-
-        ClozeQuestion$new(questions = ql)
-    })
-
-    Group$new(quiz_group$title,
-              header = quiz_group$header,
-              seed = quiz_group$seed,
-              data = quiz_group$data,
-              hidden_seed = quiz_group$hidden_seed,
-              hidden_data = quiz_group$hidden_data,
-              children = cl_list)
-}
 
 #' Merge several group quiz objects
 #'
@@ -465,115 +339,6 @@ merge_groups <- function(groups, title) {
               children = children)
 }
 
-##' Create copies of a given group
-##'
-##' @param group An quiz object group
-##' @param seed Identifier used to create the title
-##' @param N Number of groups to create
-##' @return The list of newly created groups
-versionize_group <- function(group, seed, N) {
-    original_hidden_data <- group$hidden_data
-    title <- group$title
-
-    width = floor(log10(N)) + 1
-    ident_seed <- sprintf("%s%%0%dd", seed, width)
-
-    lapply(seq_len(N), function(i) {
-
-        ident <- sprintf(ident_seed, i)
-        group_name <- sprintf("%s v%03d", title, i)
-
-        ## Prepend custom ds_name and ds_sym to be used in question
-        new_hdata <- merge_languages(bquote({
-            ds_name <- .(ident)
-            ds_sym <- as.symbol(ds_name)
-        }), original_hidden_data)
-
-        new_group <- group$clone()
-        new_group$hidden_data <- new_hdata
-        new_group$text <- group_name
-
-        new_group
-    })
-}
-
-#' @export
-versionize_questions <- function(questions, seed, nver) {
-    n <- length(questions)
-
-    if (length(nver) == 1) nver <- rep(nver, n)
-    stopifnot(length(nver) == n, all(nver > 0))
-
-    lapply(seq_len(n), function(i) {
-        question <- questions[[i]]
-        if (question$type == "cloze")
-            original_hidden_data <- question$cloze_hidden_data
-        else
-            original_hidden_data <- question$hidden_data
-
-        lapply(seq_len(nver[i]), function(j) {
-            ident <- paste0(seed, as.character(100*i + j))
-
-            ## Prepend custom ds_name and ds_sym to be used in question
-            new_hdata <- merge_languages(bquote({
-                ds_name <- .(ident)
-                ds_sym <- as.symbol(ds_name)
-            }), original_hidden_data)
-
-            qc <- question$copy()
-
-            if (question$type == "cloze")
-                qc$cloze_hidden_data <- new_hdata
-            else
-                qc$hidden_data <- new_hdata
-
-            qc
-        })
-    })
-}
-
-# Build NVER versions of QUESTIONS with SEED identifier. Then
-# construct N cloze questions from K different questions with random
-# version.
-#' @importFrom stats runif
-#' @export
-clozify_independant_questions <- function(questions, seed, N, k, nver) {
-    n <- length(questions)
-    if (length(nver) == 1) nver <- rep(nver, n)
-
-    stopifnot(floor(sum(nver)/k) >= N)
-    stopifnot(length(questions) >= k)
-    # stopifnot(rev(sort(nver))[k] >= N)
-
-    versions_list <- versionize_questions(questions, seed, nver)
-
-    ## Sample from VERSIONS_LIST
-    questions_list <- list()
-    for (i in seq_len(N)) {
-        # Current number of versions
-        nver <- sapply(versions_list, length)
-
-        # Choose k questions that are present the most
-        qchoice <- sample(which(nver >= rev(sort(nver))[k]), k)
-
-        # Choose versions
-        ver_choice <- ceiling(runif(k) * nver[qchoice])
-
-        # Extracting these questions
-        questions_set <- list()
-        for (j in seq_len(k)) {
-            question <- versions_list[[qchoice[j]]][[ver_choice[j]]]
-            versions_list[[qchoice[j]]][[ver_choice[j]]] <- NULL
-            questions_set <- c(questions_set, list(question))
-        }
-
-        qq <- Question(type = "cloze", questions = questions_set)
-
-        questions_list <- c(questions_list, list(qq))
-    }
-
-    questions_list
-}
 
 #' @export
 expand_with_gaussian <- function(
@@ -702,7 +467,10 @@ Sampler <- R6::R6Class(
                                ds_sym <- as.symbol(ds_name)
                            }), original_hidden_data)
 
-                           qc <- private$.question$copy()
+                           if (inherits(private$.question, "Group"))
+                               qc <- private$.question$clone()
+                           else
+                               qc <- private$.question$copy()
 
                            if (private$.question$type == "cloze")
                                qc$cloze_hidden_data <- new_hdata
@@ -725,6 +493,68 @@ Sampler <- R6::R6Class(
                        .counter = NULL
                    ))
 
+
+# Build the group factor and sampler closure from a question list.
+# Returns list(group, n_groups, sampler).
+#' @importFrom stats runif
+make_group_sampler <- function(questions, group_by, group_sizes) {
+    n_questions <- length(questions)
+
+    if (is.null(group_by)) {
+        group <- factor(1:n_questions)
+    } else if (identical(group_by, "tags")) {
+        group <- sapply(questions, function(q)
+            if (is.character(q$tags) & length(q$tags) == 1) q$tags
+            else digest::digest(runif(1), "md5"))
+        group <- factor(group, levels = unique(group))
+    } else if (is.vector(group_by)) {
+        stopifnot(length(group_by) == n_questions)
+        group <- factor(group_by, levels = unique(group_by))
+    } else stop("Unsupported group_by")
+
+    n_groups <- nlevels(group)
+
+    if (is.list(group_sizes)) {
+        stopifnot(setequal(names(group_sizes), levels(group)))
+        stopifnot(all(group_sizes <= table(group)[names(group_sizes)]))
+        group_sampler <- function(counts) {
+            unlist(lapply(levels(group), function(level) {
+                idxs <- which(group == level & counts > 0)
+                stopifnot(length(idxs) >= group_sizes[[level]])
+                idxs[sample.int(length(idxs), group_sizes[[level]])]
+            }))
+        }
+    } else if (is.vector(group_sizes) & length(group_sizes) > 1) {
+        stopifnot(n_groups == length(group_sizes))
+        stopifnot(all(group_sizes <= table(group)))
+        group_sampler <- function(counts) {
+            unlist(lapply(1:nlevels(group), function(i) {
+                level <- levels(group)[i]
+                idxs <- which(group == level & counts > 0)
+                stopifnot(length(idxs) >= group_sizes[i])
+                idxs[sample.int(length(idxs), group_sizes[i])]
+            }))
+        }
+    } else if (is.vector(group_sizes) & length(group_sizes) == 1) {
+        stopifnot(n_groups >= group_sizes)
+        group_sampler <- function(counts) {
+            avail_levels <- levels(group)[sapply(levels(group), function(lv)
+                any(group == lv & counts > 0))]
+            stopifnot(length(avail_levels) >= group_sizes)
+            # Weight by remaining capacity so no group exhausts prematurely;
+            # fall back to uniform when counts are Inf
+            weights <- sapply(avail_levels, function(lv) sum(counts[group == lv]))
+            prob <- if (any(is.infinite(weights))) NULL else weights
+            groups <- sample(avail_levels, group_sizes, prob = prob)
+            sapply(groups, function(level) {
+                idxs <- which(group == level & counts > 0)
+                idxs[sample.int(length(idxs), 1)]
+            })
+        }
+    }
+
+    list(group = group, n_groups = n_groups, sampler = group_sampler)
+}
 
 #' Return a list of questions or a list of clozified questions.
 #'
@@ -777,69 +607,59 @@ sample_questions <- function(questions,
                              group_sizes = 1,
                              clozify = TRUE) {
 
+    # Group mode: children of the group are sampled; each output cloze carries
+    # a versioned copy of the group's hidden_data/data so sub-questions from
+    # the same cloze share one consistent data context.
+    if (inherits(questions, "Group")) {
+        children   <- questions$children
+        n_children <- length(children)
+
+        gs            <- make_group_sampler(children, group_by, group_sizes)
+        group_sampler <- gs$sampler
+
+        counts <- if (length(batch_size) == 1)
+            rep(as.numeric(batch_size), n_children)
+        else {
+            stopifnot(length(batch_size) == n_children)
+            as.numeric(batch_size)
+        }
+
+        width      <- floor(log10(sample_size)) + 1
+        ident_seed <- sprintf("%s%%0%dd", seed, width)
+        original_hidden_data <- questions$hidden_data
+
+        result <- vector("list", sample_size)
+        for (i in seq_len(sample_size)) {
+            idxs         <- group_sampler(counts)
+            counts[idxs] <- counts[idxs] - 1
+
+            ident <- sprintf(ident_seed, i)
+            versioned_hdata <- merge_languages(bquote({
+                ds_name <- .(ident)
+                ds_sym  <- as.symbol(ds_name)
+            }), original_hidden_data)
+
+            selected   <- children[idxs]
+            result[[i]] <- Question(type        = "cloze",
+                                    questions   = selected,
+                                    hidden_data = versioned_hdata,
+                                    data        = questions$data,
+                                    hidden_seed = questions$hidden_seed,
+                                    seed        = questions$seed,
+                                    header      = questions$header)
+        }
+        return(result)
+    }
+
     if (inherits(questions, "SimpleQuestion"))
         questions <- list(questions)
 
     n_questions  <- length(questions)
 
-    # Set `group`, assign each question a group from `group_by`
-    if (is.null(group_by)) {
-        group <- factor(1:n_questions)
-    } else if (identical(group_by, "tags")) {
-        ## Extract tag or random tag if none
-        group <- sapply(questions, function(q)
-            ## Keep strings as is
-            if(is.character(q$tags) & length(q$tags) == 1)
-                q$tags
-            else
-                digest::digest(runif(1), "md5"))
-
-        group <- factor(group, levels = unique(group))
-    } else if (is.vector(group_by)) {
-        stopifnot(length(group_by) == length(questions))
-        # Respect order c("B", "A", "A") gives c(1, 2, 2)
-        group <- factor(group_by, levels = unique(group_by))
-    } else stop('Unsupported group_by')
-
-    # Number of different groupes of questions
-    n_groups <- nlevels(group)
-
-    # Set `group_sampler`; how to sample from a subset of
-    # `group_sizes` groups in groups defined by `group`.
-    if (is.list(group_sizes)) {
-        stopifnot(setequal(names(group_sizes), levels(group)))
-        stopifnot(all(group_sizes <= table(group)[names(group_sizes)]))
-        group_sampler <- function(counts) {
-            unlist(lapply(levels(group), function(level) {
-                idxs <- which(group == level & counts > 0)
-                stopifnot(length(idxs) >= group_sizes[level])
-                idxs[sample.int(length(idxs), group_sizes[level])]
-            }))
-        }
-    } else if (is.vector(group_sizes) & length(group_sizes) > 1) {
-        stopifnot(n_groups == length(group_sizes))
-        stopifnot(all(group_sizes <= table(group)))
-        group_sampler <- function(counts) {
-            unlist(lapply(1:nlevels(group), function(i) {
-                level = levels(group)[i]
-                idxs <- which(group == level & counts > 0)
-                stopifnot(length(idxs) >= group_sizes[i])
-                idxs[sample.int(length(idxs), group_sizes[i])]
-            }))
-        }
-    } else if (is.vector(group_sizes) & length(group_sizes) == 1) {
-        stopifnot(n_groups >= group_sizes)
-        group_sampler <- function(counts) {
-            ## Which groups to sample from
-            groups <- sample(levels(group), group_sizes)
-
-            ## Sample indexes for questions in a given group
-            sapply(groups, function(level) {
-                idxs <- which(group == level & counts > 0)
-                idxs[sample.int(length(idxs), 1)]
-            })
-        }
-    }
+    gs            <- make_group_sampler(questions, group_by, group_sizes)
+    group         <- gs$group
+    n_groups      <- gs$n_groups
+    group_sampler <- gs$sampler
 
     # Make SEEDS contain a unique seed for each question
     if (length(seed) == 1) {
@@ -852,7 +672,7 @@ sample_questions <- function(questions,
             level = levels(group)[i]
             n_level = length(which(group == level))
             width = floor(log10(n_level)) + 1
-            idents <- sprintf(sprintf("%%0%dd%d", width), 1:n_level)
+            idents <- sprintf(sprintf("%%0%dd", width), 1:n_level)
             seeds[group == level] <- paste0(seeds[group == level], idents)
         }
     } else {
