@@ -3,3 +3,6 @@ all:
 	R CMD build .
 	-R CMD check quizR_1.0.tar.gz
 	R CMD INSTALL quizR_1.0.tar.gz
+
+test:
+	Rscript -e "devtools::load_all('.'); library(testthat); test_dir('tests/testthat')"
