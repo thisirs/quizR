@@ -171,7 +171,8 @@ AMCExporter <- R6::R6Class(
             qtext <- if (nzchar(trimws(inode$text)))
                 render_latex_fragment(inode$text, opts, list(env = inode$env)) else ""
 
-            choices_env   <- if (isTRUE(inode$options[["horizontal"]])) "horizchoices" else "choices"
+            eff_opts      <- modifyList(if (is.null(opts$question_defaults)) list() else opts$question_defaults, inode$options)
+            choices_env   <- if (isTRUE(eff_opts[["horizontal"]])) "horizchoices" else "choices"
             correct_line  <- sprintf("    \\correctchoice{$%s$}", format(answer_val))
             wrong_lines   <- sapply(format(distractor_vals), function(d)
                                  sprintf("    \\wrongchoice{$%s$}", d))
@@ -194,7 +195,8 @@ AMCExporter <- R6::R6Class(
             inst_items <- lapply(inode$items, function(item)
                 render_latex_fragment(item, opts, list(env = inode$env)))
 
-            choices_env  <- if (isTRUE(inode$options[["horizontal"]])) "horizchoices" else "choices"
+            eff_opts     <- modifyList(if (is.null(opts$question_defaults)) list() else opts$question_defaults, inode$options)
+            choices_env  <- if (isTRUE(eff_opts[["horizontal"]])) "horizchoices" else "choices"
             choice_lines <- sapply(seq_along(inst_items), function(i) {
                 cmd <- if (inode$answer[[i]]) "\\correctchoice" else "\\wrongchoice"
                 sprintf("    %s{%s}", cmd, inst_items[[i]])

@@ -37,9 +37,10 @@ Quiz <- R6::R6Class(
             write(xml, opts$output)
         },
 
-        generate_AMC = function(...) {
+        generate_AMC = function(..., question_defaults = list()) {
             opts <- list(...)
             if (is.null(opts$output)) opts$output <- paste0(self$text, ".tex")
+            opts$question_defaults <- question_defaults
 
             inode    <- instantiate(self)
             exporter <- AMCExporter$new()
