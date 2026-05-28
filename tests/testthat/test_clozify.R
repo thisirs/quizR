@@ -4,17 +4,17 @@ test_that(paste(sQuote("sample_questions"), " is working correctly"), {
 
     # Only one question
     qs <- sample_questions(Question("q1", answer = 1),
-                           sample_size = 3)
+                           n = 3)
     expect_true(length(qs) == 3)
     expect_true(all(sapply(qs, function(q) q$type) != "cloze"))
 
     qs <- sample_questions(list(Question("q1", answer = 1)),
-                           sample_size = 3)
+                           n = 3)
     expect_true(length(qs) == 3)
 
     qs <- sample_questions(list(Question("q1", answer = 1)),
-                           clozify = TRUE,
-                           sample_size = 3)
+                           wrap_as_cloze = TRUE,
+                           n = 3)
     expect_true(length(qs) == 3)
     expect_true(all(sapply(qs, function(q) q$type) != "cloze"))
 
@@ -28,14 +28,14 @@ test_that(paste(sQuote("sample_questions"), " is working correctly"), {
         Question("q6", answer = 6),
         Question("q7", answer = 7))
 
-    q_list <- sample_questions(qs, sample_size = 4, group_sizes = 2)
+    q_list <- sample_questions(qs, n = 4, n_per_group = 2)
     expect_equal(length(q_list), 4)
     expect_true(all(sapply(q_list, function(q) q$type) == "cloze"))
 
 
-    q_list <- sample_questions(qs, sample_size = 4,
-                               group_sizes = 2,
-                               clozify = FALSE)
+    q_list <- sample_questions(qs, n = 4,
+                               n_per_group = 2,
+                               wrap_as_cloze = FALSE)
     expect_true(all(sapply(q_list, length) == 2))
     expect_equal(length(q_list), 4)
 })
@@ -60,20 +60,20 @@ test_that("sample_questions produces cloze questions from grouped questions", {
     questions <- lapply(1:7, function(i) Question(paste0("q", i), answer = i))
     n <- 3
     N <- 10
-    q_list <- sample_questions(questions, sample_size = N, group_sizes = n, group_by = NULL)
+    q_list <- sample_questions(questions, n = N, n_per_group = n, group_by = NULL)
     expect_equal(length(q_list), N)
     expect_true(all(sapply(q_list, function(q) q$type) == "cloze"))
     expect_true(all(sapply(q_list, function(q) q$num) == n))
 })
 
-test_that("sample_questions with batch_size injects ds_name into sub-questions", {
+test_that("sample_questions with max_uses injects ds_name into sub-questions", {
     questions <- lapply(1:7, function(i)
         Question(paste0("q", i), type = "SA", hidden_seed = 1, answer = quote(ds_name)))
     N <- 10
     k <- 3
-    batch_size <- 10
-    q_list <- sample_questions(questions, sample_size = N, group_sizes = k,
-                               group_by = NULL, batch_size = batch_size, seed = "SEED")
+    max_uses <- 10
+    q_list <- sample_questions(questions, n = N, n_per_group = k,
+                               group_by = NULL, max_uses = max_uses, seed = "SEED")
     expect_equal(length(q_list), N)
     expect_true(all(sapply(q_list, function(q) q$type) == "cloze"))
     expect_true(all(sapply(q_list, function(q) q$num) == k))
@@ -88,7 +88,7 @@ test_that("sample_questions versions a Group via Sampler", {
                        children = list(
                            Question("q1", type = "SA"),
                            Question("q2", type = "SA")))
-    v_groups <- sample_questions(list(group), sample_size = N, batch_size = N,
+    v_groups <- sample_questions(list(group), n = N, max_uses = N,
                                  seed = seed, group_by = NULL)
     expect_equal(length(v_groups), N)
     expect_true(all(sapply(v_groups, inherits, "Group")))

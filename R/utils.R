@@ -410,6 +410,88 @@ expand_with_gaussian <- function(
     return(result)
 }
 
+#' Sample wrong answers near existing answers using a mixture of Gaussians.
+#'
+#' One Gaussian component is placed at each existing answer; its sigma is set
+#' to \code{sd_factor} times the distance to the nearest other answer (with a
+#' minimum of 0.75 in integer mode so at least adjacent integers are reachable).
+#' Each candidate is drawn by picking a component uniformly at random and then
+#' sampling from it.
+#'
+#' @param answers Numeric vector of existing answers (correct + wrong).
+#' @param target_n Total number of values desired (existing + new).
+#' @param constraint Function \code{function(x) -> logical} applied to each
+#'   candidate; candidates failing it are discarded.
+#' @param min_sep Minimum separation between any two values in the result.
+#'   Defaults to uniqueness-only (no gap enforced).
+#' @param integer_mode Logical; if \code{NULL} (default) detected automatically.
+#' @param sd_factor Scale applied to nearest-neighbour distance to obtain sigma.
+#' @param sd_fallback Sigma used when there is only one existing answer.
+#' @param max_iter Maximum rejection-sampling iterations before stopping.
+#' @return Numeric vector of length \code{target_n}.
+#' @export
+expand_with_mixture <- function(answers,
+                                target_n,
+                                constraint  = function(x) TRUE,
+                                min_sep     = NULL,
+                                integer_mode = NULL,
+                                sd_factor   = 0.4,
+                                sd_fallback = NULL,
+                                max_iter    = 10000) {
+    answers <- unique(answers)
+
+    if (length(answers) >= target_n)
+        return(sort(answers)[seq_len(target_n)])
+
+    if (is.null(integer_mode))
+        integer_mode <- all(abs(answers - round(answers)) < .Machine$double.eps^0.5)
+
+    n <- length(answers)
+
+    # Per-component sigma: sd_factor * nearest-neighbour distance
+    if (n == 1) {
+        fallback <- if (!is.null(sd_fallback)) sd_fallback
+                    else if (integer_mode) 2
+                    else abs(answers) * 0.1 + 1
+        sds <- rep(fallback, n)
+    } else {
+        sds <- sapply(answers, function(a) {
+            nn <- min(abs(answers[abs(answers - a) > .Machine$double.eps^0.5] - a))
+            nn * sd_factor
+        })
+    }
+
+    # In integer mode the component must be wide enough to reach adjacent integers
+    if (integer_mode)
+        sds <- pmax(sds, 0.75)
+
+    result <- answers
+    iter   <- 0
+
+    while (length(result) < target_n && iter < max_iter) {
+        iter <- iter + 1
+
+        i         <- sample.int(n, 1)
+        candidate <- stats::rnorm(1, mean = answers[i], sd = sds[i])
+
+        if (integer_mode)
+            candidate <- round(candidate)
+
+        if (!constraint(candidate)) next
+
+        sep <- if (!is.null(min_sep)) min_sep else .Machine$double.eps^0.5
+        if (any(abs(candidate - result) < sep)) next
+
+        result <- c(result, candidate)
+    }
+
+    if (length(result) < target_n)
+        warning("expand_with_mixture: could only generate ", length(result),
+                " of ", target_n, " values after ", max_iter, " iterations")
+
+    result
+}
+
 evaluate_inline_r <- function(text, env) {
     if (is.null(env) || is.null(text)) return(text)
 
@@ -558,78 +640,78 @@ make_group_sampler <- function(questions, group_by, group_sizes) {
 
 #' Return a list of questions or a list of clozified questions.
 #'
-#' This function samples repeatedly (\code{sample_size} times without
-#' replacement) from \code{questions} a number of questions
-#' (controlled by \code{group_sizes} and \code{group_by}) from a set
-#' of provided questions. If \code{clozified} is false, it returns a
-#' list of lists of questions. If \code{clozified} is true each list
+#' This function samples repeatedly (\code{n} times without
+#' replacement) from \code{pool} a number of questions
+#' (controlled by \code{n_per_group} and \code{group_by}) from a set
+#' of provided questions. If \code{wrap_as_cloze} is false, it returns a
+#' list of lists of questions. If \code{wrap_as_cloze} is true each list
 #' consisting of questions turned into a cloze question.
 #'
-#' The argument \code{sample_size} is the desired number of returned
+#' The argument \code{n} is the desired number of returned
 #' list of questions or clozified questions.
 #'
 #' The argument \code{group_by} is used to first make groups of
 #' questions so that sampling without replacement is done in each
-#' subgroups according to \code{group_sizes}. If \code{group_by} is
+#' subgroups according to \code{n_per_group}. If \code{group_by} is
 #' set to \code{NULL} each question is in its own group. If
 #' \code{group_by} is set to \code{"tags"}, the field tags each
 #' questions is used to make groups. If \code{group_by} is a vector of
-#' the same length as \code{questions} it is used as a grouping key.
+#' the same length as \code{pool} it is used as a grouping key.
 #'
-#' The argument \code{batch_size} is a vector of same length as
-#' \code{questions} and specify the number of different versions to
-#' create for each question. If \code{batch_size} is just a number,
+#' The argument \code{max_uses} is a vector of same length as
+#' \code{pool} and specifies the number of different versions to
+#' create for each question. If \code{max_uses} is just a number,
 #' it is used for each question.
 #'
-#' The argument \code{group_sizes} is a vector whose length is the
-#' number of groups. It specified the number of questions to sample in
-#' each subgroups.
+#' The argument \code{n_per_group} is a vector whose length is the
+#' number of groups. It specifies the number of questions to sample in
+#' each subgroup.
 #'
 #' The argument \code{seed} is a base identifier that is used to
 #' generate unique identifiers for each question when creating
 #' multiple versions of each questions.
 #'
-#' @param questions A list of base questions to sample from
-#' @param sample_size Number of questions to create
-#' @param group_by Group question before sampling
-#' @param batch_size Number of duplicates for each question
+#' @param pool A list of base questions to sample from
+#' @param n Number of quiz copies to produce
+#' @param group_by Group questions before sampling
+#' @param max_uses Maximum number of times each question may appear across all copies
 #' @param seed Seed for each question
-#' @param group_sizes Size a sample in each subgroup
-#' @param clozify Specify if questions should be clozified
+#' @param n_per_group Number of questions to pick per group per copy
+#' @param wrap_as_cloze Whether to wrap selected questions into a ClozeQuestion
 #' @return A list of questions or a list of list of questions
 #' @export
 #' @importFrom stats runif
-sample_questions <- function(questions,
-                             sample_size = 10,
+sample_questions <- function(pool,
+                             n = 10,
                              group_by = "tags",
-                             batch_size = Inf,
+                             max_uses = Inf,
                              seed = "DATA",
-                             group_sizes = 1,
-                             clozify = TRUE) {
+                             n_per_group = 1,
+                             wrap_as_cloze = TRUE) {
 
     # Group mode: children of the group are sampled; each output cloze carries
     # a versioned copy of the group's hidden_data/data so sub-questions from
     # the same cloze share one consistent data context.
-    if (inherits(questions, "Group")) {
-        children   <- questions$children
+    if (inherits(pool, "Group")) {
+        children   <- pool$children
         n_children <- length(children)
 
-        gs            <- make_group_sampler(children, group_by, group_sizes)
+        gs            <- make_group_sampler(children, group_by, n_per_group)
         group_sampler <- gs$sampler
 
-        counts <- if (length(batch_size) == 1)
-            rep(as.numeric(batch_size), n_children)
+        counts <- if (length(max_uses) == 1)
+            rep(as.numeric(max_uses), n_children)
         else {
-            stopifnot(length(batch_size) == n_children)
-            as.numeric(batch_size)
+            stopifnot(length(max_uses) == n_children)
+            as.numeric(max_uses)
         }
 
-        width      <- floor(log10(sample_size)) + 1
+        width      <- floor(log10(n)) + 1
         ident_seed <- sprintf("%s%%0%dd", seed, width)
-        original_hidden_data <- questions$hidden_data
+        original_hidden_data <- pool$hidden_data
 
-        result <- vector("list", sample_size)
-        for (i in seq_len(sample_size)) {
+        result <- vector("list", n)
+        for (i in seq_len(n)) {
             idxs         <- group_sampler(counts)
             counts[idxs] <- counts[idxs] - 1
 
@@ -643,20 +725,20 @@ sample_questions <- function(questions,
             result[[i]] <- Question(type        = "cloze",
                                     questions   = selected,
                                     hidden_data = versioned_hdata,
-                                    data        = questions$data,
-                                    hidden_seed = questions$hidden_seed,
-                                    seed        = questions$seed,
-                                    header      = questions$header)
+                                    data        = pool$data,
+                                    hidden_seed = pool$hidden_seed,
+                                    seed        = pool$seed,
+                                    header      = pool$header)
         }
         return(result)
     }
 
-    if (inherits(questions, "SimpleQuestion"))
-        questions <- list(questions)
+    if (inherits(pool, "SimpleQuestion"))
+        pool <- list(pool)
 
-    n_questions  <- length(questions)
+    n_questions  <- length(pool)
 
-    gs            <- make_group_sampler(questions, group_by, group_sizes)
+    gs            <- make_group_sampler(pool, group_by, n_per_group)
     group         <- gs$group
     n_groups      <- gs$n_groups
     group_sampler <- gs$sampler
@@ -676,16 +758,16 @@ sample_questions <- function(questions,
             seeds[group == level] <- paste0(seeds[group == level], idents)
         }
     } else {
-        stopifnot(length(seed) == length(questions))
+        stopifnot(length(seed) == length(pool))
         seeds = seed
     }
 
-    # Size of batch for each question
-    if (length(batch_size) == 1)
-        batch_sizes = as.list(rep(batch_size, length(questions)))
+    # Size of max_uses for each question
+    if (length(max_uses) == 1)
+        batch_sizes = as.list(rep(max_uses, length(pool)))
     else {
-        stopifnot(length(batch_size) == length(questions))
-        batch_sizes = as.list(batch_size)
+        stopifnot(length(max_uses) == length(pool))
+        batch_sizes = as.list(max_uses)
     }
 
     # Build a sampler for each question using `Sampler`
@@ -693,13 +775,11 @@ sample_questions <- function(questions,
         Sampler$new(question, batch_size = batch_size, seed = seed)
     }
 
-    # Create a sampler for each question with corresponding,
-    # batch_size and seed.
-    samplers <- mapply(make_sampler, questions, batch_sizes, seeds)
+    # Create a sampler for each question with corresponding max_uses and seed.
+    samplers <- mapply(make_sampler, pool, batch_sizes, seeds)
 
-    # Sample `sample_size` of list of questions or clozified list of
-    # questions
-    lapply(seq_len(sample_size), function(i) {
+    # Sample `n` questions or cloze-wrapped questions
+    lapply(seq_len(n), function(i) {
         # Number of remaining versions for each question
         counts <- sapply(samplers, function(s) s$count())
         stopifnot(length(group) == length(counts))
@@ -715,7 +795,7 @@ sample_questions <- function(questions,
 
         # Clozify these questions to have only one or return a list of
         # questions.
-        if (clozify) {
+        if (wrap_as_cloze) {
             if (length(questions) == 1)
                 questions[[1]]
             else {
