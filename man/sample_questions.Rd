@@ -5,61 +5,61 @@
 \title{Return a list of questions or a list of clozified questions.}
 \usage{
 sample_questions(
-  questions,
-  sample_size = 10,
+  pool,
+  n = 10,
   group_by = "tags",
-  batch_size = Inf,
+  max_uses = Inf,
   seed = "DATA",
-  group_sizes = 1,
-  clozify = TRUE
+  n_per_group = 1,
+  wrap_as_cloze = TRUE
 )
 }
 \arguments{
-\item{questions}{A list of base questions to sample from}
+\item{pool}{A list of base questions to sample from}
 
-\item{sample_size}{Number of questions to create}
+\item{n}{Number of quiz copies to produce}
 
-\item{group_by}{Group question before sampling}
+\item{group_by}{Group questions before sampling}
 
-\item{batch_size}{Number of duplicates for each question}
+\item{max_uses}{Maximum number of times each question may appear across all copies}
 
 \item{seed}{Seed for each question}
 
-\item{group_sizes}{Size a sample in each subgroup}
+\item{n_per_group}{Number of questions to pick per group per copy}
 
-\item{clozify}{Specify if questions should be clozified}
+\item{wrap_as_cloze}{Whether to wrap selected questions into a ClozeQuestion}
 }
 \value{
 A list of questions or a list of list of questions
 }
 \description{
-This function samples repeatedly (\code{sample_size} times without
-replacement) from \code{questions} a number of questions
-(controlled by \code{group_sizes} and \code{group_by}) from a set
-of provided questions. If \code{clozified} is false, it returns a
-list of lists of questions. If \code{clozified} is true each list
+This function samples repeatedly (\code{n} times without
+replacement) from \code{pool} a number of questions
+(controlled by \code{n_per_group} and \code{group_by}) from a set
+of provided questions. If \code{wrap_as_cloze} is false, it returns a
+list of lists of questions. If \code{wrap_as_cloze} is true each list
 consisting of questions turned into a cloze question.
 }
 \details{
-The argument \code{sample_size} is the desired number of returned
+The argument \code{n} is the desired number of returned
 list of questions or clozified questions.
 
 The argument \code{group_by} is used to first make groups of
 questions so that sampling without replacement is done in each
-subgroups according to \code{group_sizes}. If \code{group_by} is
+subgroups according to \code{n_per_group}. If \code{group_by} is
 set to \code{NULL} each question is in its own group. If
 \code{group_by} is set to \code{"tags"}, the field tags each
 questions is used to make groups. If \code{group_by} is a vector of
-the same length as \code{questions} it is used as a grouping key.
+the same length as \code{pool} it is used as a grouping key.
 
-The argument \code{batch_size} is a vector of same length as
-\code{questions} and specify the number of different versions to
-create for each question. If \code{batch_size} is just a number,
+The argument \code{max_uses} is a vector of same length as
+\code{pool} and specifies the number of different versions to
+create for each question. If \code{max_uses} is just a number,
 it is used for each question.
 
-The argument \code{group_sizes} is a vector whose length is the
-number of groups. It specified the number of questions to sample in
-each subgroups.
+The argument \code{n_per_group} is a vector whose length is the
+number of groups. It specifies the number of questions to sample in
+each subgroup.
 
 The argument \code{seed} is a base identifier that is used to
 generate unique identifiers for each question when creating
