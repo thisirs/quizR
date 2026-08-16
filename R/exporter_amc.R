@@ -98,9 +98,11 @@ AMCExporter <- R6::R6Class(
 
                 # Answer-only question blocks (no text).
                 answer_blocks <- lapply(seq_len(n_subqs), function(i) {
-                    sq_copy      <- inode$subquestions[[i]]
-                    sq_copy$text <- ""
-                    self$render(sq_copy, subq_opts_list[[i]])
+                    sq_copy         <- inode$subquestions[[i]]
+                    sq_copy$text    <- ""
+                    so              <- subq_opts_list[[i]]
+                    so$in_list      <- TRUE
+                    self$render(sq_copy, so)
                 })
                 if (all(sapply(answer_blocks, is.null))) return(NULL)
 
@@ -133,6 +135,7 @@ AMCExporter <- R6::R6Class(
                 # their own range header or \AMCnobloc — the parent owns those.
                 child_opts <- lapply(seq_len(n_subqs), function(i) {
                     so <- subq_opts_list[[i]]
+                    so$in_list <- TRUE
                     if (inode$subquestions[[i]]$class_name == "ClozeQuestion")
                         so$as_subquestion <- TRUE
                     so
@@ -144,7 +147,7 @@ AMCExporter <- R6::R6Class(
                 if (length(subq_latex_list) == 0) return(NULL)
 
                 items <- lapply(subq_latex_list, function(s) paste0("\\item\n", s))
-                parts <- c(parts, list(paste0("\\begin{enumerate}\n",
+                parts <- c(parts, list(paste0("\\begin{enumerate}\n\\tightlist\n",
                                               paste(items, collapse = "\n"),
                                               "\n\\end{enumerate}")))
             }
@@ -173,15 +176,26 @@ AMCExporter <- R6::R6Class(
 
             eff_opts      <- modifyList(if (is.null(opts$question_defaults)) list() else opts$question_defaults, inode$options)
             choices_env   <- if (isTRUE(eff_opts[["horizontal"]])) "choiceshoriz" else "choices"
+            scoring       <- if (!is.null(eff_opts$scoring)) eff_opts$scoring else {
+                pts <- if (!is.null(eff_opts$points)) eff_opts$points else 1
+                sprintf('formula="%s*max(0, NBC/max(NB,1)-NMC/max(NM,1))"', pts)
+            }
             correct_line  <- sprintf("    \\correctchoice{$%s$}", private$fmt_num(answer_val))
             wrong_lines   <- sapply(distractor_vals, function(d)
                                  sprintf("    \\wrongchoice{$%s$}", private$fmt_num(d)))
             choices_block <- paste(c(correct_line, wrong_lines), collapse = "\n")
+            choices_body  <- private$wrap_choices(choices_env, choices_block)
 
-            sprintf(
-                "\\begin{question}{%s}\n  \\AMCqlabel{%s}\n  %s\n  \\begin{%s}\n%s\n  \\end{%s}\n\\end{question}",
-                qid, qid, qtext, choices_env, choices_block, choices_env
-            )
+            if (isTRUE(opts$in_list))
+                sprintf(
+                    "%s\n\\begin{question}{%s}\\AMCqlabel{%s}\\scoring{%s}\\vspace*{-2\\baselineskip}\n%s\n\\end{question}",
+                    qtext, qid, qid, scoring, choices_body
+                )
+            else
+                sprintf(
+                    "\\begin{question}{%s}\n  \\AMCqlabel{%s}\n  \\scoring{%s}\n  %s\n%s\n\\end{question}",
+                    qid, qid, scoring, qtext, choices_body
+                )
         },
 
         # ── MultipleChoice ───────────────────────────────────────────────────
@@ -197,16 +211,27 @@ AMCExporter <- R6::R6Class(
 
             eff_opts     <- modifyList(if (is.null(opts$question_defaults)) list() else opts$question_defaults, inode$options)
             choices_env  <- if (isTRUE(eff_opts[["horizontal"]])) "choiceshoriz" else "choices"
+            scoring      <- if (!is.null(eff_opts$scoring)) eff_opts$scoring else {
+                pts <- if (!is.null(eff_opts$points)) eff_opts$points else 1
+                sprintf('formula="%s*max(0, NBC/max(NB,1)-NMC/max(NM,1))"', pts)
+            }
             choice_lines <- sapply(seq_along(inst_items), function(i) {
                 cmd <- if (inode$answer[[i]]) "\\correctchoice" else "\\wrongchoice"
                 sprintf("    %s{%s}", cmd, inst_items[[i]])
             })
             choices_block <- paste(choice_lines, collapse = "\n")
+            choices_body  <- private$wrap_choices(choices_env, choices_block)
 
-            sprintf(
-                "\\begin{%s}{%s}\n  \\AMCqlabel{%s}\n  %s\n  \\begin{%s}\n%s\n  \\end{%s}\n\\end{%s}",
-                qtype, qid, qid, qtext, choices_env, choices_block, choices_env, qtype
-            )
+            if (isTRUE(opts$in_list))
+                sprintf(
+                    "%s\n\\begin{%s}{%s}\\AMCqlabel{%s}\\scoring{%s}\\vspace*{-2\\baselineskip}\n%s\n\\end{%s}",
+                    qtext, qtype, qid, qid, scoring, choices_body, qtype
+                )
+            else
+                sprintf(
+                    "\\begin{%s}{%s}\n  \\AMCqlabel{%s}\n  \\scoring{%s}\n  %s\n%s\n\\end{%s}",
+                    qtype, qid, qid, scoring, qtext, choices_body, qtype
+                )
         }
     ),
 
@@ -216,6 +241,17 @@ AMCExporter <- R6::R6Class(
             s <- gsub("e\\+0*(\\d+)", "\\\\times 10^{\\1}",  s)
             s <- gsub("e-0*(\\d+)",   "\\\\times 10^{-\\1}", s)
             s
+        },
+
+        wrap_choices = function(env, block) {
+            paste0(
+                "  \\bgroup\\medskip\\setlength{\\baselineskip}{20pt}",
+                "\\setlength{\\lineskip}{8pt}\\setlength{\\lineskiplimit}{0pt}\\vspace*{-14pt}\n",
+                "  \\begin{", env, "}\n",
+                block, "\n",
+                "  \\end{", env, "}\n",
+                "  \\egroup"
+            )
         },
 
         make_id = function(inode, opts) {
