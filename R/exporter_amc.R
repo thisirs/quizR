@@ -173,9 +173,9 @@ AMCExporter <- R6::R6Class(
 
             eff_opts      <- modifyList(if (is.null(opts$question_defaults)) list() else opts$question_defaults, inode$options)
             choices_env   <- if (isTRUE(eff_opts[["horizontal"]])) "choiceshoriz" else "choices"
-            correct_line  <- sprintf("    \\correctchoice{$%s$}", format(answer_val))
-            wrong_lines   <- sapply(format(distractor_vals), function(d)
-                                 sprintf("    \\wrongchoice{$%s$}", d))
+            correct_line  <- sprintf("    \\correctchoice{$%s$}", private$fmt_num(answer_val))
+            wrong_lines   <- sapply(distractor_vals, function(d)
+                                 sprintf("    \\wrongchoice{$%s$}", private$fmt_num(d)))
             choices_block <- paste(c(correct_line, wrong_lines), collapse = "\n")
 
             sprintf(
@@ -211,6 +211,13 @@ AMCExporter <- R6::R6Class(
     ),
 
     private = list(
+        fmt_num = function(x) {
+            s <- format(x)
+            s <- gsub("e\\+0*(\\d+)", "\\\\times 10^{\\1}",  s)
+            s <- gsub("e-0*(\\d+)",   "\\\\times 10^{-\\1}", s)
+            s
+        },
+
         make_id = function(inode, opts) {
             title <- evaluate_inline_r(inode$title, inode$env)
             if (length(title) == 0 || is.na(title)) title <- ""
