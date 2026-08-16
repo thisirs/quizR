@@ -492,6 +492,111 @@ expand_with_mixture <- function(answers,
     result
 }
 
+rs_tag_names <- function(pool) {
+    tag_lists <- lapply(pool, `[[`, "tags")
+    singles   <- unique(unlist(tag_lists))
+    pairs     <- unique(unlist(lapply(tag_lists, function(tags) {
+        if (length(tags) < 2) return(NULL)
+        combn(sort(tags), 2, FUN = paste, collapse = ".", simplify = FALSE)
+    })))
+    c(singles, unlist(pairs))
+}
+
+rs_build_N <- function(sel, all_names) {
+    tag_lists <- lapply(sel, `[[`, "tags")
+    N         <- setNames(integer(length(all_names)), all_names)
+    for (nm in all_names) {
+        needed <- strsplit(nm, ".", fixed = TRUE)[[1]]
+        N[nm]  <- sum(vapply(tag_lists, function(tl) all(needed %in% tl), logical(1)))
+    }
+    N
+}
+
+#' Sample questions using rejection sampling with a tag-based constraint.
+#'
+#' At each of the \code{n} draws, \code{p} questions are sampled at random and
+#' accepted only when \code{constraint(N)} is TRUE, where \code{N} is a named
+#' integer vector of tag counts.  Single-tag counts are accessed as
+#' \code{N["dure"]}; pairwise co-occurrence counts (questions carrying both
+#' tags simultaneously) as \code{N["dure.theme1"]}.
+#'
+#' @param pool A list of questions to sample from.
+#' @param n Number of quiz copies to produce.
+#' @param p Number of questions per copy.
+#' @param constraint \code{function(N) -> logical} expressing the acceptance
+#'   criterion on the tag-count vector.
+#' @param max_uses Maximum number of times each question may appear across all
+#'   copies (scalar or vector of length \code{pool}).
+#' @param seed Base seed string for question versioning.
+#' @param wrap_as_cloze Whether to wrap selected questions into a ClozeQuestion.
+#' @param max_iter Maximum rejection iterations per copy before stopping.
+#' @return A list of length \code{n}: each element is a question or a list of
+#'   questions depending on \code{wrap_as_cloze}.
+#' @export
+sample_questions_rs <- function(pool,
+                                n          = 10,
+                                p,
+                                constraint = function(N) TRUE,
+                                max_uses   = Inf,
+                                seed       = "DATA",
+                                wrap_as_cloze = TRUE,
+                                max_iter   = 10000) {
+
+    if (inherits(pool, "SimpleQuestion"))
+        pool <- list(pool)
+
+    n_questions <- length(pool)
+    stopifnot(p <= n_questions)
+
+    all_names <- rs_tag_names(pool)
+
+    if (length(seed) == 1) {
+        width <- floor(log10(n_questions)) + 1
+        seeds <- sprintf(sprintf("%s%%0%dd", seed, width), seq_len(n_questions))
+    } else {
+        stopifnot(length(seed) == n_questions)
+        seeds <- seed
+    }
+
+    batch_sizes <- if (length(max_uses) == 1)
+        rep(as.numeric(max_uses), n_questions)
+    else {
+        stopifnot(length(max_uses) == n_questions)
+        as.numeric(max_uses)
+    }
+
+    samplers <- mapply(
+        function(q, bs, s) Sampler$new(q, batch_size = bs, seed = s),
+        pool, as.list(batch_sizes), seeds,
+        SIMPLIFY = FALSE
+    )
+
+    lapply(seq_len(n), function(i) {
+        avail <- which(vapply(samplers, function(s) s$count() > 0, logical(1)))
+        if (length(avail) < p)
+            stop("Not enough questions available for copy ", i,
+                 " (need ", p, ", have ", length(avail), ")")
+
+        accepted <- NULL
+        for (iter in seq_len(max_iter)) {
+            idxs <- sample(avail, p)
+            N    <- rs_build_N(pool[idxs], all_names)
+            if (isTRUE(constraint(N))) { accepted <- idxs; break }
+        }
+        if (is.null(accepted))
+            stop("No valid selection found in ", max_iter,
+                 " iterations for copy ", i)
+
+        questions <- lapply(accepted, function(idx) samplers[[idx]]$sample())
+
+        if (wrap_as_cloze) {
+            if (length(questions) == 1) questions[[1]]
+            else Question(type = "cloze", questions = questions)
+        } else
+            questions
+    })
+}
+
 evaluate_inline_r <- function(text, env) {
     if (is.null(env) || is.null(text)) return(text)
 
